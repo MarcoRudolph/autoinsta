@@ -1,0 +1,15 @@
+{
+    "name": "AutoChat",
+    "description": "Next.js app using TypeScript, Shadcn UI, Drizzle ORM, and Zod. Project enforces strong coding standards and conventions.",
+    "instructions": [
+      "Follow all conventions in .cursor/rules/core.mdc.",
+      "If code generation involves authentication, use the custom tables and UI as defined in the project.",
+      "All validation must use Zod.",
+      "Use Tailwind CSS and Shadcn for all styling.",
+      "Before adding new components, check if shadcn has a component that can be used instead.",
+      "Always use TypeScript with strict settings.",
+      "When in doubt or when external documentation is needed, refer to perplexity-tool.mdc rules.",
+      "Don't ask for confirmation at the end; just proceed with the changes."
+    ]
+  }
+  

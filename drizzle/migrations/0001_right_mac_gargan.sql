@@ -1,0 +1,4 @@
+ALTER TABLE "personas" DROP COLUMN "userId";
+ALTER TABLE "personas" ADD COLUMN "userId" uuid NOT NULL;
+ALTER TABLE "users" DROP COLUMN "id";
+ALTER TABLE "users" ADD COLUMN "id" uuid PRIMARY KEY NOT NULL;

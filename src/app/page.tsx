@@ -1,53 +1,57 @@
 "use client";
 
-import React from 'react';
-import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog';
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Dialog, DialogTrigger, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import AuthForm from '@/components/auth/AuthForm';
+import { createClient } from '@/lib/auth/supabaseClient.client';
 
-export default function Home() {
+export default function LandingPage() {
+  const router = useRouter();
+  const supabase = createClient();
+  const [checkingSession, setCheckingSession] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session && mounted) {
+        router.replace('/dashboard');
+      }
+      setCheckingSession(false);
+    });
+    return () => { mounted = false; };
+  }, [router, supabase]);
+
+  if (checkingSession) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section 
-        className="relative min-h-screen flex items-center justify-center px-4"
-        style={{
-          backgroundImage: `
-            linear-gradient(rgba(21, 25, 42, 0.35), rgba(21, 25, 42, 0.35)),
-            url('/images/chatbot.png')
-          `,
-          backgroundPosition: 'center',
-          backgroundSize: 'cover',
-          backgroundRepeat: 'no-repeat'
-        }}
+      <section
+        className="relative min-h-screen flex items-center justify-center px-4
+          bg-[url('/images/chatbot-mobile.png')] md:bg-[url('/images/chatbot.png')]
+          bg-center bg-cover bg-no-repeat
+          before:absolute before:inset-0 before:bg-[rgba(21,25,42,0.4)] before:content-[''] before:z-0"
       >
-        {/* Mobile background override */}
-        <div 
-          className="absolute inset-0 md:hidden"
-          style={{
-            backgroundImage: `
-              linear-gradient(rgba(21, 25, 42, 0.40), rgba(21, 25, 42, 0.40)),
-              url('/images/chatbot-mobile.png')
-            `,
-            backgroundPosition: 'center',
-            backgroundSize: 'cover',
-            backgroundRepeat: 'no-repeat'
-          }}
-        />
-
         {/* AutoChat Card + Catchy Lines Block */}
         <div className="absolute top-0 left-0 w-full flex flex-col items-center pt-12 z-20">
           <div className="bg-white/80 backdrop-blur-md shadow-lg rounded-2xl px-8 py-4 max-w-md w-full flex items-center justify-center mb-4">
             <h1 className="text-4xl md:text-5xl font-extrabold text-[#334269] tracking-tight drop-shadow-sm">AutoChat</h1>
           </div>
-          <div className="flex flex-col items-center gap-2 md:gap-4 select-none pointer-events-none">
-            <span className="text-2xl md:text-4xl font-bold text-white drop-shadow-lg bg-gradient-to-r from-[#f3aacb] via-[#e6ebfc] to-[#a3bffa] bg-clip-text text-transparent animate-pulse">
+          <div className="flex flex-col items-center gap-2 md:gap-4 select-none pointer-events-none text-center">
+            <span className="text-2xl md:text-4xl font-bold text-white drop-shadow-lg bg-gradient-to-r from-[#f3aacb] via-[#e6ebfc] to-[#a3bffa] bg-clip-text text-transparent animate-pulse text-center">
               Craft your digital persona.
             </span>
-            <span className="text-lg md:text-2xl font-semibold text-white drop-shadow-md bg-gradient-to-r from-[#a3bffa] via-[#f3aacb] to-[#e6ebfc] bg-clip-text text-transparent animate-fade-in">
+            <span className="text-lg md:text-2xl font-semibold text-white drop-shadow-md bg-gradient-to-r from-[#a3bffa] via-[#f3aacb] to-[#e6ebfc] bg-clip-text text-transparent animate-fade-in text-center">
               AI takes over your Instagram DMs & comments—just the way you want.
             </span>
-            <span className="text-lg md:text-xl font-medium text-white drop-shadow-md bg-gradient-to-r from-[#e6ebfc] via-[#f3aacb] to-[#a3bffa] bg-clip-text text-transparent animate-fade-in delay-200 mb-4">
+            <span className="text-lg md:text-xl font-medium text-white drop-shadow-md bg-gradient-to-r from-[#e6ebfc] via-[#f3aacb] to-[#a3bffa] bg-clip-text text-transparent animate-fade-in delay-200 mb-4 text-center">
               Consistent, authentic, automatic.
             </span>
             <div className="pointer-events-auto">
@@ -60,6 +64,7 @@ export default function Home() {
                   </button>
                 </DialogTrigger>
                 <DialogContent>
+                  <DialogTitle>Login or Register</DialogTitle>
                   <AuthForm />
                 </DialogContent>
               </Dialog>

@@ -1,7 +1,4 @@
-import 'dotenv/config';
-import { createClient } from '@supabase/supabase-js';
+// This file will be split into three: client, server, and middleware clients for Supabase SSR best practices.
+// Remove old code from this file and add a comment pointing to the new files.
 
-const supabaseUrl = 'https://beydpbnwneqksnmnlcce.supabase.co';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY as string;
-
-export const supabase = createClient(supabaseUrl, supabaseKey); 
+// See: src/lib/auth/supabaseClient.client.ts, supabaseClient.server.ts, supabaseClient.middleware.ts 

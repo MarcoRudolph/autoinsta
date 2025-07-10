@@ -1,0 +1,34 @@
+{
+  "name": "",
+  "description": "",
+  "active": false,
+  "childhoodExperiences": {
+    "personalDevelopment": [],
+    "sexuality": [],
+    "generalExperiences": [],
+    "socialEnvironmentFriendships": [],
+    "educationLearning": [],
+    "familyRelationships": []
+  },
+  "emotionalTriggers": [],
+  "characterTraits": [],
+  "positiveTraits": {
+    "socialCommunicative": [],
+    "professionalCognitive": [],
+    "personalIntrinsic": []
+  },
+  "negativeTraits": [],
+  "areasOfInterest": [],
+  "communicationStyle": {
+    "tone": "",
+    "wordChoice": "",
+    "responsePatterns": "",
+    "humor": {
+      "humorEnabled": false,
+      "humorTypes": [],
+      "humorIntensity": "",
+      "humorExclusionTopics": []
+    }
+  }
+}
+  

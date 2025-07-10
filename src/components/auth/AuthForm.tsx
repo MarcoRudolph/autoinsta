@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { signIn, signUp } from '@/lib/auth';
-import { supabase } from '@/lib/auth';
+import { createClient } from '@/lib/auth/supabaseClient.client';
+import { useRouter } from 'next/navigation';
 
 export default function AuthForm() {
+  const supabase = createClient();
+  const router = useRouter();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -14,6 +17,7 @@ export default function AuthForm() {
     setError(null);
     const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
     if (error) setError(error.message);
+    else router.push('/dashboard');
     setLoading(false);
   };
 
@@ -22,6 +26,7 @@ export default function AuthForm() {
     setError(null);
     const { error } = await supabase.auth.signInWithOAuth({ provider: 'facebook' });
     if (error) setError(error.message);
+    else router.push('/dashboard');
     setLoading(false);
   };
 
@@ -33,9 +38,11 @@ export default function AuthForm() {
       if (mode === 'login') {
         const { error } = await signIn(email, password);
         if (error) setError(error.message);
+        else router.push('/dashboard');
       } else {
         const { error } = await signUp(email, password);
         if (error) setError(error.message);
+        else router.push('/dashboard');
       }
     } catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'message' in err) {
