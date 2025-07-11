@@ -1,7 +1,7 @@
 // app/dashboard/page.tsx
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/auth/supabaseClient.client';
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 // import { useRef } from 'react'; // Remove unused
@@ -81,6 +81,7 @@ export default function Dashboard() {
     duration: { from: '', until: '' },
     productLinks: [] as string[],
   });
+  const [instagramConnected, setInstagramConnected] = useState(false);
   const [personas, setPersonas] = useState<{id: string, name: string, active?: boolean}[]>([]);
   const [selectedPersonaId, setSelectedPersonaId] = useState<string>('');
   const [loadingAI, setLoadingAI] = useState(false);
@@ -174,8 +175,31 @@ export default function Dashboard() {
     }
   }, []);
 
+  const handleInstagramLogin = () => {
+    window.location.href = '/api/instagram/auth';
+  };
+
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
+
+  useEffect(() => {
+    const param = searchParams.get('instagramConnected');
+    if (param === 'true') {
+      setInstagramConnected(true);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('instagramConnected', 'true');
+        const url = new URL(window.location.href);
+        url.searchParams.delete('instagramConnected');
+        window.history.replaceState({}, '', url.toString());
+      }
+    } else if (param === 'false') {
+      setInstagramConnected(false);
+    } else if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('instagramConnected');
+      if (stored === 'true') setInstagramConnected(true);
+    }
+  }, [searchParams]);
 
   const handleSavePersona = useCallback(async () => {
     setSaving(true);
@@ -331,8 +355,11 @@ export default function Dashboard() {
       <div className="flex flex-col items-center text-white rounded-2xl shadow-lg py-6 px-10 mb-8" style={{ background: 'linear-gradient(135deg, #1b1f2b, #2a2f4d, #3f4d70, #654a74)' }}>
         <h1 className="text-4xl font-extrabold tracking-wide">🤖 AutoChat Dashboard</h1>
         <p className="text-sm mt-2 opacity-80">Automatisiere deine Instagram-Interaktionen</p>
-        <button className="mt-4 border border-white text-white font-semibold py-2 px-4 rounded-lg hover:bg-white hover:text-indigo-700 transition shadow-none bg-transparent">
-          Instagram verbinden
+        <button
+          onClick={handleInstagramLogin}
+          className={`mt-4 border font-semibold py-2 px-4 rounded-lg transition shadow-none ${instagramConnected ? 'bg-green-600 border-green-600 text-white' : 'bg-transparent text-white border-white hover:bg-white hover:text-indigo-700'}`}
+        >
+          {instagramConnected ? 'Instagram verbunden' : 'Instagram verbinden'}
         </button>
       </div>
 
