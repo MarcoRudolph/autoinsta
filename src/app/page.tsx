@@ -2,7 +2,13 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Dialog, DialogTrigger, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import AuthForm from '@/components/auth/AuthForm';
 import { createClient } from '@/lib/auth/supabaseClient.client';
 import CookieBanner from '@/components/CookieBanner';
@@ -40,6 +46,34 @@ export default function LandingPage() {
           bg-center bg-cover bg-no-repeat
           before:absolute before:inset-0 before:bg-[rgba(21,25,42,0.4)] before:content-[''] before:z-0"
       >
+        {/* Pricing Button */}
+        <div className="absolute top-4 right-4 z-30 pointer-events-auto">
+          <Dialog>
+            <DialogTrigger asChild>
+              <button
+                className="px-4 py-2 rounded-full bg-[#334269]/60 text-white font-semibold backdrop-blur-md hover:bg-[#334269]/80"
+              >
+                Pricing
+              </button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogTitle className="text-center mb-4">Our Plans</DialogTitle>
+              <div className="space-y-4">
+                <div className="bg-white/80 dark:bg-[#232946] rounded-lg p-4 shadow">
+                  <h3 className="text-lg font-bold mb-1 text-[#334269] dark:text-white">Free Plan</h3>
+                  <p className="text-sm text-[#334269] dark:text-gray-200">
+                    20 automated messages in direct messages or comments.
+                  </p>
+                </div>
+                <div className="bg-[#f3aacb] text-[#334269] rounded-lg p-4 shadow">
+                  <h3 className="text-lg font-bold mb-1">Pro Plan</h3>
+                  <p className="text-sm">Unlimited messages for one Instagram account.</p>
+                  <p className="text-base font-semibold mt-2">10€ per month</p>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
         {/* AutoChat Card + Catchy Lines Block */}
         <div className="absolute top-0 left-0 w-full flex flex-col items-center pt-12 z-20">
           <div className="bg-white/80 backdrop-blur-md shadow-lg rounded-2xl px-8 py-4 max-w-md w-full flex items-center justify-center mb-4">
