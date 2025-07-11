@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Dialog, DialogTrigger, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import AuthForm from '@/components/auth/AuthForm';
 import { createClient } from '@/lib/auth/supabaseClient.client';
+import CookieBanner from '@/components/CookieBanner';
 
 export default function LandingPage() {
   const router = useRouter();
@@ -106,6 +107,7 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+      <CookieBanner />
     </div>
   );
 }
