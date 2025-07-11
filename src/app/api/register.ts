@@ -4,6 +4,7 @@ import { users } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { hash } from 'bcryptjs';
 import { z } from 'zod';
+import { createClient } from '@supabase/supabase-js';
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -15,19 +16,35 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { email, password } = registerSchema.parse(body);
 
-    // Check if user already exists
-    const existing = await db.select().from(users).where(eq(users.email, email));
-    if (existing.length > 0) {
-      return NextResponse.json({ code: 'USER_EXISTS', message: 'User already exists.' }, { status: 400 });
+    // Initialize Supabase client using environment variables
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Create user with Supabase Auth
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+    if (signUpError || !signUpData.user) {
+      return NextResponse.json(
+        { code: 'SUPABASE_ERROR', message: signUpError?.message || 'Failed to register user.' },
+        { status: 400 },
+      );
     }
 
-    // Hash password
+    const userId = signUpData.user.id;
+
+    // Hash password for local storage
     const passwordHash = await hash(password, 10);
 
-    // Insert user
-    await db.insert(users).values({ email, passwordHash });
+    // Sync user table with Supabase user id
+    const existing = await db.select().from(users).where(eq(users.id, userId));
+    if (existing.length === 0) {
+      await db.insert(users).values({ id: userId, email, passwordHash });
+    }
 
-    return NextResponse.json({ message: 'User registered successfully.' }, { status: 201 });
+    return NextResponse.json({ user: signUpData.user }, { status: 201 });
   } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ code: 'VALIDATION_ERROR', message: error.issues }, { status: 400 });
@@ -37,4 +54,4 @@ export async function POST(req: NextRequest) {
     }
     return NextResponse.json({ code: 'INTERNAL_ERROR', message: 'Unknown error' }, { status: 500 });
   }
-} 
+}
