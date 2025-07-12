@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/auth/supabaseClient.client';
-import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import AuthForm from '@/components/auth/AuthForm';
 // import { useRef } from 'react'; // Remove unused
 import isEqual from 'lodash.isequal';
 
@@ -352,7 +353,21 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen p-4 md:p-6" style={{ background: 'linear-gradient(135deg, #1b1f2b, #2b2e47, #313c5c)' }}>
-      <div className="flex flex-col items-center text-white rounded-2xl shadow-lg py-6 px-10 mb-8" style={{ background: 'linear-gradient(135deg, #1b1f2b, #2a2f4d, #3f4d70, #654a74)' }}>
+      <div className="flex flex-col items-center text-white rounded-2xl shadow-lg py-6 px-10 mb-8 relative" style={{ background: 'linear-gradient(135deg, #1b1f2b, #2a2f4d, #3f4d70, #654a74)' }}>
+        <Dialog>
+          <DialogTrigger asChild>
+            <button
+              className="absolute top-6 right-8 border border-sky-400 text-sky-400 font-semibold py-2 px-4 rounded-lg hover:bg-sky-400 hover:text-white transition shadow-none bg-transparent disabled:opacity-60"
+              onClick={() => router.push('/pricing')}
+            >
+              Get Started
+            </button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogTitle>Login or Register</DialogTitle>
+            <AuthForm />
+          </DialogContent>
+        </Dialog>
         <h1 className="text-4xl font-extrabold tracking-wide">🤖 AutoChat Dashboard</h1>
         <p className="text-sm mt-2 opacity-80">Automatisiere deine Instagram-Interaktionen</p>
         <button
