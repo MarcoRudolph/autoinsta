@@ -19,7 +19,7 @@ const PricingCard: React.FC<PricingCardProps> = ({
     className={`bg-white border rounded-2xl shadow-md p-16 flex flex-col items-start w-full max-w-2xl ${
       highlight ? "border-blue-500" : "border-gray-200"
     } font-satoshi`}
-    style={{ fontFamily: 'Satoshi, sans-serif' }}
+    style={{ fontFamily: 'Satoshi, sans-serif', background: '#fff' }}
   >
     <span className="text-2xl font-bold tracking-tight bg-gradient-to-r from-sky-700 to-cyan-500 bg-clip-text text-transparent font-satoshi mb-2" style={{ fontFamily: 'Satoshi, sans-serif' }}>
       AutoInsta

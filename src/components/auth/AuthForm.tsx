@@ -12,7 +12,17 @@ export default function AuthForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Helper to check localStorage for Bravo
+  const isBravoLogin = () => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('login') === 'Bravo';
+  };
+
   const handleGoogle = async () => {
+    if (!isBravoLogin()) {
+      setError('Login currently disabled.');
+      return;
+    }
     setLoading(true);
     setError(null);
     const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
@@ -22,6 +32,10 @@ export default function AuthForm() {
   };
 
   const handleFacebook = async () => {
+    if (!isBravoLogin()) {
+      setError('Login currently disabled.');
+      return;
+    }
     setLoading(true);
     setError(null);
     const { error } = await supabase.auth.signInWithOAuth({ provider: 'facebook' });
@@ -32,6 +46,10 @@ export default function AuthForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isBravoLogin()) {
+      setError('Login currently disabled.');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {

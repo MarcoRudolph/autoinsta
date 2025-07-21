@@ -1,14 +1,21 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import PricingCard from "@/components/PricingCard";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
+import Head from 'next/head';
 
 const PricingPage = () => {
   const router = useRouter();
+  useEffect(() => {
+    document.title = "AutoInsta";
+  }, []);
   return (
     <>
+      <Head>
+        <title>AutoInsta</title>
+      </Head>
       <Navbar />
       <div className="min-h-screen bg-white flex flex-col items-center">
         {/* Hero Section */}

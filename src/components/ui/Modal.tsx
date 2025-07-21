@@ -26,7 +26,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
       />
       <div className="relative bg-white dark:bg-[#15192a] rounded-xl shadow-2xl p-6 w-full max-w-md mx-4 z-10 animate-fade-in">
         <button
-          className="absolute top-3 right-3 text-gray-400 hover:text-gray-700 dark:hover:text-white text-2xl font-bold focus:outline-none"
+          className="absolute top-3 right-3 text-gray-400 hover:text-gray-700 dark:hover:text-white text-4xl font-bold focus:outline-none"
           onClick={onClose}
           aria-label="Close"
         >
