@@ -3,6 +3,12 @@ import { db } from '@/drizzle';
 import { personas } from '@/drizzle/schema/personas';
 import { eq, and } from 'drizzle-orm';
 
+type PersonaData = {
+  name?: string;
+  active?: boolean;
+  [key: string]: unknown;
+};
+
 export async function POST(req: NextRequest) {
   try {
     const { personaId, userId } = await req.json();
@@ -13,7 +19,7 @@ export async function POST(req: NextRequest) {
     const allPersonas = await db.select().from(personas).where(eq(personas.userId, userId));
     // Set active=false for all, active=true for the selected one
     for (const p of allPersonas) {
-      const data = { ...(p.data as any), active: p.id === personaId };
+      const data = { ...(p.data as PersonaData), active: p.id === personaId };
       await db.update(personas)
         .set({ data })
         .where(eq(personas.id, p.id));

@@ -2,12 +2,18 @@ import { db } from '@/drizzle';
 import { personas } from '@/drizzle/schema/personas';
 import { NextResponse } from 'next/server';
 
+type PersonaData = {
+  name?: string;
+  active?: boolean;
+  [key: string]: unknown;
+};
+
 export async function GET() {
   try {
     const result = await db.select().from(personas);
     // Map to include id, name, and active for dropdown
     const personasList = result.map(row => {
-      const data = row.data as any;
+      const data = row.data as PersonaData;
       return {
         id: row.id,
         name: data?.name || `Persona ${row.id}`,

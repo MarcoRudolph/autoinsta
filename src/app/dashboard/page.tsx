@@ -1,6 +1,6 @@
 // app/dashboard/page.tsx
 'use client';
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/auth/supabaseClient.client';
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -35,7 +35,11 @@ type Personality = {
   userId?: string;
 };
 
-export default function Dashboard() {
+function DashboardContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const supabase = createClient();
+  
   // All hooks must be called before any return or conditional return
   // Initial state: flat structure
   const [personality, setPersonality] = useState<Personality>({
@@ -182,9 +186,7 @@ export default function Dashboard() {
       'https://www.instagram.com/oauth/authorize?force_reauth=true&client_id=1031545482523645&redirect_uri=https://www.rudolpho-chat.de/api/instagram/callback&response_type=code&scope=instagram_business_basic%2Cinstagram_business_manage_messages%2Cinstagram_business_manage_comments%2Cinstagram_business_content_publish%2Cinstagram_business_manage_insights';
   };
 
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const supabase = createClient();
+
 
   // Click outside to close dropdown
   useEffect(() => {
@@ -793,5 +795,13 @@ export default function Dashboard() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function Dashboard() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <DashboardContent />
+    </Suspense>
   );
 }
