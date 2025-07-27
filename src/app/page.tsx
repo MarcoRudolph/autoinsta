@@ -7,11 +7,11 @@ import {
   DialogTrigger,
   DialogContent,
   DialogTitle,
-  DialogDescription,
 } from '@/components/ui/dialog';
 import AuthForm from '@/components/auth/AuthForm';
 import { createClient } from '@/lib/auth/supabaseClient.client';
 import CookieBanner from '@/components/CookieBanner';
+import Footer from '@/components/Footer';
 
 export default function LandingPage() {
   const router = useRouter();
@@ -56,28 +56,73 @@ export default function LandingPage() {
                 Pricing
               </button>
             </DialogTrigger>
-            <DialogContent>
-              <DialogTitle className="text-center mb-4">Our Plans</DialogTitle>
-              <div className="space-y-4">
-                <div className="bg-white/80 dark:bg-[#232946] rounded-lg p-4 shadow">
-                  <h3 className="text-lg font-bold mb-1 text-[#334269] dark:text-white">Free Plan</h3>
-                  <p className="text-sm text-[#334269] dark:text-gray-200">
+            <DialogContent className="bg-white dark:bg-[#232946] border-2 border-[#f3aacb]/20 shadow-2xl max-w-md [&>button]:text-white [&>button]:hover:text-gray-200 [&>button]:bg-[#334269] [&>button]:hover:bg-[#334269]/80 [&>button]:rounded-full [&>button]:p-2 [&>button]:transition-all [&>button]:duration-200">
+              <DialogTitle className="text-center mb-6 text-2xl font-bold text-[#334269] dark:text-white">
+                Choose Your Plan
+              </DialogTitle>
+              <div className="space-y-6">
+                {/* Free Plan */}
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-[#2a2f4c] dark:to-[#232946] rounded-xl p-6 shadow-lg border border-gray-200 dark:border-[#334269]/30 hover:shadow-xl transition-all duration-300">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-xl font-bold text-[#334269] dark:text-white">Free Plan</h3>
+                    <span className="text-sm font-medium text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-3 py-1 rounded-full">
+                      Free
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
                     20 automated messages in direct messages or comments.
                   </p>
+                  <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                    <li className="flex items-center">
+                      <span className="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
+                      Basic automation
+                    </li>
+                    <li className="flex items-center">
+                      <span className="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
+                      Standard response templates
+                    </li>
+                  </ul>
                 </div>
-                <div className="bg-[#f3aacb] text-[#334269] rounded-lg p-4 shadow">
-                  <h3 className="text-lg font-bold mb-1">Pro Plan</h3>
-                  <p className="text-sm">Unlimited messages for one Instagram account.</p>
-                  <p className="text-base font-semibold mt-2">10€ per month</p>
+
+                {/* Pro Plan */}
+                <div className="bg-gradient-to-br from-[#f3aacb] to-[#e6a3c4] rounded-xl p-6 shadow-lg border-2 border-[#f3aacb] hover:shadow-xl transition-all duration-300 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 bg-[#334269] text-white text-xs font-bold px-3 py-1 rounded-bl-lg">
+                    POPULAR
+                  </div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-xl font-bold text-[#334269]">Pro Plan</h3>
+                    <span className="text-lg font-bold text-[#334269]">10€/month</span>
+                  </div>
+                  <p className="text-sm text-[#334269]/80 mb-4">
+                    Unlimited messages for one Instagram account.
+                  </p>
+                  <ul className="space-y-2 text-sm text-[#334269]/80">
+                    <li className="flex items-center">
+                      <span className="w-2 h-2 bg-[#334269] rounded-full mr-3"></span>
+                      Unlimited automation
+                    </li>
+                    <li className="flex items-center">
+                      <span className="w-2 h-2 bg-[#334269] rounded-full mr-3"></span>
+                      Advanced AI responses
+                    </li>
+                    <li className="flex items-center">
+                      <span className="w-2 h-2 bg-[#334269] rounded-full mr-3"></span>
+                      Priority support
+                    </li>
+                    <li className="flex items-center">
+                      <span className="w-2 h-2 bg-[#334269] rounded-full mr-3"></span>
+                      Custom persona creation
+                    </li>
+                  </ul>
                 </div>
               </div>
             </DialogContent>
           </Dialog>
         </div>
-        {/* AutoChat Card + Catchy Lines Block */}
+        {/* rudolpho-chat Card + Catchy Lines Block */}
         <div className="absolute top-0 left-0 w-full flex flex-col items-center pt-12 z-20">
           <div className="bg-white/80 backdrop-blur-md shadow-lg rounded-2xl px-8 py-4 max-w-md w-full flex items-center justify-center mb-4">
-            <h1 className="text-4xl md:text-5xl font-extrabold text-[#334269] tracking-tight drop-shadow-sm">AutoChat</h1>
+            <h1 className="text-4xl md:text-5xl font-extrabold text-[#334269] tracking-tight drop-shadow-sm">rudolpho-chat</h1>
           </div>
           <div className="flex flex-col items-center gap-2 md:gap-4 select-none pointer-events-none text-center">
             <span className="text-2xl md:text-4xl font-bold text-white drop-shadow-lg bg-gradient-to-r from-[#f3aacb] via-[#e6ebfc] to-[#a3bffa] bg-clip-text text-transparent animate-pulse text-center">
@@ -141,6 +186,7 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+      <Footer />
       <CookieBanner />
     </div>
   );

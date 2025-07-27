@@ -26,14 +26,14 @@ const ProPage = () => {
       <div className="min-h-screen bg-white flex flex-col items-center pt-16 px-4">
         <div className="flex items-center gap-4 mb-8">
           <h1 className="text-6xl md:text-7xl font-bold tracking-tight bg-gradient-to-r from-sky-700 to-cyan-500 bg-clip-text text-transparent font-satoshi" style={{ fontFamily: 'Satoshi, sans-serif' }}>
-            AutoInsta
+            rudolpho-chat
           </h1>
           <span className="text-3xl md:text-4xl font-bold text-cyan-600 font-satoshi" style={{ fontFamily: 'Satoshi, sans-serif' }}>
             Pro
           </span>
         </div>
         <div className="max-w-4xl text-center space-y-6 text-xl md:text-2xl text-gray-700 font-satoshi" style={{ fontFamily: 'Satoshi, sans-serif' }}>
-          <p>AutoInsta is a powerful way to let the AI do the job for you.</p>
+          <p>rudolpho-chat is a powerful way to let the AI do the job for you.</p>
           <p>Successful conversations can lead the chatbot to offer products after establishing a basic level of trust through a pleasing, customizable conversational mentality.</p>
           <p>It builds customer loyalty and never applies pressure, as it has plenty of time to engage with each customer individually.</p>
         </div>
@@ -55,8 +55,8 @@ const ProPage = () => {
             </button>
             <ul className="space-y-2 text-gray-700 text-base">
               <li className="flex items-center gap-2"><span className="text-cyan-500">✓</span>10x more citations in answers</li>
-              <li className="flex items-center gap-2"><span className="text-cyan-500">✓</span>Access to AutoInsta Labs</li>
-              <li className="flex items-center gap-2"><span className="text-cyan-500">✓</span>Unlimited access to AutoInsta Research</li>
+              <li className="flex items-center gap-2"><span className="text-cyan-500">✓</span>Access to rudolpho-chat Labs</li>
+              <li className="flex items-center gap-2"><span className="text-cyan-500">✓</span>Unlimited access to rudolpho-chat Research</li>
               <li className="flex items-center gap-2"><span className="text-cyan-500">✓</span>Unlimited file uploads</li>
               <li className="flex items-center gap-2"><span className="text-cyan-500">✓</span>Enhanced image generation access</li>
               <li className="flex items-center gap-2"><span className="text-cyan-500">✓</span>Subscription to all latest AI models</li>

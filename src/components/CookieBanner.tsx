@@ -99,8 +99,10 @@ export default function CookieBanner() {
             Akzeptieren
           </button>
         </div>
-        <p className="mt-2 text-xs text-right">
-          <Link href="/cookie-policy" className="underline">Mehr erfahren</Link>
+        <p className="mt-2 text-xs text-right space-x-2">
+          <Link href="/cookie-policy" className="underline">Cookie-Richtlinie</Link>
+          <span>•</span>
+          <Link href="/terms" className="underline">Nutzungsbedingungen</Link>
         </p>
       </div>
     </div>

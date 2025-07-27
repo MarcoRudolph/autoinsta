@@ -9,12 +9,12 @@ import Head from 'next/head';
 const PricingPage = () => {
   const router = useRouter();
   useEffect(() => {
-    document.title = "AutoInsta";
+    document.title = "rudolpho-chat";
   }, []);
   return (
     <>
       <Head>
-        <title>AutoInsta</title>
+        <title>rudolpho-chat</title>
       </Head>
       <Navbar />
       <div className="min-h-screen bg-white flex flex-col items-center">
@@ -24,7 +24,7 @@ const PricingPage = () => {
             Let the bot do the chat for you
           </h1>
           <p className="text-lg md:text-xl text-gray-600 text-center max-w-2xl mb-8">
-            Whether you’re a small business or a large enterprise, AutoInsta Pro enables you to focus on growing your business.
+            Whether you’re a small business or a large enterprise, rudolpho-chat Pro enables you to focus on growing your business.
           </p>
           <div className="w-16 h-1 bg-teal-200 rounded-full mb-8" />
         </section>

@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AutoInsta",
+  title: "rudolpho-chat",
   description: "Let the bot do the chat for you",
 };
 

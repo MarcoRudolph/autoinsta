@@ -4,14 +4,14 @@ globs:
 alwaysApply: true
 ---
 ---
-description: Core coding standards and project conventions for "AutoChat" web app.
+description: Core coding standards and project conventions for "rudolpho-chat" web app.
 globs: "**"
 alwaysApply: true
 ---
 
-# Core Project Rules for "AutoChat" Web App
+# Core Project Rules for "rudolpho-chat" Web App
 
-This document outlines the coding standards, preferred libraries, naming conventions, file structure, error handling, documentation, testing, and commit message format for the "AutoChat" Next.js application. Adhering to these rules ensures consistency, maintainability, and quality across the codebase.
+This document outlines the coding standards, preferred libraries, naming conventions, file structure, error handling, documentation, testing, and commit message format for the "rudolpho-chat" Next.js application. Adhering to these rules ensures consistency, maintainability, and quality across the codebase.
 
 ## 1. Coding Standards
 

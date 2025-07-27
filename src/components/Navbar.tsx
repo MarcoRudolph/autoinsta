@@ -41,8 +41,8 @@ const Navbar: React.FC = () => {
   return (
     <nav className="w-full bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shadow-sm z-50">
       <div className="flex items-center gap-1 cursor-pointer" onClick={() => router.push("/")}> 
-        <Image src="/images/autoinsta_symbol.png" alt="AutoInsta Symbol" width={54} height={54} />
-        <span className="text-2xl font-bold tracking-tight bg-gradient-to-r from-sky-700 to-cyan-500 bg-clip-text text-transparent font-satoshi" style={{ fontFamily: 'Satoshi, sans-serif' }}>AutoInsta</span>
+        <Image src="/images/autoinsta_symbol.png" alt="rudolpho-chat Symbol" width={54} height={54} />
+        <span className="text-2xl font-bold tracking-tight bg-gradient-to-r from-sky-700 to-cyan-500 bg-clip-text text-transparent font-satoshi" style={{ fontFamily: 'Satoshi, sans-serif' }}>rudolpho-chat</span>
       </div>
       <div className="relative" ref={dropdownRef}>
         <button

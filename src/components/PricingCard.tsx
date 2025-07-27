@@ -22,7 +22,7 @@ const PricingCard: React.FC<PricingCardProps> = ({
     style={{ fontFamily: 'Satoshi, sans-serif', background: '#fff' }}
   >
     <span className="text-2xl font-bold tracking-tight bg-gradient-to-r from-sky-700 to-cyan-500 bg-clip-text text-transparent font-satoshi mb-2" style={{ fontFamily: 'Satoshi, sans-serif' }}>
-      AutoInsta
+              rudolpho-chat
       {highlight && (
         <span className="ml-2 text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded align-middle">PRO</span>
       )}

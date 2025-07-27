@@ -1,5 +1,5 @@
 {
-    "name": "AutoChat",
+    "name": "rudolpho-chat",
     "description": "Next.js app using TypeScript, Shadcn UI, Drizzle ORM, and Zod. Project enforces strong coding standards and conventions.",
     "instructions": [
       "Follow all conventions in .cursor/rules/core.mdc.",
