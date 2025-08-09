@@ -54,10 +54,13 @@ export default function AuthForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // If login is not enabled, automatically enable it for registration/login
     if (!isBravoLogin()) {
-      setError('Login currently disabled.');
+      enableLogin();
       return;
     }
+    
     setLoading(true);
     setError(null);
     try {
@@ -90,7 +93,7 @@ export default function AuthForm() {
       {!isBravoLogin() && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
           <p className="text-blue-800 text-sm text-center">
-            Login functionality is currently disabled. Click the button below to enable registration and login with email and password.
+            Welcome! Fill out the form below and click Login/Register to get started.
           </p>
         </div>
       )}
@@ -139,16 +142,6 @@ export default function AuthForm() {
           required
         />
         {error && <div className="text-red-500 text-sm text-center">{error}</div>}
-        
-        {!isBravoLogin() && (
-          <button
-            type="button"
-            onClick={enableLogin}
-            className="w-full bg-green-600 text-white font-bold py-2 rounded-lg shadow hover:bg-green-700 transition mb-2"
-          >
-            Enable Login
-          </button>
-        )}
         
         <button
           type="submit"
