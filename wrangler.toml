@@ -1,41 +1,7 @@
-name = "rudolpho-chat"
-compatibility_date = "2024-12-19"
-compatibility_flags = ["nodejs_compat"]
-pages_build_output_dir = ".next"
+# Cloudflare Pages configuration
+# Most configuration is handled through the Cloudflare dashboard for Pages
 
-# Remove the [build] and [site] sections as they're for Workers, not Pages
-
-[env.production]
-name = "rudolpho-chat"
-route = "rudolpho-chat.your-domain.com/*"
-zone_id = "your-zone-id"
-
-[env.staging]
-name = "rudolpho-chat-staging"
-route = "staging.rudolpho-chat.your-domain.com/*"
-zone_id = "your-zone-id"
-
-# Environment variables (replace with your actual values)
-[vars]
-NODE_ENV = "production"
-
-# Secrets (set these using wrangler secret put)
-# DATABASE_URL = "your-database-url"
-# SUPABASE_URL = "your-supabase-url"
-# SUPABASE_ANON_KEY = "your-supabase-anon-key"
-
-# KV namespaces (if needed)
-# [[kv_namespaces]]
-# binding = "CACHE"
-# id = "your-kv-namespace-id"
-# preview_id = "your-preview-kv-namespace-id"
-
-# Durable Objects (if needed)
-# [[durable_objects.bindings]]
-# name = "CHAT_ROOM"
-# class_name = "ChatRoom"
-
-# R2 buckets (if needed)
-# [[r2_buckets]]
-# binding = "ASSETS"
-# bucket_name = "rudolpho-chat-assets" 
+# If you need to set environment variables, do it through the Cloudflare dashboard:
+# 1. Go to your Pages project
+# 2. Settings → Environment variables
+# 3. Add: POSTGRES_URL, OPENAI_API_KEY, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY 

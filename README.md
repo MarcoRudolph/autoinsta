@@ -3,44 +3,52 @@ AI Chatbot for Insta DMs
 
 ## Deployment
 
-This project is configured for deployment to Cloudflare Pages using Wrangler.
+This project is configured for deployment to Cloudflare Pages.
 
-### Prerequisites
+### Option 1: Cloudflare Dashboard (Recommended)
 
-1. Install Wrangler CLI:
+1. **Connect Repository**:
+   - Go to [Cloudflare Dashboard](https://dash.cloudflare.com)
+   - Navigate to Pages → Create a project
+   - Connect your GitHub repository
+
+2. **Build Settings**:
+   - **Build command**: `npm run build`
+   - **Build output directory**: `.next`
+   - **Root directory**: (leave empty)
+
+3. **Environment Variables**:
+   In your Pages project settings, add these environment variables:
+   - `POSTGRES_URL`: Your database connection string
+   - `OPENAI_API_KEY`: Your OpenAI API key
+   - `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase anonymous key
+
+### Option 2: Wrangler CLI
+
+1. **Prerequisites**:
    ```bash
-   npm install -g wrangler
-   ```
-
-2. Login to Cloudflare:
-   ```bash
+   npm install -g wrangler@latest
    wrangler login
    ```
 
-### Configuration
-
-1. Update the `wrangler.toml` file with your domain and zone ID:
-   - Replace `rudolpho-chat.your-domain.com` with your actual domain
-   - Replace `your-zone-id` with your Cloudflare zone ID
-
-2. Set up environment secrets:
+2. **Deploy**:
    ```bash
-   wrangler secret put DATABASE_URL
-   wrangler secret put SUPABASE_URL
-   wrangler secret put SUPABASE_ANON_KEY
+   npm run build
+   npm run deploy
    ```
 
-### Deployment Commands
+### Local Development
 
-- Deploy to production: `npm run deploy:production`
-- Deploy to staging: `npm run deploy:staging`
-- Deploy to default environment: `npm run deploy`
+```bash
+npm install
+npm run dev
+```
 
 ### Environment Variables
 
-Make sure to set the following environment variables in your Cloudflare dashboard or using Wrangler secrets:
-
-- `DATABASE_URL`: Your database connection string
-- `SUPABASE_URL`: Your Supabase project URL
-- `SUPABASE_ANON_KEY`: Your Supabase anonymous key
-- `NODE_ENV`: Set to "production" for production deployments
+Required environment variables:
+- `POSTGRES_URL`: Your PostgreSQL database connection string
+- `OPENAI_API_KEY`: Your OpenAI API key for persona generation
+- `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase anonymous key
