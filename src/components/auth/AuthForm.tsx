@@ -46,25 +46,6 @@ export default function AuthForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Test-Login für OILRATS
-    if (email === 'OILRATS' || email.toLowerCase() === 'oilrats') {
-      setLoading(true);
-      setError(null);
-      
-      // Simuliere einen erfolgreichen Login
-      setTimeout(() => {
-        // Setze Test-Session im localStorage
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('testUser', 'OILRATS');
-          localStorage.setItem('isLoggedIn', 'true');
-        }
-        router.push('/dashboard');
-        setLoading(false);
-      }, 500);
-      return;
-    }
-    
     if (!isBravoLogin()) {
       setError('Login currently disabled.');
       return;
