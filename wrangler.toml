@@ -1,12 +1,9 @@
 name = "rudolpho-chat"
-compatibility_date = "2024-01-01"
+compatibility_date = "2024-12-19"
 compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = ".next"
 
-[build]
-command = "npm run build"
-
-[site]
-bucket = ".next/static"
+# Remove the [build] and [site] sections as they're for Workers, not Pages
 
 [env.production]
 name = "rudolpho-chat"

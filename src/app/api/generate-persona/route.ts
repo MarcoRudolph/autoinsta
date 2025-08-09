@@ -1,8 +1,4 @@
 import { NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
-
-// export const runtime = 'edge'; // Disable edge runtime to allow fs
 
 export async function POST() {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -10,14 +6,32 @@ export async function POST() {
     return NextResponse.json({ error: 'Missing OpenAI API key' }, { status: 500 });
   }
 
-  // Read the structure from structure.json
-  const structurePath = path.join(process.cwd(), 'public', 'structure.json');
-  let structureJson = '';
-  try {
-    structureJson = await fs.readFile(structurePath, 'utf-8');
-  } catch {
-    return NextResponse.json({ error: 'Could not read structure.json' }, { status: 500 });
-  }
+  // Use inline structure instead of reading from file system
+  const structureJson = JSON.stringify({
+    "name": "",
+    "age": 0,
+    "location": "",
+    "occupation": "",
+    "personality": {
+      "traits": [],
+      "communication_style": "",
+      "tone": ""
+    },
+    "interests": [],
+    "background": "",
+    "communication_preferences": {
+      "response_length": "",
+      "emoji_usage": "",
+      "formality_level": ""
+    },
+    "goals_and_motivations": [],
+    "typical_responses": {
+      "greeting": "",
+      "question_about_services": "",
+      "compliment": "",
+      "complaint": ""
+    }
+  });
 
   const prompt = `Fill out the following JSON structure with a realistic, detailed persona for a social media dashboard app. Use English for all fields. Only return a valid JSON object, matching the structure exactly. Do not add or remove fields.\n\nStructure:\n${structureJson}`;
 
@@ -54,9 +68,7 @@ export async function POST() {
         throw new Error('Could not parse persona JSON');
       }
     }
-    // Save persona as template.json in public folder
-    const filePath = path.join(process.cwd(), 'public', 'template.json');
-    await fs.writeFile(filePath, JSON.stringify(persona, null, 2), 'utf-8');
+    // Return the persona directly instead of saving to file system
     return NextResponse.json({ persona });
   } catch {
     return NextResponse.json({ error: 'Failed to generate persona' }, { status: 500 });
