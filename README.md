@@ -24,19 +24,9 @@ This project is configured for deployment to Cloudflare Pages.
    - `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase anonymous key
 
-### Option 2: Wrangler CLI
+### Automatic Deployment
 
-1. **Prerequisites**:
-   ```bash
-   npm install -g wrangler@latest
-   wrangler login
-   ```
-
-2. **Deploy**:
-   ```bash
-   npm run build
-   npm run deploy
-   ```
+Cloudflare Pages automatically deploys your application when you push changes to your connected Git repository. No manual deployment needed!
 
 ### Local Development
 

@@ -1,7 +1,0 @@
-# Cloudflare Pages configuration
-# Most configuration is handled through the Cloudflare dashboard for Pages
-
-# If you need to set environment variables, do it through the Cloudflare dashboard:
-# 1. Go to your Pages project
-# 2. Settings → Environment variables
-# 3. Add: POSTGRES_URL, OPENAI_API_KEY, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY 

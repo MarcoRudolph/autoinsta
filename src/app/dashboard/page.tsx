@@ -288,6 +288,19 @@ function DashboardContent() {
 
   useEffect(() => {
     let mounted = true;
+    
+    // Check for test user first
+    if (typeof window !== 'undefined') {
+      const testUser = localStorage.getItem('testUser');
+      const isLoggedIn = localStorage.getItem('isLoggedIn');
+      
+      if (testUser === 'OILRATS' && isLoggedIn === 'true') {
+        setCheckingSession(false);
+        return;
+      }
+    }
+    
+    // Check Supabase session if not test user
     supabase.auth.getSession().then(({ data }) => {
       if (!data.session && mounted) {
         router.replace('/');
