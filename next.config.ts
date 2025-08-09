@@ -12,11 +12,19 @@ const nextConfig: NextConfig = {
     webpackBuildWorker: false,
   },
   webpack: (config, { isServer }) => {
-    // Disable webpack cache in production to reduce file sizes
-    if (!isServer && process.env.NODE_ENV === 'production') {
+    // Completely disable webpack cache in production
+    if (process.env.NODE_ENV === 'production') {
       config.cache = false;
     }
+    // Disable filesystem caching
+    config.infrastructureLogging = {
+      level: 'error',
+    };
     return config;
+  },
+  // Disable build cache
+  generateBuildId: async () => {
+    return 'build-' + Date.now();
   }
 };
 

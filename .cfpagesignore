@@ -7,10 +7,23 @@ node_modules/
 coverage/
 .nyc_output
 
-# Next.js
+# Next.js build output to exclude from deployment
 .next/cache/
 .next/trace/
+.next/server/chunks/
+.next/server/pages/
+.next/server/app/
+.next/static/chunks/
 out/
+
+# All cache directories
+cache/
+.cache/
+**/cache/
+
+# Large build files
+*.pack
+*.map
 
 # Environment variables
 .env*

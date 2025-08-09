@@ -18,6 +18,14 @@ export default function AuthForm() {
     return localStorage.getItem('login') === 'Bravo';
   };
 
+  // Enable login functionality
+  const enableLogin = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('login', 'Bravo');
+      window.location.reload(); // Refresh to update the UI
+    }
+  };
+
   const handleGoogle = async () => {
     if (!isBravoLogin()) {
       setError('Login currently disabled.');
@@ -78,29 +86,41 @@ export default function AuthForm() {
       <h2 className="text-2xl font-bold text-center mb-6 text-[#334269] dark:text-white">
         {mode === 'login' ? 'Login to your account' : 'Create an account'}
       </h2>
-      <div className="flex flex-col gap-3 mb-4">
-        <button
-          onClick={handleGoogle}
-          className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-800 font-semibold py-2 rounded-lg shadow hover:bg-gray-50 transition"
-          disabled={loading}
-        >
-          <span className="i-mdi:google text-xl" />
-          Continue with Google
-        </button>
-        <button
-          onClick={handleFacebook}
-          className="w-full flex items-center justify-center gap-2 bg-[#4267B2] text-white font-semibold py-2 rounded-lg shadow hover:bg-[#365899] transition"
-          disabled={loading}
-        >
-          <span className="i-mdi:facebook text-xl" />
-          Continue with Facebook
-        </button>
-      </div>
-      <div className="flex items-center my-4">
-        <div className="flex-grow border-t border-gray-200" />
-        <span className="mx-2 text-gray-400 text-sm">or</span>
-        <div className="flex-grow border-t border-gray-200" />
-      </div>
+      
+      {!isBravoLogin() && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+          <p className="text-blue-800 text-sm text-center">
+            Login functionality is currently disabled. Click the button below to enable registration and login with email and password.
+          </p>
+        </div>
+      )}
+      {isBravoLogin() && (
+        <div className="flex flex-col gap-3 mb-4">
+          <button
+            onClick={handleGoogle}
+            className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-800 font-semibold py-2 rounded-lg shadow hover:bg-gray-50 transition"
+            disabled={loading}
+          >
+            <span className="i-mdi:google text-xl" />
+            Continue with Google
+          </button>
+          <button
+            onClick={handleFacebook}
+            className="w-full flex items-center justify-center gap-2 bg-[#4267B2] text-white font-semibold py-2 rounded-lg shadow hover:bg-[#365899] transition"
+            disabled={loading}
+          >
+            <span className="i-mdi:facebook text-xl" />
+            Continue with Facebook
+          </button>
+        </div>
+      )}
+      {isBravoLogin() && (
+        <div className="flex items-center my-4">
+          <div className="flex-grow border-t border-gray-200" />
+          <span className="mx-2 text-gray-400 text-sm">or</span>
+          <div className="flex-grow border-t border-gray-200" />
+        </div>
+      )}
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <input
           type="email"
@@ -119,6 +139,17 @@ export default function AuthForm() {
           required
         />
         {error && <div className="text-red-500 text-sm text-center">{error}</div>}
+        
+        {!isBravoLogin() && (
+          <button
+            type="button"
+            onClick={enableLogin}
+            className="w-full bg-green-600 text-white font-bold py-2 rounded-lg shadow hover:bg-green-700 transition mb-2"
+          >
+            Enable Login
+          </button>
+        )}
+        
         <button
           type="submit"
           className="w-full bg-[#f3aacb] text-[#334269] font-bold py-2 rounded-lg shadow hover:bg-[#e6ebfc] transition"
