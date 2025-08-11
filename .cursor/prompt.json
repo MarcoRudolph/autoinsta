@@ -1,15 +1,26 @@
 {
-    "name": "rudolpho-chat",
-    "description": "Next.js app using TypeScript, Shadcn UI, Drizzle ORM, and Zod. Project enforces strong coding standards and conventions.",
-    "instructions": [
-      "Follow all conventions in .cursor/rules/core.mdc.",
-      "If code generation involves authentication, use the custom tables and UI as defined in the project.",
-      "All validation must use Zod.",
-      "Use Tailwind CSS and Shadcn for all styling.",
-      "Before adding new components, check if shadcn has a component that can be used instead.",
-      "Always use TypeScript with strict settings.",
-      "When in doubt or when external documentation is needed, refer to perplexity-tool.mdc rules.",
-      "Don't ask for confirmation at the end; just proceed with the changes."
-    ]
-  }
+  "name": "rudolpho-chat",
+  "description": "Next.js (App Router) mit TypeScript, Shadcn UI, Drizzle ORM und Zod. Klare Architektur, starke Konventionen, hohe Codequalität.",
+  "instructions": [
+    "Rule precedence: Bei Konflikten gewinnt die spezifischere Regel (nextjs.instructions.md > core.mdc > tools).",
+    "Halte die Projektstruktur strikt ein: Drizzle/DB lebt in src/drizzle/** (nicht in src/lib/db).",
+    "Verwende ausschließlich Drizzle ORM; mache keine Vorschläge für TypeORM oder NestJS-Patterns in Next.js-Dateien.",
+    "Nutze Path-Aliases (@drizzle/*, @app/*, @components/*, @lib/*, @services/*, @types/*) konsistent.",
+    "Next.js App Router: Standard ist React Server Components. Markiere Client Components nur wenn nötig (\"use client\").",
+    "Mutationen bevorzugt als Server Actions oder API Routes unter src/app/api/** – keine ad-hoc Fetch-Calls im Client für sensible Logik.",
+    "Alle Eingaben werden mit Zod validiert; Typen nach Möglichkeit via z.infer ableiten (kein any).",
+    "UI: Tailwind CSS + Shadcn. Prüfe vor neuen Bausteinen, ob Shadcn eine passende Komponente hat.",
+    "Barrierefreiheit: Nutze semantische HTML-Elemente, ARIA-Attribute nur gezielt, Fokuszustände dürfen nicht entfernt werden.",
+    "Fehler-/Loading-Zustände: Implementiere sinnvolle Empty/Loading/Error-UI. Keine stummen Fehler.",
+    "Keine neuen Dependencies ohne starken Grund; nutze bestehende Utilities unter src/lib/utils/**.",
+    "Tests: Schreibe für neue Logik Unit-Tests (z. B. Vitest) und für kritische Flows e2e (z. B. Playwright).",
+    "Code-Qualität: Halte dich an ESLint/Prettier/tsconfig (strict). Keine console.log im Prod-Code; Logging über Utility.",
+    "Security: Keine Secrets hardcoden; env-Zugriffe typisieren (z. B. Zod-Schema für process.env).",
+    "Performance: Verwende dynamische Importe nur bei Bedarf, achte auf Streaming/SSR, meide unnötige Client-Bundles.",
+    "Bevorzuge stabile, dokumentierte APIs. Füge JSDoc-Kommentare für öffentliche Utilities hinzu.",
+    "Folge allen Konventionen aus .cursor/rules/core.mdc und nextjs.instructions.md.",
+    "Wenn externe Doku nötig ist: nutze die Regeln in perplexity-tool.mdc rein für Recherche; Code-Entscheidungen müssen zu unseren Projektregeln passen.",
+    "Frage nicht nach abschließender Bestätigung; setze die Änderungen direkt um."
+  ]
+}
   

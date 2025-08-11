@@ -29,8 +29,12 @@ export default function PrivacyPolicy() {
         </p>
         <div className="bg-gray-50 p-4 rounded-lg">
           <p><strong>rudolpho-chat</strong></p>
-          <p>E-Mail: privacy@rudolpho-chat.de</p>
-          <p>Adresse: [Ihre Geschäftsadresse]</p>
+          <p><strong>Marco Rudolph</strong></p>
+          <p>No de Halloh 8a</p>
+          <p>25591 Ottenbüttel</p>
+          <p>Tel: 04893 9373110</p>
+          <p>E-Mail: MarcoRudolph09@proton.me</p>
+
         </div>
       </section>
 
@@ -132,8 +136,9 @@ export default function PrivacyPolicy() {
           Bei Fragen zum Datenschutz erreichen Sie uns unter:
         </p>
         <div className="bg-gray-50 p-4 rounded-lg">
-          <p><strong>E-Mail:</strong> privacy@rudolpho-chat.de</p>
-          <p><strong>Adresse:</strong> [Ihre Geschäftsadresse]</p>
+          <p><strong>E-Mail:</strong> MarcoRudolph09@proton.me</p>
+          <p><strong>Adresse:</strong> Marco Rudolph, No de Halloh 8a, 25591 Ottenbüttel</p>
+          <p><strong>Telefon:</strong> 04893 9373110</p>
         </div>
         <p>
           Sie haben auch das Recht, sich bei der zuständigen Aufsichtsbehörde zu beschweren.

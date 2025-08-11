@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/auth/supabaseClient.client';
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import AddValueModal from '@/components/ui/AddValueModal';
+import EditValueModal from '@/components/ui/EditValueModal';
 import isEqual from 'lodash.isequal';
 
 // Define a type for personality with childhoodExperiences having a proper index signature
@@ -99,6 +101,30 @@ function DashboardContent() {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string>('');
   const userDropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Modal states
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [currentModalConfig, setCurrentModalConfig] = useState<{
+    title: string;
+    placeholder: string;
+    onSave: (value: string) => void;
+    onEdit?: (oldValue: string, newValue: string) => void;
+  } | null>(null);
+  const [editingValue, setEditingValue] = useState<string>('');
+
+  // Helper function to open add modal
+  const openAddModal = (title: string, placeholder: string, onSave: (value: string) => void) => {
+    setCurrentModalConfig({ title, placeholder, onSave });
+    setAddModalOpen(true);
+  };
+
+  // Helper function to open edit modal
+  const openEditModal = (title: string, placeholder: string, currentValue: string, onEdit: (oldValue: string, newValue: string) => void) => {
+    setCurrentModalConfig({ title, placeholder, onSave: () => {}, onEdit });
+    setEditingValue(currentValue);
+    setEditModalOpen(true);
+  };
 
   const handleActivatePersona = async (id: string) => {
     // Get userId from session
@@ -125,13 +151,34 @@ function DashboardContent() {
 
   // Fetch personas from API
   const fetchPersonas = useCallback(async () => {
-    const res = await fetch('/api/list-personas');
-    if (res.ok) {
-      const data = await res.json();
-      setPersonas(data.personas || []);
-      if ((data.personas || []).length === 1) {
-        setSelectedPersonaId(data.personas[0].id);
+    try {
+      const res = await fetch('/api/list-personas');
+      if (res.ok) {
+        const data = await res.json();
+        // Filter out any null or invalid personas
+        const validPersonas = (data.personas || []).filter((persona: {id: string, name: string, active?: boolean}) => 
+          persona && persona.id && persona.name && persona.id !== null && persona.name !== null
+        );
+        setPersonas(validPersonas);
+        
+        // Only set selected persona if we have valid personas
+        if (validPersonas.length === 1) {
+          setSelectedPersonaId(validPersonas[0].id);
+        } else if (validPersonas.length === 0) {
+          setSelectedPersonaId('');
+          setCurrentPersonaId(null);
+        }
+      } else {
+        console.error('Failed to fetch personas:', res.status, res.statusText);
+        setPersonas([]);
+        setSelectedPersonaId('');
+        setCurrentPersonaId(null);
       }
+    } catch (error) {
+      console.error('Error fetching personas:', error);
+      setPersonas([]);
+      setSelectedPersonaId('');
+      setCurrentPersonaId(null);
     }
   }, []);
 
@@ -307,6 +354,13 @@ function DashboardContent() {
 
   // Make sure to install lodash.isequal: npm install lodash.isequal
   const handlePersonaDropdownChange = async (id: string) => {
+    // Add null check for the selected ID
+    if (!id || id === 'null' || id === 'undefined') {
+      console.warn('Invalid persona ID selected:', id);
+      alert('Bitte wählen Sie eine gültige Persona aus.');
+      return;
+    }
+    
     setSelectedPersonaId(id);
     setCurrentPersonaId(id);
     if (!isEqual(personality, lastLoadedPersona)) {
@@ -322,15 +376,23 @@ function DashboardContent() {
     try {
       const res = await fetch(`/api/get-persona?id=${id}`);
       if (res.ok) {
-        const data: { persona?: { data?: typeof personality } } = await res.json();
-        if (data && data.persona && data.persona.data) {
-          setPersonality(data.persona.data);
-          setLastLoadedPersona(data.persona.data);
+        const data: { persona?: typeof personality } = await res.json();
+        if (data && data.persona && data.persona !== null) {
+          console.log('Loading persona:', data.persona);
+          setPersonality(data.persona);
+          setLastLoadedPersona(data.persona);
           setSelectedPersonaId(id);
           setCurrentPersonaId(id);
+        } else {
+          console.warn('No valid persona data received:', data);
+          alert('Keine gültigen Persona-Daten gefunden.');
         }
+      } else {
+        console.error('Failed to fetch persona:', res.status, res.statusText);
+        alert('Fehler beim Laden der Persona.');
       }
-    } catch {
+    } catch (error) {
+      console.error('Error loading persona:', error);
       alert('Fehler beim Laden der Persona.');
     }
   };
@@ -406,8 +468,7 @@ function DashboardContent() {
   };
 
   const handleSettings = () => {
-    // TODO: Implement settings page
-    alert('Settings page coming soon!');
+    router.push('/settings');
     setUserDropdownOpen(false);
   };
 
@@ -502,15 +563,60 @@ function DashboardContent() {
           {/* Childhood Experiences */}
           {Object.keys(personality.childhoodExperiences).map((section: string) => {
             const isPersonalDev = section === 'personalDevelopment';
+            
+            const addItem = (newItem: string) => {
+              if (newItem && newItem.trim()) {
+                setPersonality(prev => ({
+                  ...prev,
+                  childhoodExperiences: {
+                    ...prev.childhoodExperiences,
+                    [section]: [...(prev.childhoodExperiences[section as keyof typeof prev.childhoodExperiences] || []), newItem.trim()]
+                  }
+                }));
+              }
+            };
+
+            const removeItem = (index: number) => {
+              setPersonality(prev => ({
+                ...prev,
+                childhoodExperiences: {
+                  ...prev.childhoodExperiences,
+                  [section]: (prev.childhoodExperiences[section as keyof typeof prev.childhoodExperiences] || []).filter((_, idx) => idx !== index)
+                }
+              }));
+            };
+
             return (
               <div key={section} className="mb-6">
-                <h3 className="font-medium mb-2 capitalize">
-                  {isPersonalDev ? 'Personal development' : section.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                </h3>
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="font-medium capitalize">
+                    {isPersonalDev ? 'Personal development' : section.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                  </h3>
+                  <button
+                    onClick={() => {
+                      const sectionTitle = isPersonalDev ? 'Personal development' : section.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+                      openAddModal(
+                        sectionTitle,
+                        `Neuen ${section.replace(/([A-Z])/g, ' $1').toLowerCase()} hinzufügen`,
+                        addItem
+                      );
+                    }}
+                    className="text-blue-500 hover:text-blue-700 text-lg font-bold w-6 h-6 flex items-center justify-center rounded-full hover:bg-blue-100 transition-colors"
+                  >
+                    +
+                  </button>
+                </div>
+                
                 <ul className="mt-2 space-y-2">
                   {(personality.childhoodExperiences[section as keyof typeof personality.childhoodExperiences] || []).map((item, idx) => (
-                    <li key={idx} className="bg-blue-100 text-blue-900 px-4 py-2 rounded shadow-sm">
-                      {item}
+                    <li key={idx} className="bg-blue-100 text-blue-900 px-4 py-2 rounded shadow-sm flex items-center justify-between">
+                      <span>{item}</span>
+                      <button
+                        onClick={() => removeItem(idx)}
+                        className="text-red-500 hover:text-red-700 text-sm ml-2"
+                      >
+                        ×
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -520,7 +626,28 @@ function DashboardContent() {
 
           {/* Character Traits */}
           <div className="mb-6">
-            <h3 className="font-medium mb-2">Character Traits</h3>
+            <div className="flex items-center gap-2 mb-2">
+              <h3 className="font-medium">Character Traits</h3>
+              <button
+                onClick={() => {
+                  openAddModal(
+                    'Character Traits',
+                    'Neuen Charakterzug hinzufügen',
+                    (newTrait: string) => {
+                      if (newTrait && newTrait.trim()) {
+                        setPersonality(prev => ({
+                          ...prev,
+                          characterTraits: [...prev.characterTraits, newTrait.trim()]
+                        }));
+                      }
+                    }
+                  );
+                }}
+                className="text-blue-500 hover:text-blue-700 text-lg font-bold w-6 h-6 flex items-center justify-center rounded-full hover:bg-blue-100 transition-colors"
+              >
+                +
+              </button>
+            </div>
             <div className="flex flex-wrap gap-2">
               {personality.characterTraits.map((trait: string, index: number) => (
                 <span
@@ -530,18 +657,461 @@ function DashboardContent() {
                   {trait}
                   <button
                     className="ml-2 text-red-500 text-sm"
-                    onClick={() => {}}
+                    onClick={() => {
+                      setPersonality(prev => ({
+                        ...prev,
+                        characterTraits: prev.characterTraits.filter((_, idx) => idx !== index)
+                      }));
+                    }}
                   >
                     ×
                   </button>
                 </span>
               ))}
-              <input
-                type="text"
-                placeholder="Add trait"
-                className="p-2 border rounded"
-                onKeyPress={() => {}}
-              />
+            </div>
+          </div>
+
+          {/* Positive Traits */}
+          <div className="mb-6">
+            <h3 className="font-medium mb-2">Positive Traits</h3>
+            <div className="space-y-3">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <h4 className="text-sm font-medium text-gray-500">Personal & Intrinsic</h4>
+                  <button
+                    onClick={() => {
+                      openAddModal(
+                        'Personal & Intrinsic',
+                        'Neuen persönlichen & intrinsischen Zug hinzufügen',
+                        (newTrait: string) => {
+                          if (newTrait && newTrait.trim()) {
+                            setPersonality(prev => ({
+                              ...prev,
+                              positiveTraits: {
+                                ...prev.positiveTraits,
+                                personalIntrinsic: [...prev.positiveTraits.personalIntrinsic, newTrait.trim()]
+                              }
+                            }));
+                          }
+                        }
+                      );
+                    }}
+                    className="text-green-500 hover:text-green-700 text-sm font-bold w-5 h-5 flex items-center justify-center rounded-full hover:bg-green-100 transition-colors"
+                  >
+                    +
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {personality.positiveTraits.personalIntrinsic.map((trait: string, index: number) => (
+                    <span key={index} className="bg-green-100 text-green-900 px-3 py-1 rounded-full text-sm flex items-center">
+                      {trait}
+                      <button
+                        onClick={() => {
+                          setPersonality(prev => ({
+                            ...prev,
+                            positiveTraits: {
+                              ...prev.positiveTraits,
+                              personalIntrinsic: prev.positiveTraits.personalIntrinsic.filter((_, idx) => idx !== index)
+                            }
+                          }));
+                        }}
+                        className="ml-2 text-red-500 hover:text-red-700 text-xs"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <h4 className="text-sm font-medium text-gray-500">Social & Communicative</h4>
+                  <button
+                    onClick={() => {
+                      openAddModal(
+                        'Social & Communicative',
+                        'Neuen sozialen & kommunikativen Zug hinzufügen',
+                        (newTrait: string) => {
+                          if (newTrait && newTrait.trim()) {
+                            setPersonality(prev => ({
+                              ...prev,
+                              positiveTraits: {
+                                ...prev.positiveTraits,
+                                socialCommunicative: [...prev.positiveTraits.socialCommunicative, newTrait.trim()]
+                              }
+                            }));
+                          }
+                        }
+                      );
+                    }}
+                    className="text-blue-500 hover:text-blue-700 text-sm font-bold w-5 h-5 flex items-center justify-center rounded-full hover:bg-blue-100 transition-colors"
+                  >
+                    +
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {personality.positiveTraits.socialCommunicative.map((trait: string, index: number) => (
+                    <span key={index} className="bg-blue-100 text-blue-900 px-3 py-1 rounded-full text-sm flex items-center">
+                      {trait}
+                      <button
+                        onClick={() => {
+                          setPersonality(prev => ({
+                            ...prev,
+                            positiveTraits: {
+                              ...prev.positiveTraits,
+                              socialCommunicative: prev.positiveTraits.socialCommunicative.filter((_, idx) => idx !== index)
+                            }
+                          }));
+                        }}
+                        className="ml-2 text-red-500 hover:text-red-700 text-xs"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <h4 className="text-sm font-medium text-gray-500">Professional & Cognitive</h4>
+                  <button
+                    onClick={() => {
+                      openAddModal(
+                        'Professional & Cognitive',
+                        'Neuen professionellen & kognitiven Zug hinzufügen',
+                        (newTrait: string) => {
+                          if (newTrait && newTrait.trim()) {
+                            setPersonality(prev => ({
+                              ...prev,
+                              positiveTraits: {
+                                ...prev.positiveTraits,
+                                professionalCognitive: [...prev.positiveTraits.professionalCognitive, newTrait.trim()]
+                              }
+                            }));
+                          }
+                        }
+                      );
+                    }}
+                    className="text-purple-500 hover:text-purple-700 text-sm font-bold w-5 h-5 flex items-center justify-center rounded-full hover:bg-purple-100 transition-colors"
+                  >
+                    +
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {personality.positiveTraits.professionalCognitive.map((trait: string, index: number) => (
+                    <span key={index} className="bg-purple-100 text-purple-900 px-3 py-1 rounded-full text-sm flex items-center">
+                      {trait}
+                      <button
+                        onClick={() => {
+                          setPersonality(prev => ({
+                            ...prev,
+                            positiveTraits: {
+                              ...prev.positiveTraits,
+                              professionalCognitive: prev.positiveTraits.professionalCognitive.filter((_, idx) => idx !== index)
+                            }
+                          }));
+                        }}
+                        className="ml-2 text-red-500 hover:text-red-700 text-xs"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Negative Traits */}
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-2">
+              <h3 className="font-medium">Negative Traits</h3>
+              <button
+                onClick={() => {
+                  const newTrait = prompt('Add new negative trait:');
+                  if (newTrait && newTrait.trim()) {
+                    setPersonality(prev => ({
+                      ...prev,
+                      negativeTraits: [...prev.negativeTraits, newTrait.trim()]
+                    }));
+                  }
+                }}
+                className="text-red-500 hover:text-red-700 text-lg font-bold w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-100 transition-colors"
+              >
+                +
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {personality.negativeTraits.map((trait: string, index: number) => (
+                <span key={index} className="bg-red-100 text-red-900 px-3 py-1 rounded-full text-sm flex items-center">
+                  {trait}
+                  <button
+                    onClick={() => {
+                      setPersonality(prev => ({
+                        ...prev,
+                        negativeTraits: prev.negativeTraits.filter((_, idx) => idx !== index)
+                      }));
+                    }}
+                    className="ml-2 text-red-500 hover:text-red-700 text-xs"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Areas of Interest */}
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-2">
+              <h3 className="font-medium">Areas of Interest</h3>
+              <button
+                onClick={() => {
+                  const newInterest = prompt('Add new area of interest:');
+                  if (newInterest && newInterest.trim()) {
+                    setPersonality(prev => ({
+                      ...prev,
+                      areasOfInterest: [...prev.areasOfInterest, newInterest.trim()]
+                    }));
+                  }
+                }}
+                className="text-yellow-500 hover:text-yellow-700 text-lg font-bold w-6 h-6 flex items-center justify-center rounded-full hover:bg-yellow-100 transition-colors"
+              >
+                +
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {personality.areasOfInterest.map((interest: string, index: number) => (
+                <span key={index} className="bg-yellow-100 text-yellow-900 px-3 py-1 rounded-full text-sm flex items-center">
+                  {interest}
+                  <button
+                    onClick={() => {
+                      setPersonality(prev => ({
+                        ...prev,
+                        areasOfInterest: prev.areasOfInterest.filter((_, idx) => idx !== index)
+                      }));
+                    }}
+                    className="ml-2 text-red-500 hover:text-red-700 text-xs"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Emotional Triggers */}
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-2">
+              <h3 className="font-medium">Emotional Triggers</h3>
+              <button
+                onClick={() => {
+                  const newTrigger = prompt('Add new emotional trigger:');
+                  if (newTrigger && newTrigger.trim()) {
+                    setPersonality(prev => ({
+                      ...prev,
+                      emotionalTriggers: [...prev.emotionalTriggers, newTrigger.trim()]
+                    }));
+                  }
+                }}
+                className="text-orange-500 hover:text-orange-700 text-lg font-bold w-6 h-6 flex items-center justify-center rounded-full hover:bg-orange-100 transition-colors"
+              >
+                +
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {personality.emotionalTriggers.map((trigger: string, index: number) => (
+                <span key={index} className="bg-orange-100 text-orange-900 px-3 py-1 rounded-full text-sm flex items-center">
+                  {trigger}
+                  <button
+                    onClick={() => {
+                      setPersonality(prev => ({
+                        ...prev,
+                        emotionalTriggers: prev.emotionalTriggers.filter((_, idx) => idx !== index)
+                      }));
+                    }}
+                    className="ml-2 text-red-500 hover:text-red-700 text-xs"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Communication Style */}
+          <div className="mb-6">
+            <h3 className="font-medium mb-2">Communication Style</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">Tone</label>
+                <input
+                  type="text"
+                  className="w-full p-2 border rounded text-blue-900 bg-blue-50"
+                  value={personality.communicationStyle.tone}
+                  onChange={e => setPersonality(prev => ({ 
+                    ...prev, 
+                    communicationStyle: { ...prev.communicationStyle, tone: e.target.value }
+                  }))}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">Word Choice</label>
+                <input
+                  type="text"
+                  className="w-full p-2 border rounded text-blue-900 bg-blue-50"
+                  value={personality.communicationStyle.wordChoice}
+                  onChange={e => setPersonality(prev => ({ 
+                    ...prev, 
+                    communicationStyle: { ...prev.communicationStyle, wordChoice: e.target.value }
+                  }))}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">Response Patterns</label>
+                <input
+                  type="text"
+                  className="w-full p-2 border rounded text-blue-900 bg-blue-50"
+                  value={personality.communicationStyle.responsePatterns}
+                  onChange={e => setPersonality(prev => ({ 
+                    ...prev, 
+                    communicationStyle: { ...prev.communicationStyle, responsePatterns: e.target.value }
+                  }))}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">Humor</label>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={personality.communicationStyle.humor.humorEnabled}
+                      onChange={e => setPersonality(prev => ({ 
+                        ...prev, 
+                        communicationStyle: { 
+                          ...prev.communicationStyle, 
+                          humor: { ...prev.communicationStyle.humor, humorEnabled: e.target.checked }
+                        }
+                      }))}
+                      className="accent-blue-500"
+                    />
+                    <span className="text-sm">Humor Enabled</span>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <label className="block text-xs text-gray-500">Humor Types</label>
+                      <button
+                        onClick={() => {
+                          const newType = prompt('Add new humor type:');
+                          if (newType && newType.trim()) {
+                            setPersonality(prev => ({
+                              ...prev,
+                              communicationStyle: {
+                                ...prev.communicationStyle,
+                                humor: {
+                                  ...prev.communicationStyle.humor,
+                                  humorTypes: [...prev.communicationStyle.humor.humorTypes, newType.trim()]
+                                }
+                              }
+                            }));
+                          }
+                        }}
+                        className="text-pink-500 hover:text-pink-700 text-xs font-bold w-4 h-4 flex items-center justify-center rounded-full hover:bg-pink-100 transition-colors"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {personality.communicationStyle.humor.humorTypes.map((type: string, index: number) => (
+                        <span key={index} className="bg-pink-100 text-pink-900 px-2 py-1 rounded text-xs flex items-center">
+                          {type}
+                          <button
+                            onClick={() => {
+                              setPersonality(prev => ({
+                                ...prev,
+                                communicationStyle: {
+                                  ...prev.communicationStyle,
+                                  humor: {
+                                    ...prev.communicationStyle.humor,
+                                    humorTypes: prev.communicationStyle.humor.humorTypes.filter((_, idx) => idx !== index)
+                                  }
+                                }
+                              }));
+                            }}
+                            className="ml-1 text-red-500 hover:text-red-700 text-xs"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Humor Intensity</label>
+                    <input
+                      type="text"
+                      className="w-full p-2 border rounded text-blue-900 bg-blue-50 text-sm"
+                      value={personality.communicationStyle.humor.humorIntensity}
+                      onChange={e => setPersonality(prev => ({ 
+                        ...prev, 
+                        communicationStyle: { 
+                          ...prev.communicationStyle, 
+                          humor: { ...prev.communicationStyle.humor, humorIntensity: e.target.value }
+                        }
+                      }))}
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <label className="block text-xs text-gray-500">Humor Exclusion Topics</label>
+                      <button
+                        onClick={() => {
+                          const newTopic = prompt('Add new humor exclusion topic:');
+                          if (newTopic && newTopic.trim()) {
+                            setPersonality(prev => ({
+                              ...prev,
+                              communicationStyle: {
+                                ...prev.communicationStyle,
+                                humor: {
+                                  ...prev.communicationStyle.humor,
+                                  humorExclusionTopics: [...prev.communicationStyle.humor.humorExclusionTopics, newTopic.trim()]
+                                }
+                              }
+                            }));
+                          }
+                        }}
+                        className="text-gray-500 hover:text-gray-700 text-xs font-bold w-4 h-4 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {personality.communicationStyle.humor.humorExclusionTopics.map((topic: string, index: number) => (
+                        <span key={index} className="bg-gray-100 text-gray-900 px-2 py-1 rounded text-xs flex items-center">
+                          {topic}
+                          <button
+                            onClick={() => {
+                              setPersonality(prev => ({
+                                ...prev,
+                                communicationStyle: {
+                                  ...prev.communicationStyle,
+                                  humor: {
+                                    ...prev.communicationStyle.humor,
+                                    humorExclusionTopics: prev.communicationStyle.humor.humorExclusionTopics.filter((_, idx) => idx !== index)
+                                  }
+                                }
+                              }));
+                            }}
+                            className="ml-1 text-red-500 hover:text-red-700 text-xs"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -572,7 +1142,45 @@ function DashboardContent() {
               >
                 {saving ? 'Saving...' : 'Save'}
               </button>
-              <button className="border border-white text-white font-semibold py-2 px-6 rounded-lg hover:bg-white hover:text-indigo-700 transition shadow-none bg-transparent">
+              <button 
+                className="border border-white text-white font-semibold py-2 px-6 rounded-lg hover:bg-white hover:text-indigo-700 transition shadow-none bg-transparent"
+                onClick={() => {
+                  setPersonality({
+                    name: '',
+                    description: '',
+                    childhoodExperiences: {
+                      personalDevelopment: [],
+                      sexuality: [],
+                      generalExperiences: [],
+                      socialEnvironmentFriendships: [],
+                      educationLearning: [],
+                      familyRelationships: []
+                    },
+                    emotionalTriggers: [],
+                    characterTraits: [],
+                    positiveTraits: {
+                      socialCommunicative: [],
+                      professionalCognitive: [],
+                      personalIntrinsic: []
+                    },
+                    negativeTraits: [],
+                    areasOfInterest: [],
+                    communicationStyle: {
+                      tone: '',
+                      wordChoice: '',
+                      responsePatterns: '',
+                      humor: {
+                        humorEnabled: false,
+                        humorTypes: [],
+                        humorIntensity: '',
+                        humorExclusionTopics: []
+                      }
+                    }
+                  });
+                  setCurrentPersonaId(null);
+                  setSelectedPersonaId('');
+                }}
+              >
                 Clear all
               </button>
               <button className="border border-white text-white font-semibold py-2 px-6 rounded-lg hover:bg-red-600 hover:text-white transition shadow-none bg-transparent" onClick={handleDeletePersona}>
@@ -596,7 +1204,8 @@ function DashboardContent() {
                   value={selectedPersonaId}
                   onChange={e => handlePersonaDropdownChange(e.target.value)}
                 >
-                  {personas.map((persona) => (
+                  <option value="">-- Select a persona --</option>
+                  {personas.filter(persona => persona && persona.id && persona.name).map((persona) => (
                     <option key={persona.id} value={persona.id}>
                       {persona.name}
                     </option>
@@ -794,6 +1403,29 @@ function DashboardContent() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Add Value Modal */}
+      {currentModalConfig && (
+        <AddValueModal
+          isOpen={addModalOpen}
+          onClose={() => setAddModalOpen(false)}
+          onSave={currentModalConfig.onSave}
+          title={currentModalConfig.title}
+          placeholder={currentModalConfig.placeholder}
+        />
+      )}
+
+      {/* Edit Value Modal */}
+      {currentModalConfig && (
+        <EditValueModal
+          isOpen={editModalOpen}
+          onClose={() => setEditModalOpen(false)}
+          onSave={currentModalConfig.onEdit || (() => {})}
+          title={currentModalConfig.title}
+          currentValue={editingValue}
+          placeholder={currentModalConfig.placeholder}
+        />
+      )}
     </div>
   );
 }

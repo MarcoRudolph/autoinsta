@@ -32,6 +32,19 @@ export default function CookiePolicy() {
         Storage Ihres Browsers leeren. Beim nächsten Besuch erscheint der
         Banner erneut.
       </p>
+      
+      <section className="space-y-4 mt-8">
+        <h2 className="text-2xl font-semibold">Kontakt</h2>
+        <p>
+          Bei Fragen zu unserer Cookie-Richtlinie erreichen Sie uns unter:
+        </p>
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <p><strong>E-Mail:</strong> MarcoRudolph09@proton.me</p>
+          <p><strong>Adresse:</strong> Marco Rudolph, No de Halloh 8a, 25591 Ottenbüttel</p>
+          <p><strong>Telefon:</strong> 04893 9373110</p>
+
+        </div>
+      </section>
     </div>
   );
 }

@@ -16,6 +16,17 @@ export default function Footer() {
               KI-gestützte Automatisierung für Ihre Instagram-Interaktionen. 
               Lassen Sie den Bot die Arbeit für Sie erledigen.
             </p>
+            <p className="text-xs text-gray-500">
+              Entwickelt von{" "}
+              <a 
+                href="https://rudolpho-ai.de" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-[#a3bffa] hover:text-[#f3aacb] transition-colors underline"
+              >
+                rudolpho-ai.de
+              </a>
+            </p>
           </div>
 
           {/* Quick Links */}
@@ -45,8 +56,13 @@ export default function Footer() {
             <h3 className="font-semibold mb-4">Rechtliches</h3>
             <ul className="space-y-2 text-sm">
               <li>
+                <Link href="/impressum" className="hover:text-[#f3aacb] transition-colors">
+                  Impressum
+                </Link>
+              </li>
+              <li>
                 <Link href="/terms" className="hover:text-[#f3aacb] transition-colors">
-                  Nutzungsbedingungen
+                  Terms of use
                 </Link>
               </li>
               <li>
@@ -69,8 +85,11 @@ export default function Footer() {
             © {new Date().getFullYear()} rudolpho-chat. Alle Rechte vorbehalten.
           </p>
           <div className="flex space-x-4 mt-4 md:mt-0">
+            <Link href="/impressum" className="text-xs text-gray-500 hover:text-[#f3aacb] transition-colors">
+              Impressum
+            </Link>
             <Link href="/terms" className="text-xs text-gray-500 hover:text-[#f3aacb] transition-colors">
-              Nutzungsbedingungen
+              Terms of use
             </Link>
             <Link href="/cookie-policy" className="text-xs text-gray-500 hover:text-[#f3aacb] transition-colors">
               Cookie-Richtlinie

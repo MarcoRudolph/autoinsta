@@ -102,7 +102,7 @@ export default function CookieBanner() {
         <p className="mt-2 text-xs text-right space-x-2">
           <Link href="/cookie-policy" className="underline">Cookie-Richtlinie</Link>
           <span>•</span>
-          <Link href="/terms" className="underline">Nutzungsbedingungen</Link>
+          <Link href="/terms" className="underline">Terms of use</Link>
         </p>
       </div>
     </div>

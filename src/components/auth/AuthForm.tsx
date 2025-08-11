@@ -12,25 +12,7 @@ export default function AuthForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Helper to check localStorage for Bravo
-  const isBravoLogin = () => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('login') === 'Bravo';
-  };
-
-  // Enable login functionality
-  const enableLogin = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('login', 'Bravo');
-      window.location.reload(); // Refresh to update the UI
-    }
-  };
-
   const handleGoogle = async () => {
-    if (!isBravoLogin()) {
-      setError('Login currently disabled.');
-      return;
-    }
     setLoading(true);
     setError(null);
     const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
@@ -40,10 +22,6 @@ export default function AuthForm() {
   };
 
   const handleFacebook = async () => {
-    if (!isBravoLogin()) {
-      setError('Login currently disabled.');
-      return;
-    }
     setLoading(true);
     setError(null);
     const { error } = await supabase.auth.signInWithOAuth({ provider: 'facebook' });
@@ -54,12 +32,6 @@ export default function AuthForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // If login is not enabled, automatically enable it for registration/login
-    if (!isBravoLogin()) {
-      enableLogin();
-      return;
-    }
     
     setLoading(true);
     setError(null);
@@ -90,40 +62,31 @@ export default function AuthForm() {
         {mode === 'login' ? 'Login to your account' : 'Create an account'}
       </h2>
       
-      {!isBravoLogin() && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-          <p className="text-blue-800 text-sm text-center">
-            Welcome! Fill out the form below and click Login/Register to get started.
-          </p>
-        </div>
-      )}
-      {isBravoLogin() && (
-        <div className="flex flex-col gap-3 mb-4">
-          <button
-            onClick={handleGoogle}
-            className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-800 font-semibold py-2 rounded-lg shadow hover:bg-gray-50 transition"
-            disabled={loading}
-          >
-            <span className="i-mdi:google text-xl" />
-            Continue with Google
-          </button>
-          <button
-            onClick={handleFacebook}
-            className="w-full flex items-center justify-center gap-2 bg-[#4267B2] text-white font-semibold py-2 rounded-lg shadow hover:bg-[#365899] transition"
-            disabled={loading}
-          >
-            <span className="i-mdi:facebook text-xl" />
-            Continue with Facebook
-          </button>
-        </div>
-      )}
-      {isBravoLogin() && (
-        <div className="flex items-center my-4">
-          <div className="flex-grow border-t border-gray-200" />
-          <span className="mx-2 text-gray-400 text-sm">or</span>
-          <div className="flex-grow border-t border-gray-200" />
-        </div>
-      )}
+      <div className="flex flex-col gap-3 mb-4">
+        <button
+          onClick={handleGoogle}
+          className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-800 font-semibold py-2 rounded-lg shadow hover:bg-gray-50 transition"
+          disabled={loading}
+        >
+          <span className="i-mdi:google text-xl" />
+          Continue with Google
+        </button>
+        <button
+          onClick={handleFacebook}
+          className="w-full flex items-center justify-center gap-2 bg-[#4267B2] text-white font-semibold py-2 rounded-lg shadow hover:bg-[#365899] transition"
+          disabled={loading}
+        >
+          <span className="i-mdi:facebook text-xl" />
+          Continue with Facebook
+        </button>
+      </div>
+      
+      <div className="flex items-center my-4">
+        <div className="flex-grow border-t border-gray-200" />
+        <span className="mx-2 text-gray-400 text-sm">or</span>
+        <div className="flex-grow border-t border-gray-200" />
+      </div>
+      
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <input
           type="email"
