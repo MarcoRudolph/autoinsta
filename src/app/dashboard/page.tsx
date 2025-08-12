@@ -93,6 +93,9 @@ function DashboardContent() {
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [checkingSession, setCheckingSession] = useState(true);
+  // AI Template daily limit state
+  const [aiTemplateCount, setAiTemplateCount] = useState(0);
+  const [lastAiTemplateDate, setLastAiTemplateDate] = useState<string>('');
   // Unsaved changes dialog hooks
   const [lastLoadedPersona, setLastLoadedPersona] = useState<typeof personality>(personality);
   const [pendingPersonaId, setPendingPersonaId] = useState<string | null>(null);
@@ -182,6 +185,12 @@ function DashboardContent() {
   }, [fetchPersonas]);
 
   const handleGetAITemplate = useCallback(async () => {
+    // Check daily limit first
+    if (!canGenerateAITemplate()) {
+      alert('Du hast heute bereits 2 AI-Templates generiert. Das Limit wird täglich um Mitternacht zurückgesetzt.');
+      return;
+    }
+
     setLoadingAI(true);
     console.log('Sending request to /api/generate-persona...');
     try {
@@ -193,6 +202,12 @@ function DashboardContent() {
       if (data && data.persona) {
         setPersonality(data.persona);
         console.log('Persona state updated with AI template.');
+        
+        // Update daily limit counter
+        const today = new Date().toDateString();
+        const newCount = aiTemplateCount + 1;
+        setAiTemplateCount(newCount);
+        localStorage.setItem('aiTemplateLimit', JSON.stringify({ count: newCount, date: today }));
       } else {
         console.log('No persona found in response:', data);
       }
@@ -202,7 +217,7 @@ function DashboardContent() {
     } finally {
       setLoadingAI(false);
     }
-  }, []);
+  }, [aiTemplateCount]);
 
   const handleFillWithTemplate = useCallback(async () => {
     try {
@@ -256,6 +271,47 @@ function DashboardContent() {
     };
     getUserEmail();
   }, [supabase]);
+
+  // Check and initialize AI template daily limit
+  useEffect(() => {
+    const checkDailyLimit = () => {
+      const today = new Date().toDateString();
+      const stored = localStorage.getItem('aiTemplateLimit');
+      
+      if (stored) {
+        const { count, date } = JSON.parse(stored);
+        if (date === today) {
+          setAiTemplateCount(count);
+          setLastAiTemplateDate(date);
+        } else {
+          // Reset for new day
+          setAiTemplateCount(0);
+          setLastAiTemplateDate(today);
+          localStorage.setItem('aiTemplateLimit', JSON.stringify({ count: 0, date: today }));
+        }
+      } else {
+        // First time user
+        setAiTemplateCount(0);
+        setLastAiTemplateDate(today);
+        localStorage.setItem('aiTemplateLimit', JSON.stringify({ count: 0, date: today }));
+      }
+    };
+
+    checkDailyLimit();
+  }, []);
+
+  // Check if user can generate AI template
+  const canGenerateAITemplate = () => {
+    const today = new Date().toDateString();
+    return lastAiTemplateDate === today && aiTemplateCount < 2;
+  };
+
+  // Get remaining attempts for today
+  const getRemainingAttempts = () => {
+    const today = new Date().toDateString();
+    if (lastAiTemplateDate !== today) return 2;
+    return Math.max(0, 2 - aiTemplateCount);
+  };
 
   useEffect(() => {
     const param = searchParams.get('instagramConnected');
@@ -1112,14 +1168,19 @@ function DashboardContent() {
           {/* Add more sections for other persona components */}
           <div className="flex justify-between items-end mt-6">
             <div className="flex gap-2">
-              <button
-                className="border border-blue-500 text-blue-500 font-semibold py-2 px-4 rounded-lg hover:bg-blue-500 hover:text-white transition shadow-none bg-transparent disabled:opacity-60"
-                type="button"
-                onClick={handleGetAITemplate}
-                disabled={loadingAI}
-              >
-                {loadingAI ? 'Generating...' : 'Get AI template'}
-              </button>
+              <div className="flex flex-col gap-1">
+                <button
+                  className="border border-blue-500 text-blue-500 font-semibold py-2 px-4 rounded-lg hover:bg-blue-500 hover:text-white transition shadow-none bg-transparent disabled:opacity-60 disabled:cursor-not-allowed"
+                  type="button"
+                  onClick={handleGetAITemplate}
+                  disabled={loadingAI || !canGenerateAITemplate()}
+                >
+                  {loadingAI ? 'Generating...' : 'Get AI template'}
+                </button>
+                <span className="text-xs text-gray-400">
+                  {getRemainingAttempts()} von 2 Versuchen heute übrig
+                </span>
+              </div>
               <button
                 className="border border-gray-500 text-gray-500 font-semibold py-2 px-4 rounded-lg hover:bg-gray-500 hover:text-white transition shadow-none bg-transparent disabled:opacity-60"
                 type="button"

@@ -1,19 +1,26 @@
 {
-  "version": "7",
+  "version": "5",
   "dialect": "postgresql",
   "entries": [
     {
       "idx": 0,
-      "version": "7",
-      "when": 1752160618701,
+      "version": "5",
+      "when": 1734567890000,
       "tag": "0000_lame_lilandra",
       "breakpoints": true
     },
     {
       "idx": 1,
-      "version": "7",
-      "when": 1752176681066,
+      "version": "5",
+      "when": 1734567890000,
       "tag": "0001_right_mac_gargan",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1734567890000,
+      "tag": "0002_stripe_integration",
       "breakpoints": true
     }
   ]
