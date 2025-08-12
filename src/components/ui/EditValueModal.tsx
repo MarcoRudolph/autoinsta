@@ -48,7 +48,7 @@ export default function EditValueModal({
         
         <div className="py-4">
           <p className="text-sm text-gray-600 mb-4">
-            Bearbeite den Wert für "{title}"
+            Bearbeite den Wert für &ldquo;{title}&rdquo;
           </p>
           
           <input
@@ -81,3 +81,4 @@ export default function EditValueModal({
     </Dialog>
   );
 }
+

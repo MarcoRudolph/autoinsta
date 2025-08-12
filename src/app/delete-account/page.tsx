@@ -77,7 +77,7 @@ export default function DeleteAccountPage() {
         <div className="bg-[#15192a]/80 backdrop-blur-lg rounded-xl shadow-2xl p-6 text-white mb-6">
           <h3 className="text-xl font-bold mb-4 text-[#f3aacb]">Bestätigung erforderlich</h3>
           <p className="text-gray-300 mb-4">
-            Um zu bestätigen, dass Sie Ihr Konto wirklich löschen möchten, geben Sie bitte "LÖSCHEN" in das Feld unten ein:
+            Um zu bestätigen, dass Sie Ihr Konto wirklich löschen möchten, geben Sie bitte &ldquo;LÖSCHEN&rdquo; in das Feld unten ein:
           </p>
           <input
             type="text"

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/auth/supabaseClient.client';
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import AddValueModal from '@/components/ui/AddValueModal';
-import EditValueModal from '@/components/ui/EditValueModal';
+
 import isEqual from 'lodash.isequal';
 
 // Define a type for personality with childhoodExperiences having a proper index signature
@@ -104,14 +104,11 @@ function DashboardContent() {
   
   // Modal states
   const [addModalOpen, setAddModalOpen] = useState(false);
-  const [editModalOpen, setEditModalOpen] = useState(false);
   const [currentModalConfig, setCurrentModalConfig] = useState<{
     title: string;
     placeholder: string;
     onSave: (value: string) => void;
-    onEdit?: (oldValue: string, newValue: string) => void;
   } | null>(null);
-  const [editingValue, setEditingValue] = useState<string>('');
 
   // Helper function to open add modal
   const openAddModal = (title: string, placeholder: string, onSave: (value: string) => void) => {
@@ -119,12 +116,9 @@ function DashboardContent() {
     setAddModalOpen(true);
   };
 
-  // Helper function to open edit modal
-  const openEditModal = (title: string, placeholder: string, currentValue: string, onEdit: (oldValue: string, newValue: string) => void) => {
-    setCurrentModalConfig({ title, placeholder, onSave: () => {}, onEdit });
-    setEditingValue(currentValue);
-    setEditModalOpen(true);
-  };
+
+
+
 
   const handleActivatePersona = async (id: string) => {
     // Get userId from session
@@ -1415,17 +1409,7 @@ function DashboardContent() {
         />
       )}
 
-      {/* Edit Value Modal */}
-      {currentModalConfig && (
-        <EditValueModal
-          isOpen={editModalOpen}
-          onClose={() => setEditModalOpen(false)}
-          onSave={currentModalConfig.onEdit || (() => {})}
-          title={currentModalConfig.title}
-          currentValue={editingValue}
-          placeholder={currentModalConfig.placeholder}
-        />
-      )}
+
     </div>
   );
 }
