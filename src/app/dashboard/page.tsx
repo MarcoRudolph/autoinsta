@@ -113,6 +113,26 @@ function DashboardContent() {
     onSave: (value: string) => void;
   } | null>(null);
 
+  // Helper function to check if a persona is empty (has no meaningful content)
+  const isPersonaEmpty = (persona: typeof personality): boolean => {
+    return (
+      !persona.name.trim() &&
+      !persona.description.trim() &&
+      Object.values(persona.childhoodExperiences).every(experiences => experiences.length === 0) &&
+      persona.emotionalTriggers.length === 0 &&
+      persona.characterTraits.length === 0 &&
+      Object.values(persona.positiveTraits).every(traits => traits.length === 0) &&
+      persona.negativeTraits.length === 0 &&
+      persona.areasOfInterest.length === 0 &&
+      !persona.communicationStyle.tone.trim() &&
+      !persona.communicationStyle.wordChoice.trim() &&
+      !persona.communicationStyle.responsePatterns.trim() &&
+      !persona.communicationStyle.humor.humorIntensity.trim() &&
+      persona.communicationStyle.humor.humorTypes.length === 0 &&
+      persona.communicationStyle.humor.humorExclusionTopics.length === 0
+    );
+  };
+
   // Helper function to open add modal
   const openAddModal = (title: string, placeholder: string, onSave: (value: string) => void) => {
     setCurrentModalConfig({ title, placeholder, onSave });
@@ -413,7 +433,8 @@ function DashboardContent() {
     
     setSelectedPersonaId(id);
     setCurrentPersonaId(id);
-    if (!isEqual(personality, lastLoadedPersona)) {
+    // Only show unsaved changes dialog if current persona has meaningful content
+    if (!isEqual(personality, lastLoadedPersona) && !isPersonaEmpty(personality)) {
       setPendingPersonaId(id);
       setShowUnsavedDialog(true);
     } else {

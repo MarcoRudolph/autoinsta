@@ -1,6 +1,6 @@
 {
-  "id": "f7b4a563-5b5f-4ede-a102-917f8a4281d5",
-  "prevId": "9883ac6e-ec09-458d-8b10-e97d498655b2",
+  "id": "f137aa85-9cfd-47c2-b953-5e57931e85fc",
+  "prevId": "f7b4a563-5b5f-4ede-a102-917f8a4281d5",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -10,25 +10,25 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": true,
           "notNull": true
         },
         "email": {
           "name": "email",
-          "type": "varchar(255)",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
         "passwordHash": {
           "name": "passwordHash",
-          "type": "varchar(255)",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
         "instaAccessToken": {
           "name": "instaAccessToken",
-          "type": "varchar(255)",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },

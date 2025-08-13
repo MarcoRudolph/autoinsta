@@ -1,10 +1,11 @@
-import { pgTable, uuid, varchar, timestamp, text, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, boolean } from 'drizzle-orm/pg-core';
+import { v4 as uuidv4 } from 'uuid';
 
 export const users = pgTable('users', {
-  id: uuid('id').primaryKey().notNull(),
-  email: varchar('email', { length: 255 }).notNull().unique(),
-  passwordHash: varchar('passwordHash', { length: 255 }).notNull(),
-  instaAccessToken: varchar('instaAccessToken', { length: 255 }),
+  id: text('id').primaryKey().notNull().$defaultFn(() => uuidv4()),
+  email: text('email').notNull().unique(),
+  passwordHash: text('passwordHash').notNull(),
+  instaAccessToken: text('instaAccessToken'),
   
   // Subscription fields for Stripe integration (using snake_case to match DB)
   stripeCustomerId: text('stripe_customer_id'), // Stripe customer reference

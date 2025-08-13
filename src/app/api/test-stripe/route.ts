@@ -15,7 +15,6 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       message: 'Stripe integration is working correctly',
-      stripeApiVersion: stripe.getApiField('version'),
       priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO,
       siteUrl: process.env.NEXT_PUBLIC_SITE_URL,
     });

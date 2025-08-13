@@ -2,7 +2,7 @@ import { eq, and, desc } from 'drizzle-orm';
 import { db } from '../drizzle';
 import { users, subscriptions } from '../drizzle/schema';
 
-export type SubscriptionStatus = 'trialing' | 'active' | 'past_due' | 'canceled' | 'incomplete' | 'incomplete_expired' | 'unpaid' | 'paused';
+export type SubscriptionStatus = 'free' | 'trialing' | 'active' | 'past_due' | 'canceled' | 'incomplete' | 'incomplete_expired' | 'unpaid' | 'paused';
 export type SubscriptionPlan = 'free' | 'pro' | 'enterprise';
 
 export interface UserSubscription {
