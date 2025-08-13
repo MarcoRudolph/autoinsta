@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { BundleAnalyzerPlugin } from 'webpack-bundle-analyzer';
 
 const nextConfig: NextConfig = {
   // Optional: Wenn du externe Pakete nutzt, die auf dem Server laufen müssen
@@ -9,6 +10,23 @@ const nextConfig: NextConfig = {
   // images: {
   //   unoptimized: true
   // },
+
+  webpack: (config, { isServer, dev }) => {
+    // Only run bundle analyzer in production builds
+    if (!dev && !isServer) {
+      config.plugins.push(
+        new BundleAnalyzerPlugin({
+          analyzerMode: 'static',
+          openAnalyzer: false,
+          reportFilename: './bundle-analysis.html',
+          generateStatsFile: true,
+          statsFilename: './bundle-stats.json',
+        })
+      );
+    }
+
+    return config;
+  },
 };
 
 export default nextConfig;

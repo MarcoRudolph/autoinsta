@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "analyze": "open .next/bundle-analysis.html"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.14",
@@ -38,6 +39,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/uuid": "^10.0.0",
+    "@types/webpack-bundle-analyzer": "^4.7.0",
     "autoprefixer": "^10.4.21",
     "drizzle-kit": "^0.31.4",
     "eslint": "^9",
