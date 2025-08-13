@@ -184,6 +184,12 @@ function DashboardContent() {
     fetchPersonas();
   }, [fetchPersonas]);
 
+  // Check if user can generate AI template
+  const canGenerateAITemplate = useCallback(() => {
+    const today = new Date().toDateString();
+    return lastAiTemplateDate === today && aiTemplateCount < 2;
+  }, [lastAiTemplateDate, aiTemplateCount]);
+
   const handleGetAITemplate = useCallback(async () => {
     // Check daily limit first
     if (!canGenerateAITemplate()) {
@@ -217,7 +223,7 @@ function DashboardContent() {
     } finally {
       setLoadingAI(false);
     }
-  }, [aiTemplateCount]);
+  }, [aiTemplateCount, canGenerateAITemplate]);
 
   const handleFillWithTemplate = useCallback(async () => {
     try {
@@ -299,12 +305,6 @@ function DashboardContent() {
 
     checkDailyLimit();
   }, []);
-
-  // Check if user can generate AI template
-  const canGenerateAITemplate = () => {
-    const today = new Date().toDateString();
-    return lastAiTemplateDate === today && aiTemplateCount < 2;
-  };
 
   // Get remaining attempts for today
   const getRemainingAttempts = () => {

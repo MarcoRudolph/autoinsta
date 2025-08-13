@@ -47,11 +47,12 @@ export async function POST(request: NextRequest) {
       message: 'Test user created',
       userId: newUser[0].id,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     console.error('Error creating test user:', error);
     return NextResponse.json({
       success: false,
-      error: error.message,
+      error: errorMessage,
       details: error,
     }, { status: 500 });
   }
@@ -90,11 +91,12 @@ export async function GET(request: NextRequest) {
         isPro: user.isPro,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     console.error('Error fetching test user:', error);
     return NextResponse.json({
       success: false,
-      error: error.message,
+      error: errorMessage,
     }, { status: 500 });
   }
 }

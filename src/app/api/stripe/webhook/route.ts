@@ -3,6 +3,7 @@ import { stripe, mapPriceToPlan } from '@/lib/stripe';
 import { db } from '@/drizzle';
 import { users, subscriptions, webhookEvents } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
+import Stripe from 'stripe';
 
 // Disable body parsing for raw body access
 export const config = {
@@ -19,7 +20,7 @@ function toDate(unix: number | null | undefined): Date | null {
 /**
  * Get object ID from Stripe event
  */
-function getObjectId(event: any): string | null {
+function getObjectId(event: Stripe.Event): string | null {
   const obj = event.data.object;
   return obj?.subscription ?? obj?.id ?? null;
 }
@@ -27,10 +28,9 @@ function getObjectId(event: any): string | null {
 /**
  * Handle checkout session completed event
  */
-async function handleCheckoutSessionCompleted(event: any) {
-  const session = event.data.object;
+async function handleCheckoutSessionCompleted(event: Stripe.Event) {
+  const session = event.data.object as Stripe.Checkout.Session;
   const customerId = session.customer as string | null;
-  const subscriptionId = session.subscription as string | null;
   const appUserId = session.metadata?.appUserId;
 
   if (!appUserId || !customerId) return;
@@ -41,7 +41,7 @@ async function handleCheckoutSessionCompleted(event: any) {
       expand: ['subscription', 'customer'],
     });
 
-    const customer = s.customer as any;
+    const customer = s.customer as Stripe.Customer;
     const email = typeof customer === 'object' ? customer.email : undefined;
     if (!email) return;
 
@@ -91,8 +91,8 @@ async function handleCheckoutSessionCompleted(event: any) {
 /**
  * Handle subscription changes (created, updated, deleted)
  */
-async function handleSubscriptionChange(event: any) {
-  const payload = event.data.object;
+async function handleSubscriptionChange(event: Stripe.Event) {
+  const payload = event.data.object as Stripe.Subscription;
   
   try {
     // Re-fetch canonical subscription to avoid stale/out-of-order data
@@ -100,7 +100,7 @@ async function handleSubscriptionChange(event: any) {
       expand: ['customer', 'items.data.price.product', 'latest_invoice.payment_intent'],
     });
 
-    const customer = sub.customer as any;
+    const customer = sub.customer as Stripe.Customer;
     const email = typeof customer === 'object' ? customer.email : undefined;
     if (!email) throw new Error('Customer email missing');
 
@@ -166,8 +166,8 @@ async function handleSubscriptionChange(event: any) {
 /**
  * Handle invoice events
  */
-async function handleInvoice(event: any) {
-  const invoice = event.data.object;
+async function handleInvoice(event: Stripe.Event) {
+  const invoice = event.data.object as Stripe.Invoice;
   const subId = typeof invoice.subscription === 'string' ? invoice.subscription : invoice.subscription?.id;
   if (!subId) return;
 
@@ -195,15 +195,16 @@ export async function POST(req: NextRequest) {
     return new NextResponse('Missing stripe-signature header', { status: 400 });
   }
 
-  let event: any;
+  let event: Stripe.Event;
 
   try {
     // Read raw body for signature verification
     const body = await req.text();
     event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
-  } catch (err: any) {
-    console.error('Webhook signature verification failed:', err.message);
-    return new NextResponse(`Webhook Error: ${err.message}`, { status: 400 });
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+    console.error('Webhook signature verification failed:', errorMessage);
+    return new NextResponse(`Webhook Error: ${errorMessage}`, { status: 400 });
   }
 
   try {
@@ -249,7 +250,8 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ received: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     console.error('Webhook handler failed:', error);
 
     // Record failure for retry/DLQ
@@ -259,7 +261,7 @@ export async function POST(req: NextRequest) {
         type: event.type,
         objectId: getObjectId(event),
         status: 'failed',
-        error: error?.message?.slice(0, 500),
+        error: errorMessage.slice(0, 500),
         processedAt: new Date(),
       });
     } catch (dbError) {
@@ -267,6 +269,6 @@ export async function POST(req: NextRequest) {
     }
 
     // Return 500 to trigger Stripe retry
-    return new NextResponse(`Webhook handler failed: ${error.message}`, { status: 500 });
+    return new NextResponse(`Webhook handler failed: ${errorMessage}`, { status: 500 });
   }
 }

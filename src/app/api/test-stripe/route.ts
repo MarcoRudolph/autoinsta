@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Test if Stripe is properly configured
     const testCustomer = await stripe.customers.create({
@@ -19,11 +19,12 @@ export async function GET(request: NextRequest) {
       priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO,
       siteUrl: process.env.NEXT_PUBLIC_SITE_URL,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     console.error('Stripe test failed:', error);
     return NextResponse.json({
       success: false,
-      error: error.message,
+      error: errorMessage,
       details: {
         hasSecretKey: !!process.env.STRIPE_SECRET_KEY,
         hasPriceId: !!process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO,
