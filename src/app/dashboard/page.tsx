@@ -589,9 +589,55 @@ function DashboardContent() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Craft Persona Section */}
         <div className="bg-[#15192a]/80 backdrop-blur-lg rounded-xl shadow-2xl p-6 text-white">
-          <h2 className="text-2xl md:text-4xl font-extrabold text-center mb-4 bg-gradient-to-r from-[#f3aacb] via-[#a3bffa] to-[#e6ebfc] bg-clip-text text-transparent drop-shadow-lg tracking-tight">
-            Craft Persona
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl md:text-4xl font-extrabold bg-gradient-to-r from-[#f3aacb] via-[#a3bffa] to-[#e6ebfc] bg-clip-text text-transparent drop-shadow-lg tracking-tight">
+              Craft Persona
+            </h2>
+            {/* Show New Persona button only when an existing persona is displayed */}
+            {currentPersonaId && (
+              <button
+                onClick={() => {
+                  setPersonality({
+                    name: '',
+                    description: '',
+                    childhoodExperiences: {
+                      personalDevelopment: [],
+                      sexuality: [],
+                      generalExperiences: [],
+                      socialEnvironmentFriendships: [],
+                      educationLearning: [],
+                      familyRelationships: []
+                    },
+                    emotionalTriggers: [],
+                    characterTraits: [],
+                    positiveTraits: {
+                      socialCommunicative: [],
+                      professionalCognitive: [],
+                      personalIntrinsic: []
+                    },
+                    negativeTraits: [],
+                    areasOfInterest: [],
+                    communicationStyle: {
+                      tone: '',
+                      wordChoice: '',
+                      responsePatterns: '',
+                      humor: {
+                        humorEnabled: false,
+                        humorTypes: [],
+                        humorIntensity: '',
+                        humorExclusionTopics: []
+                      }
+                    }
+                  });
+                  setCurrentPersonaId(null);
+                  setSelectedPersonaId('');
+                }}
+                className="border border-white text-white font-semibold py-2 px-4 rounded-lg hover:bg-white hover:text-indigo-700 transition shadow-none bg-transparent text-sm"
+              >
+                New Persona
+              </button>
+            )}
+          </div>
           
           {/* Basic Info */}
           <div className="mb-6">
@@ -1200,9 +1246,12 @@ function DashboardContent() {
               <button 
                 className="border border-white text-white font-semibold py-2 px-6 rounded-lg hover:bg-white hover:text-indigo-700 transition shadow-none bg-transparent"
                 onClick={() => {
+                  // Keep the current persona name and description, only clear the values
+                  const currentName = personality.name;
+                  const currentDescription = personality.description;
                   setPersonality({
-                    name: '',
-                    description: '',
+                    name: currentName,
+                    description: currentDescription,
                     childhoodExperiences: {
                       personalDevelopment: [],
                       sexuality: [],
@@ -1232,11 +1281,10 @@ function DashboardContent() {
                       }
                     }
                   });
-                  setCurrentPersonaId(null);
-                  setSelectedPersonaId('');
+                  // Don't clear currentPersonaId and selectedPersonaId to keep the persona context
                 }}
               >
-                Clear all
+                Clear Values
               </button>
               <button className="border border-white text-white font-semibold py-2 px-6 rounded-lg hover:bg-red-600 hover:text-white transition shadow-none bg-transparent" onClick={handleDeletePersona}>
                 Delete
@@ -1338,32 +1386,7 @@ function DashboardContent() {
                 </div>
               </div>
               
-              <div>
-                <h3 className="font-medium mb-2">Product Links</h3>
-                {dmSettings.productLinks.map((link: string, index: number) => (
-                  <div key={index} className="flex gap-2 mb-2">
-                    <input
-                      type="url"
-                      placeholder="https://"
-                      className="flex-1 p-2 border rounded"
-                      value={link}
-                      onChange={() => {}}
-                    />
-                    <button
-                      className="text-red-500"
-                      onClick={() => {}}
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-                <button
-                  className="text-blue-500 text-sm"
-                  onClick={() => {}}
-                >
-                  + Add Link
-                </button>
-              </div>
+              {/* Remove the Product Links section from here - it will be moved to its own card */}
             </div>
           </div>
 
@@ -1418,7 +1441,54 @@ function DashboardContent() {
                 />
               </div>
             </div>
-            {/* Similar structure as DM Settings */}
+          </div>
+
+          {/* New Product Links Card */}
+          <div className="bg-[#15192a]/80 backdrop-blur-lg rounded-xl shadow-2xl p-6 text-white">
+            <h2 className="text-2xl md:text-4xl font-extrabold mb-2 bg-gradient-to-r from-[#f3aacb] via-[#a3bffa] to-[#e6ebfc] bg-clip-text text-transparent drop-shadow-lg tracking-tight">
+              Product Links
+            </h2>
+            <p className="text-sm mb-4 opacity-80">
+              Sometimes, during a conversation, the chatbot might share a product link — for example, an image of an item you can buy. This could happen if you ask for it directly, or if the topic naturally inspires a suggestion, like: &ldquo;Oh, maybe you&apos;d like a picture of me? =)&rdquo;
+            </p>
+            
+            <div className="space-y-3">
+              {dmSettings.productLinks.map((link: string, index: number) => (
+                <div key={index} className="flex gap-2">
+                  <input
+                    type="url"
+                    placeholder="https://"
+                    className="flex-1 p-2 border rounded text-black"
+                    value={link}
+                    onChange={(e) => {
+                      const newLinks = [...dmSettings.productLinks];
+                      newLinks[index] = e.target.value;
+                      setDmSettings(prev => ({ ...prev, productLinks: newLinks }));
+                    }}
+                  />
+                  <button
+                    className="text-red-500 hover:text-red-700 px-3 py-2 border border-red-500 rounded hover:bg-red-500 hover:text-white transition-colors"
+                    onClick={() => {
+                      const newLinks = dmSettings.productLinks.filter((_, i) => i !== index);
+                      setDmSettings(prev => ({ ...prev, productLinks: newLinks }));
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              <button
+                className="text-blue-500 hover:text-blue-700 border border-blue-500 px-4 py-2 rounded hover:bg-blue-500 hover:text-white transition-colors"
+                onClick={() => {
+                  setDmSettings(prev => ({ 
+                    ...prev, 
+                    productLinks: [...prev.productLinks, ''] 
+                  }));
+                }}
+              >
+                + Add Link
+              </button>
+            </div>
           </div>
         </div>
       </div>

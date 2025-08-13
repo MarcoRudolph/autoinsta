@@ -22,7 +22,17 @@ function toDate(unix: number | null | undefined): Date | null {
  */
 function getObjectId(event: Stripe.Event): string | null {
   const obj = event.data.object;
-  return obj?.subscription ?? obj?.id ?? null;
+  
+  // Handle different event types safely
+  if ('subscription' in obj && obj.subscription) {
+    return typeof obj.subscription === 'string' ? obj.subscription : obj.subscription.id;
+  }
+  
+  if ('id' in obj && obj.id) {
+    return obj.id;
+  }
+  
+  return null;
 }
 
 /**
