@@ -24,10 +24,33 @@ export default function AuthForm() {
   const handleFacebook = async () => {
     setLoading(true);
     setError(null);
-    const { error } = await supabase.auth.signInWithOAuth({ provider: 'facebook' });
-    if (error) setError(error.message);
-    else router.push('/dashboard');
-    setLoading(false);
+    
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ provider: 'facebook' }),
+      });
+
+      const data = await response.json();
+
+      if (data.error) {
+        setError(data.error);
+        return;
+      }
+
+      if (data.url) {
+        // Redirect to Facebook OAuth
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error('Facebook login error:', error);
+      setError('Facebook login failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

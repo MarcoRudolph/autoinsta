@@ -5,6 +5,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/auth/supabaseClient.client';
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import AddValueModal from '@/components/ui/AddValueModal';
+import EditValueModal from '@/components/ui/EditValueModal';
+import { useI18n } from '@/hooks/useI18n';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 import isEqual from 'lodash.isequal';
 
@@ -35,6 +38,12 @@ type Personality = {
     };
   };
   userId?: string;
+};
+
+// New type for the complete persona data structure
+type PersonaData = {
+  personality: Personality;
+  productLinks: string[];
 };
 
 function DashboardContent() {
@@ -76,6 +85,15 @@ function DashboardContent() {
       }
     }
   });
+  
+  // Product links state - now part of persona data
+  const [productLinks, setProductLinks] = useState<string[]>([]);
+  
+  // Locale state for internationalization
+  const [currentLocale, setCurrentLocale] = useState('en');
+  
+  const { t, tCommon } = useI18n(currentLocale);
+  
   const [dmSettings, setDmSettings] = useState({
     active: false,
     duration: { from: '', until: '' },
@@ -113,6 +131,15 @@ function DashboardContent() {
     onSave: (value: string) => void;
   } | null>(null);
 
+  // EditValueModal states for product links
+  const [editValueModalOpen, setEditValueModalOpen] = useState(false);
+  const [editValueModalConfig, setEditValueModalConfig] = useState<{
+    title: string;
+    currentValue: string;
+    placeholder: string;
+    onSave: (oldValue: string, newValue: string) => void;
+  } | null>(null);
+
   // Helper function to check if a persona is empty (has no meaningful content)
   const isPersonaEmpty = (persona: typeof personality): boolean => {
     return (
@@ -139,6 +166,12 @@ function DashboardContent() {
     setAddModalOpen(true);
   };
 
+  // Helper function to open edit value modal for product links
+  const openEditValueModal = (title: string, placeholder: string, onSave: (oldValue: string, newValue: string) => void) => {
+    setEditValueModalConfig({ title, currentValue: '', placeholder, onSave });
+    setEditValueModalOpen(true);
+  };
+
 
 
 
@@ -147,7 +180,7 @@ function DashboardContent() {
     // Get userId from session
     const { data, error } = await supabase.auth.getSession();
     if (error || !data.session?.user?.id) {
-      alert('Kein Benutzer angemeldet. Bitte einloggen.');
+      alert(t('dashboard.noUserLoggedIn'));
       return;
     }
     const userId = data.session.user.id;
@@ -213,7 +246,7 @@ function DashboardContent() {
   const handleGetAITemplate = useCallback(async () => {
     // Check daily limit first
     if (!canGenerateAITemplate()) {
-      alert('Du hast heute bereits 2 AI-Templates generiert. Das Limit wird täglich um Mitternacht zurückgesetzt.');
+      alert(t('dashboard.aiTemplateLimit'));
       return;
     }
 
@@ -243,7 +276,7 @@ function DashboardContent() {
     } finally {
       setLoadingAI(false);
     }
-  }, [aiTemplateCount, canGenerateAITemplate]);
+  }, [aiTemplateCount, canGenerateAITemplate, t]);
 
   const handleFillWithTemplate = useCallback(async () => {
     try {
@@ -360,48 +393,58 @@ function DashboardContent() {
         // Get userId from Supabase session
         const { data, error } = await supabase.auth.getSession();
         if (error || !data.session?.user?.id) {
-          alert('Kein Benutzer angemeldet. Bitte einloggen.');
+          alert(t('dashboard.noUserLoggedIn'));
           setSaving(false);
           return;
         }
         userId = data.session.user.id as string;
         console.log('Fetched userId from session:', userId);
       }
+      
+      // Create the persona data structure
+      const personaData: PersonaData = {
+        personality: { ...personality, userId },
+        productLinks: productLinks
+      };
+      
       if (currentPersonaId) {
         // Edit existing persona
-        console.log('Editing persona:', currentPersonaId, personality);
+        console.log('Editing persona:', currentPersonaId, personaData);
         const res = await fetch('/api/edit-persona', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ personaId: currentPersonaId, userId, data: { ...personality, userId } }),
+          body: JSON.stringify({ personaId: currentPersonaId, userId, data: personaData }),
         });
         const responseJson = await res.json();
         console.log('Edit persona response:', responseJson);
         if (!res.ok) throw new Error('Failed to edit persona');
-        setSaveMessage('Persona updated!');
+        setSaveMessage(t('dashboard.personaUpdated'));
       } else {
         // Create new persona
-        const personaToSave = { ...personality, userId };
-        console.log('Saving persona:', personaToSave);
+        const personaData: PersonaData = {
+          personality: { ...personality, userId },
+          productLinks: productLinks
+        };
+        console.log('Saving persona:', personaData);
         const res = await fetch('/api/save-persona', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(personaToSave),
+          body: JSON.stringify({ userId, data: personaData }),
         });
         const responseJson = await res.json();
         console.log('Save persona response:', responseJson);
         if (!res.ok) throw new Error('Failed to save persona');
-        setSaveMessage('Persona saved!');
+        setSaveMessage(t('dashboard.personaSaved'));
       }
       await fetchPersonas();
     } catch (err) {
       console.error('Error saving persona:', err);
-      alert('Fehler beim Speichern der Persona.');
+      alert(t('dashboard.saveError'));
       // Do not set a green message on error
     } finally {
       setSaving(false);
     }
-  }, [personality, fetchPersonas, supabase, currentPersonaId]);
+  }, [personality, productLinks, fetchPersonas, supabase, currentPersonaId, t]);
 
   useEffect(() => {
     let mounted = true;
@@ -427,7 +470,7 @@ function DashboardContent() {
     // Add null check for the selected ID
     if (!id || id === 'null' || id === 'undefined') {
       console.warn('Invalid persona ID selected:', id);
-      alert('Bitte wählen Sie eine gültige Persona aus.');
+      alert(t('dashboard.invalidPersona'));
       return;
     }
     
@@ -447,24 +490,36 @@ function DashboardContent() {
     try {
       const res = await fetch(`/api/get-persona?id=${id}`);
       if (res.ok) {
-        const data: { persona?: typeof personality } = await res.json();
+        const data: { persona?: PersonaData } = await res.json();
         if (data && data.persona && data.persona !== null) {
           console.log('Loading persona:', data.persona);
-          setPersonality(data.persona);
-          setLastLoadedPersona(data.persona);
+          
+          // Handle both old and new persona structures for backward compatibility
+          if (data.persona.personality) {
+            // New structure with personality and productLinks
+            setPersonality(data.persona.personality);
+            setProductLinks(data.persona.productLinks || []);
+            setLastLoadedPersona(data.persona.personality);
+          } else {
+            // Old structure - treat the entire persona as personality data
+            setPersonality(data.persona as unknown as Personality);
+            setProductLinks([]);
+            setLastLoadedPersona(data.persona as unknown as Personality);
+          }
+          
           setSelectedPersonaId(id);
           setCurrentPersonaId(id);
         } else {
           console.warn('No valid persona data received:', data);
-          alert('Keine gültigen Persona-Daten gefunden.');
+          alert(t('dashboard.noValidPersonaData'));
         }
       } else {
         console.error('Failed to fetch persona:', res.status, res.statusText);
-        alert('Fehler beim Laden der Persona.');
+        alert(t('dashboard.errorLoadingPersona'));
       }
     } catch (error) {
       console.error('Error loading persona:', error);
-      alert('Fehler beim Laden der Persona.');
+      alert(t('dashboard.errorLoadingPersona'));
     }
   };
 
@@ -472,7 +527,7 @@ function DashboardContent() {
     if (!selectedPersonaId) return;
     const persona = personas.find(p => p.id === selectedPersonaId);
     if (!persona) return;
-    const confirmed = window.confirm(`Do you really want delete '${persona.name}'?`);
+    const confirmed = window.confirm(`${t('dashboard.deleteConfirm')} '${persona.name}'?`);
     if (!confirmed) return;
     try {
       const res = await fetch(`/api/delete-persona`, {
@@ -508,11 +563,12 @@ function DashboardContent() {
             },
           },
         });
+        setProductLinks([]);
         setCurrentPersonaId(null);
         setSelectedPersonaId('');
       }
     } catch {
-      alert('Failed to delete persona.');
+      alert(t('dashboard.deleteError'));
     }
   };
 
@@ -562,21 +618,27 @@ function DashboardContent() {
               {/* User Info */}
               <div className="px-4 py-3 border-b border-gray-100">
                 <p className="text-sm font-medium text-gray-900 truncate">{userEmail}</p>
-                <p className="text-xs text-gray-500">rudolpho-chat User</p>
+                <p className="text-xs text-gray-500">{t('dashboard.userType')}</p>
               </div>
               
               {/* Menu Items */}
               <div className="py-1">
+                {/* Language Switcher */}
+                <div className="px-4 py-2 border-b border-gray-100">
+                  <div className="text-xs text-gray-500 mb-2">Language / Sprache</div>
+                  <LanguageSwitcher onLocaleChange={setCurrentLocale} />
+                </div>
+                
                 <button
                   onClick={handleSettings}
                   className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.57 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                   <div>
-                    <div className="font-medium">Settings</div>
+                    <div className="font-medium">{t('dashboard.settings')}</div>
                     <div className="text-xs text-gray-500">Einstellungen</div>
                   </div>
                 </button>
@@ -589,7 +651,7 @@ function DashboardContent() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
                   </svg>
                   <div>
-                    <div className="font-medium">Logout</div>
+                    <div className="font-medium">{t('dashboard.logout')}</div>
                     <div className="text-xs text-gray-500">Abmelden</div>
                   </div>
                 </button>
@@ -597,13 +659,13 @@ function DashboardContent() {
             </div>
           )}
         </div>
-        <h1 className="text-4xl font-extrabold tracking-wide">Dashboard</h1>
-        <p className="text-sm mt-2 opacity-80">Automatisiere deine Instagram-Interaktionen</p>
+        <h1 className="text-4xl font-extrabold tracking-wide">{t('dashboard.title')}</h1>
+        <p className="text-sm mt-2 opacity-80">{t('dashboard.automateInstagram')}</p>
         <button
           onClick={handleInstagramLogin}
           className={`mt-4 border font-semibold py-2 px-4 rounded-lg transition shadow-none ${instagramConnected ? 'bg-green-600 border-green-600 text-white' : 'bg-transparent text-white border-white hover:bg-white hover:text-indigo-700'}`}
         >
-          {instagramConnected ? 'Instagram verbunden' : 'Instagram verbinden'}
+          {instagramConnected ? t('dashboard.instagramConnected') : t('dashboard.connectInstagram')}
         </button>
       </div>
 
@@ -611,8 +673,14 @@ function DashboardContent() {
         {/* Craft Persona Section */}
         <div className="bg-[#15192a]/80 backdrop-blur-lg rounded-xl shadow-2xl p-6 text-white">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl md:text-4xl font-extrabold bg-gradient-to-r from-[#f3aacb] via-[#a3bffa] to-[#e6ebfc] bg-clip-text text-transparent drop-shadow-lg tracking-tight">
-              Craft Persona
+            <h2 className="text-2xl md:text-4xl bg-gradient-to-r from-[#f3aacb] via-[#a3bffa] to-[#e6ebfc] bg-clip-text text-transparent drop-shadow-lg tracking-tight" style={{
+              fontFamily: '"Inter", sans-serif',
+              fontWeight: '800',
+              letterSpacing: '-0.04em',
+              lineHeight: '1.2em',
+              color: '#ffffff'
+            }}>
+              {t('dashboard.craftPersona')}
             </h2>
             {/* Show New Persona button only when an existing persona is displayed */}
             {currentPersonaId && (
@@ -650,12 +718,13 @@ function DashboardContent() {
                       }
                     }
                   });
+                  setProductLinks([]);
                   setCurrentPersonaId(null);
                   setSelectedPersonaId('');
                 }}
-                className="border border-white text-white font-semibold py-2 px-4 rounded-lg hover:bg-white hover:text-indigo-700 transition shadow-none bg-transparent text-sm"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
               >
-                New Persona
+                {t('dashboard.newPersona')}
               </button>
             )}
           </div>
@@ -664,13 +733,13 @@ function DashboardContent() {
           <div className="mb-6">
             <input
               type="text"
-              placeholder="Name"
+              placeholder={t('dashboard.personality.placeholder.name')}
               className="w-full p-2 border rounded mb-2 text-blue-900 bg-blue-50"
               value={personality.name}
               onChange={e => setPersonality(prev => ({ ...prev, name: e.target.value }))}
             />
             <textarea
-              placeholder="Description"
+              placeholder={t('dashboard.personality.placeholder.description')}
               className="w-full p-2 border rounded h-20 text-blue-900 bg-blue-50"
               value={personality.description}
               onChange={e => setPersonality(prev => ({ ...prev, description: e.target.value }))}
@@ -707,14 +776,14 @@ function DashboardContent() {
               <div key={section} className="mb-6">
                 <div className="flex items-center gap-2 mb-2">
                   <h3 className="font-medium capitalize">
-                    {isPersonalDev ? 'Personal development' : section.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                    {t(`dashboard.personality.${section}`)}
                   </h3>
                   <button
                     onClick={() => {
-                      const sectionTitle = isPersonalDev ? 'Personal development' : section.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+                      const sectionTitle = t(`dashboard.personality.${section}`);
                       openAddModal(
                         sectionTitle,
-                        `Neuen ${section.replace(/([A-Z])/g, ' $1').toLowerCase()} hinzufügen`,
+                        t('dashboard.personality.addNew'),
                         addItem
                       );
                     }}
@@ -890,12 +959,12 @@ function DashboardContent() {
               </div>
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <h4 className="text-sm font-medium text-gray-500">Professional & Cognitive</h4>
+                  <h4 className="text-sm font-medium text-gray-500">{t('dashboard.personality.professionalCognitive')}</h4>
                   <button
                     onClick={() => {
                       openAddModal(
-                        'Professional & Cognitive',
-                        'Neuen professionellen & kognitiven Zug hinzufügen',
+                        t('dashboard.personality.professionalCognitive'),
+                        t('dashboard.personality.addNewTrait'),
                         (newTrait: string) => {
                           if (newTrait && newTrait.trim()) {
                             setPersonality(prev => ({
@@ -942,10 +1011,10 @@ function DashboardContent() {
           {/* Negative Traits */}
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-2">
-              <h3 className="font-medium">Negative Traits</h3>
+              <h3 className="font-medium">{t('dashboard.personality.negativeTraits')}</h3>
               <button
                 onClick={() => {
-                  const newTrait = prompt('Add new negative trait:');
+                  const newTrait = prompt(t('dashboard.personality.addNewTrait'));
                   if (newTrait && newTrait.trim()) {
                     setPersonality(prev => ({
                       ...prev,
@@ -981,10 +1050,10 @@ function DashboardContent() {
           {/* Areas of Interest */}
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-2">
-              <h3 className="font-medium">Areas of Interest</h3>
+              <h3 className="font-medium">{t('dashboard.personality.areasOfInterest')}</h3>
               <button
                 onClick={() => {
-                  const newInterest = prompt('Add new area of interest:');
+                  const newInterest = prompt(t('dashboard.personality.addNewInterest'));
                   if (newInterest && newInterest.trim()) {
                     setPersonality(prev => ({
                       ...prev,
@@ -1023,7 +1092,7 @@ function DashboardContent() {
               <h3 className="font-medium">Emotional Triggers</h3>
               <button
                 onClick={() => {
-                  const newTrigger = prompt('Add new emotional trigger:');
+                  const newTrigger = prompt(t('dashboard.personality.addNewTrigger'));
                   if (newTrigger && newTrigger.trim()) {
                     setPersonality(prev => ({
                       ...prev,
@@ -1119,7 +1188,7 @@ function DashboardContent() {
                       <label className="block text-xs text-gray-500">Humor Types</label>
                       <button
                         onClick={() => {
-                          const newType = prompt('Add new humor type:');
+                          const newType = prompt(t('dashboard.personality.addNewHumorType'));
                           if (newType && newType.trim()) {
                             setPersonality(prev => ({
                               ...prev,
@@ -1183,7 +1252,7 @@ function DashboardContent() {
                       <label className="block text-xs text-gray-500">Humor Exclusion Topics</label>
                       <button
                         onClick={() => {
-                          const newTopic = prompt('Add new humor exclusion topic:');
+                          const newTopic = prompt(t('dashboard.personality.addNewExclusionTopic'));
                           if (newTopic && newTopic.trim()) {
                             setPersonality(prev => ({
                               ...prev,
@@ -1262,7 +1331,7 @@ function DashboardContent() {
                 onClick={handleSavePersona}
                 disabled={saving}
               >
-                {saving ? 'Saving...' : 'Save'}
+                {saving ? tCommon('loading') : t('dashboard.savePersona')}
               </button>
               <button 
                 className="border border-white text-white font-semibold py-2 px-6 rounded-lg hover:bg-white hover:text-indigo-700 transition shadow-none bg-transparent"
@@ -1308,7 +1377,7 @@ function DashboardContent() {
                 Clear Values
               </button>
               <button className="border border-white text-white font-semibold py-2 px-6 rounded-lg hover:bg-red-600 hover:text-white transition shadow-none bg-transparent" onClick={handleDeletePersona}>
-                Delete
+                {tCommon('delete')}
               </button>
             </div>
           </div>
@@ -1318,8 +1387,14 @@ function DashboardContent() {
         <div className="space-y-6">
           {/* Deine Personas Section as Card */}
           <div className="bg-[#15192a]/80 backdrop-blur-lg rounded-xl shadow-2xl p-6 text-white mb-8">
-            <h2 className="text-2xl md:text-4xl font-extrabold mb-4 bg-gradient-to-r from-[#f3aacb] via-[#a3bffa] to-[#e6ebfc] bg-clip-text text-transparent drop-shadow-lg tracking-tight">
-              Deine Personas
+            <h2 className="text-2xl md:text-4xl mb-4 bg-gradient-to-r from-[#f3aacb] via-[#a3bffa] to-[#e6ebfc] bg-clip-text text-transparent drop-shadow-lg tracking-tight" style={{
+              fontFamily: '"Inter", sans-serif',
+              fontWeight: '800',
+              letterSpacing: '-0.04em',
+              lineHeight: '1.2em',
+              color: '#ffffff'
+            }}>
+              {t('dashboard.yourPersonas')}
             </h2>
             {Array.isArray(personas) && personas.length > 0 ? (
               <div className="flex items-center gap-4">
@@ -1328,7 +1403,7 @@ function DashboardContent() {
                   value={selectedPersonaId}
                   onChange={e => handlePersonaDropdownChange(e.target.value)}
                 >
-                  <option value="">-- Select a persona --</option>
+                  <option value="">{t('dashboard.selectPersona')}</option>
                   {personas.filter(persona => persona && persona.id && persona.name).map((persona) => (
                     <option key={persona.id} value={persona.id}>
                       {persona.name}
@@ -1344,7 +1419,7 @@ function DashboardContent() {
                         className="border border-green-500 text-green-600 font-semibold py-2 px-4 rounded-lg hover:bg-green-500 hover:text-white transition shadow-none bg-transparent"
                         onClick={() => handleActivatePersona(selectedPersonaId)}
                       >
-                        Activate persona
+                        {t('dashboard.activatePersona')}
                       </button>
                     );
                   }
@@ -1352,16 +1427,22 @@ function DashboardContent() {
                 })()}
               </div>
             ) : (
-              <span className="text-gray-400">no personas yet</span>
+              <span className="text-gray-400">{t('dashboard.noPersonasYet')}</span>
             )}
           </div>
           <div className="bg-[#15192a]/80 backdrop-blur-lg rounded-xl shadow-2xl p-6 text-white">
             <div className="flex items-center gap-4 mb-4">
-              <h2 className="text-2xl md:text-4xl font-extrabold bg-gradient-to-r from-[#f3aacb] via-[#a3bffa] to-[#e6ebfc] bg-clip-text text-transparent drop-shadow-lg tracking-tight m-0">
-                DM Settings
+              <h2 className="text-2xl md:text-4xl bg-gradient-to-r from-[#f3aacb] via-[#a3bffa] to-[#e6ebfc] bg-clip-text text-transparent drop-shadow-lg tracking-tight m-0" style={{
+                fontFamily: '"Inter", sans-serif',
+                fontWeight: '800',
+                letterSpacing: '-0.04em',
+                lineHeight: '1.2em',
+                color: '#ffffff'
+              }}>
+                {t('dashboard.dmSettings')}
               </h2>
               <div className="flex-grow" />
-              <span className="font-semibold text-sm md:text-base">Autoresponding to DMs</span>
+              <span className="font-semibold text-sm md:text-base">{t('dashboard.autorespondingToDMs')}</span>
               <button
                 id="dm-active"
                 type="button"
@@ -1380,9 +1461,9 @@ function DashboardContent() {
             <div className="space-y-4">
               {/* Delay of answers caption and duration fields */}
               <div className="mb-2">
-                <span className="block font-semibold mb-1">Delay of answers</span>
+                <span className="block font-semibold mb-1">{t('dashboard.delayOfAnswers')}</span>
                 <div className="flex gap-4 items-center">
-                  <label className="text-sm font-medium" htmlFor="dm-from">from</label>
+                  <label className="text-sm font-medium" htmlFor="dm-from">{t('dashboard.from')}</label>
                   <input
                     id="dm-from"
                     type="time"
@@ -1393,7 +1474,7 @@ function DashboardContent() {
                       duration: { ...prev.duration, from: e.target.value }
                     }))}
                   />
-                  <label className="text-sm font-medium" htmlFor="dm-till">till</label>
+                  <label className="text-sm font-medium" htmlFor="dm-till">{t('dashboard.till')}</label>
                   <input
                     id="dm-till"
                     type="time"
@@ -1414,11 +1495,17 @@ function DashboardContent() {
           {/* Comment Settings (similar structure) */}
           <div className="bg-[#15192a]/80 backdrop-blur-lg rounded-xl shadow-2xl p-6 text-white">
             <div className="flex items-center gap-4 mb-4">
-              <h2 className="text-2xl md:text-4xl font-extrabold bg-gradient-to-r from-[#f3aacb] via-[#a3bffa] to-[#e6ebfc] bg-clip-text text-transparent drop-shadow-lg tracking-tight m-0">
-                Comment Settings
+              <h2 className="text-2xl md:text-4xl bg-gradient-to-r from-[#f3aacb] via-[#a3bffa] to-[#e6ebfc] bg-clip-text text-transparent drop-shadow-lg tracking-tight m-0" style={{
+                fontFamily: '"Inter", sans-serif',
+                fontWeight: '800',
+                letterSpacing: '-0.04em',
+                lineHeight: '1.2em',
+                color: '#ffffff'
+              }}>
+                {t('dashboard.commentSettings')}
               </h2>
               <div className="flex-grow" />
-              <span className="font-semibold text-sm md:text-base">Autoresponding to comments</span>
+              <span className="font-semibold text-sm md:text-base">{t('dashboard.autorespondingToComments')}</span>
               <button
                 id="comment-active"
                 type="button"
@@ -1436,9 +1523,9 @@ function DashboardContent() {
             </div>
             {/* Delay of answers caption and duration fields for comments */}
             <div className="mb-2">
-              <span className="block font-semibold mb-1">Delay of answers</span>
+              <span className="block font-semibold mb-1">{t('dashboard.delayOfAnswers')}</span>
               <div className="flex gap-4 items-center">
-                <label className="text-sm font-medium" htmlFor="comment-from">from</label>
+                <label className="text-sm font-medium" htmlFor="comment-from">{t('dashboard.from')}</label>
                 <input
                   id="comment-from"
                   type="time"
@@ -1449,7 +1536,7 @@ function DashboardContent() {
                     duration: { ...prev.duration, from: e.target.value }
                   }))}
                 />
-                <label className="text-sm font-medium" htmlFor="comment-till">till</label>
+                <label className="text-sm font-medium" htmlFor="comment-till">{t('dashboard.till')}</label>
                 <input
                   id="comment-till"
                   type="time"
@@ -1466,15 +1553,21 @@ function DashboardContent() {
 
           {/* New Product Links Card */}
           <div className="bg-[#15192a]/80 backdrop-blur-lg rounded-xl shadow-2xl p-6 text-white">
-            <h2 className="text-2xl md:text-4xl font-extrabold mb-2 bg-gradient-to-r from-[#f3aacb] via-[#a3bffa] to-[#e6ebfc] bg-clip-text text-transparent drop-shadow-lg tracking-tight">
-              Product Links
+            <h2 className="text-2xl md:text-4xl mb-2 bg-gradient-to-r from-[#f3aacb] via-[#a3bffa] to-[#e6ebfc] bg-clip-text text-transparent drop-shadow-lg tracking-tight" style={{
+              fontFamily: '"Inter", sans-serif',
+              fontWeight: '800',
+              letterSpacing: '-0.04em',
+              lineHeight: '1.2em',
+              color: '#ffffff'
+            }}>
+              {personality.name ? t('dashboard.productLinks.titleWithName', { name: personality.name }) : t('dashboard.productLinks.title')}
             </h2>
             <p className="text-sm mb-4 opacity-80">
-              Sometimes, during a conversation, the chatbot might share a product link — for example, an image of an item you can buy. This could happen if you ask for it directly, or if the topic naturally inspires a suggestion, like: &ldquo;Oh, maybe you&apos;d like a picture of me? =)&rdquo;
+              {t('dashboard.productLinks.subtitle')}
             </p>
             
             <div className="space-y-3">
-              {dmSettings.productLinks.map((link: string, index: number) => (
+              {productLinks.map((link: string, index: number) => (
                 <div key={index} className="flex gap-2">
                   <input
                     type="url"
@@ -1482,16 +1575,16 @@ function DashboardContent() {
                     className="flex-1 p-2 border rounded text-black"
                     value={link}
                     onChange={(e) => {
-                      const newLinks = [...dmSettings.productLinks];
+                      const newLinks = [...productLinks];
                       newLinks[index] = e.target.value;
-                      setDmSettings(prev => ({ ...prev, productLinks: newLinks }));
+                      setProductLinks(newLinks);
                     }}
                   />
                   <button
                     className="text-red-500 hover:text-red-700 px-3 py-2 border border-red-500 rounded hover:bg-red-500 hover:text-white transition-colors"
                     onClick={() => {
-                      const newLinks = dmSettings.productLinks.filter((_, i) => i !== index);
-                      setDmSettings(prev => ({ ...prev, productLinks: newLinks }));
+                      const newLinks = productLinks.filter((_, i) => i !== index);
+                      setProductLinks(newLinks);
                     }}
                   >
                     ×
@@ -1501,13 +1594,18 @@ function DashboardContent() {
               <button
                 className="text-blue-500 hover:text-blue-700 border border-blue-500 px-4 py-2 rounded hover:bg-blue-500 hover:text-white transition-colors"
                 onClick={() => {
-                  setDmSettings(prev => ({ 
-                    ...prev, 
-                    productLinks: [...prev.productLinks, ''] 
-                  }));
+                  openEditValueModal(
+                    t('dashboard.productLinks.modalTitle'),
+                    t('dashboard.productLinks.placeholder'),
+                    (oldValue: string, newValue: string) => {
+                      if (newValue.trim()) {
+                        setProductLinks([...productLinks, newValue.trim()]);
+                      }
+                    }
+                  );
                 }}
               >
-                + Add Link
+                + {t('dashboard.productLinks.addButton')}
               </button>
             </div>
           </div>
@@ -1519,9 +1617,9 @@ function DashboardContent() {
       <Dialog open={showUnsavedDialog} onOpenChange={setShowUnsavedDialog}>
         <DialogContent className="bg-white text-black">
           <DialogHeader>
-            <DialogTitle>Unsaved Changes</DialogTitle>
+            <DialogTitle>{t('dashboard.unsavedChanges')}</DialogTitle>
             <DialogDescription>
-              Changes to the current persona have not been saved. Do you still want to continue?
+              {t('dashboard.unsavedChangesDescription')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -1532,7 +1630,7 @@ function DashboardContent() {
                 setPendingPersonaId(null);
               }}
             >
-              Cancel
+              {tCommon('cancel')}
             </button>
             <button
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
@@ -1544,7 +1642,7 @@ function DashboardContent() {
                 }
               }}
             >
-              Continue
+              {t('dashboard.continue')}
             </button>
           </DialogFooter>
         </DialogContent>
@@ -1558,6 +1656,22 @@ function DashboardContent() {
           onSave={currentModalConfig.onSave}
           title={currentModalConfig.title}
           placeholder={currentModalConfig.placeholder}
+        />
+      )}
+
+      {/* Edit Value Modal for Product Links */}
+      {editValueModalConfig && (
+        <EditValueModal
+          isOpen={editValueModalOpen}
+          onClose={() => setEditValueModalOpen(false)}
+          onSave={editValueModalConfig.onSave}
+          title={editValueModalConfig.title}
+          currentValue={editValueModalConfig.currentValue}
+          placeholder={editValueModalConfig.placeholder}
+          subtitle={t('dashboard.productLinks.modalSubtitle')}
+          buttonText={tCommon('save')}
+          cancelText={tCommon('cancel')}
+          editText={t('dashboard.productLinks.modalTitle')}
         />
       )}
 

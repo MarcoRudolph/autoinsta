@@ -3,17 +3,17 @@
 import React from 'react';
 import Link from 'next/link';
 
-export default function DeleteAccountPage() {
+export default function KontoLoeschenPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#15192a] via-[#232946] to-[#334269] text-white">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-[#f3aacb] via-[#a3bffa] to-[#e6ebfc] bg-clip-text text-transparent">
-            Account Deletion Guide
+            Anleitung zum Löschen des Kontos
           </h1>
           <p className="text-xl text-gray-300">
-            How to permanently delete your AI-Chatbot account and data
+            So löschen Sie Ihr AI-Chatbot-Konto und alle Daten dauerhaft
           </p>
         </div>
 
@@ -21,58 +21,58 @@ export default function DeleteAccountPage() {
         <div className="bg-[#15192a]/80 backdrop-blur-lg rounded-xl shadow-2xl p-8 mb-8">
           <div className="prose prose-invert max-w-none">
             <h2 className="text-2xl font-bold mb-6 text-[#f3aacb]">
-              How to Delete Your Account
+              So löschen Sie Ihr Konto
             </h2>
             
             <div className="space-y-6">
               {/* Step 1 */}
               <div className="bg-[#232946]/60 rounded-lg p-6 border border-[#334269]/30">
                 <h3 className="text-xl font-semibold mb-3 text-[#a3bffa]">
-                  Step 1: Access Your Account Settings
+                  Schritt 1: Zugriff auf Ihre Kontoeinstellungen
                 </h3>
                 <ol className="list-decimal list-inside space-y-2 text-gray-300">
-                  <li>Log in to your AI-Chatbot account at <span className="text-[#f3aacb]">rudolpho-chat.de</span></li>
-                  <li>Navigate to the Dashboard</li>
-                  <li>Click on your profile icon in the top-right corner</li>
-                  <li>Select "Settings" from the dropdown menu</li>
+                  <li>Melden Sie sich bei Ihrem AI-Chatbot-Konto auf <span className="text-[#f3aacb]">rudolpho-chat.de</span> an</li>
+                  <li>Navigieren Sie zum Dashboard</li>
+                  <li>Klicken Sie auf Ihr Profilbild in der oberen rechten Ecke</li>
+                  <li>Wählen Sie "Einstellungen" aus dem Dropdown-Menü</li>
                 </ol>
               </div>
 
               {/* Step 2 */}
               <div className="bg-[#232946]/60 rounded-lg p-6 border border-[#334269]/30">
                 <h3 className="text-xl font-semibold mb-3 text-[#a3bffa]">
-                  Step 2: Find Account Deletion Option
+                  Schritt 2: Konto-Löschung finden
                 </h3>
                 <ol className="list-decimal list-inside space-y-2 text-gray-300">
-                  <li>In the Settings page, scroll down to find "Account Management"</li>
-                  <li>Look for the "Delete Account" or "Permanently Delete Account" section</li>
-                  <li>Click on the "Delete Account" button</li>
+                  <li>Scrollen Sie auf der Einstellungsseite nach unten zu "Kontoverwaltung"</li>
+                  <li>Suchen Sie nach dem Abschnitt "Konto löschen" oder "Konto dauerhaft löschen"</li>
+                  <li>Klicken Sie auf den "Konto löschen" Button</li>
                 </ol>
               </div>
 
               {/* Step 3 */}
               <div className="bg-[#232946]/60 rounded-lg p-6 border border-[#334269]/30">
                 <h3 className="text-xl font-semibold mb-3 text-[#a3bffa]">
-                  Step 3: Confirm Deletion
+                  Schritt 3: Löschung bestätigen
                 </h3>
                 <ol className="list-decimal list-inside space-y-2 text-gray-300">
-                  <li>You will be prompted to enter your password for security verification</li>
-                  <li>Read the deletion warning carefully - this action is irreversible</li>
-                  <li>Type "DELETE" in the confirmation field</li>
-                  <li>Click "Permanently Delete My Account"</li>
+                  <li>Sie werden aufgefordert, Ihr Passwort zur Sicherheitsüberprüfung einzugeben</li>
+                  <li>Lesen Sie die Löschwarnung sorgfältig - diese Aktion ist unwiderruflich</li>
+                  <li>Geben Sie "LÖSCHEN" in das Bestätigungsfeld ein</li>
+                  <li>Klicken Sie auf "Mein Konto dauerhaft löschen"</li>
                 </ol>
               </div>
 
               {/* Step 4 */}
               <div className="bg-[#232946]/60 rounded-lg p-6 border border-[#334269]/30">
                 <h3 className="text-xl font-semibold mb-3 text-[#a3bffa]">
-                  Step 4: Account Deletion Process
+                  Schritt 4: Konto-Löschungsprozess
                 </h3>
                 <ol className="list-decimal list-inside space-y-2 text-gray-300">
-                  <li>Your account will be immediately deactivated</li>
-                  <li>All your data will be permanently deleted within 30 days</li>
-                  <li>You will receive a confirmation email</li>
-                  <li>After 30 days, your data cannot be recovered</li>
+                  <li>Ihr Konto wird sofort deaktiviert</li>
+                  <li>Alle Ihre Daten werden innerhalb von 30 Tagen dauerhaft gelöscht</li>
+                  <li>Sie erhalten eine Bestätigungs-E-Mail</li>
+                  <li>Nach 30 Tagen können Ihre Daten nicht mehr wiederhergestellt werden</li>
                 </ol>
               </div>
             </div>
@@ -82,25 +82,25 @@ export default function DeleteAccountPage() {
         {/* What Gets Deleted */}
         <div className="bg-[#15192a]/80 backdrop-blur-lg rounded-xl shadow-2xl p-8 mb-8">
           <h2 className="text-2xl font-bold mb-6 text-[#f3aacb]">
-            What Gets Deleted
+            Was wird gelöscht
           </h2>
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-[#a3bffa]">Account Data</h3>
+              <h3 className="text-lg font-semibold text-[#a3bffa]">Kontodaten</h3>
               <ul className="list-disc list-inside space-y-2 text-gray-300">
-                <li>Your profile information</li>
-                <li>Email address and login credentials</li>
-                <li>Account preferences and settings</li>
-                <li>Subscription and billing information</li>
+                <li>Ihre Profilinformationen</li>
+                <li>E-Mail-Adresse und Anmeldedaten</li>
+                <li>Kontoeinstellungen und Präferenzen</li>
+                <li>Abonnement- und Rechnungsinformationen</li>
               </ul>
             </div>
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-[#a3bffa]">AI-Chatbot Data</h3>
+              <h3 className="text-lg font-semibold text-[#a3bffa]">AI-Chatbot-Daten</h3>
               <ul className="list-disc list-inside space-y-2 text-gray-300">
-                <li>All created AI-Chatbots and personas</li>
-                <li>Chat history and conversations</li>
-                <li>Instagram connection settings</li>
-                <li>Product links and configurations</li>
+                <li>Alle erstellten AI-Chatbots und Personas</li>
+                <li>Chatverlauf und Gespräche</li>
+                <li>Instagram-Verbindungseinstellungen</li>
+                <li>Produktlinks und Konfigurationen</li>
               </ul>
             </div>
           </div>
@@ -109,21 +109,21 @@ export default function DeleteAccountPage() {
         {/* Important Information */}
         <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-8 mb-8">
           <h2 className="text-2xl font-bold mb-4 text-red-400">
-            ⚠️ Important Information
+            ⚠️ Wichtige Informationen
           </h2>
           <div className="space-y-4 text-gray-300">
             <p>
-              <strong className="text-red-400">Account deletion is permanent and irreversible.</strong> 
-              Once you delete your account:
+              <strong className="text-red-400">Das Löschen des Kontos ist dauerhaft und unwiderruflich.</strong> 
+              Sobald Sie Ihr Konto löschen:
             </p>
             <ul className="list-disc list-inside space-y-2">
-              <li>You will lose access to all your AI-Chatbots and data</li>
-              <li>Your Instagram connections will be permanently removed</li>
-              <li>All subscription payments will be cancelled</li>
-              <li>You cannot recover your account after 30 days</li>
+              <li>Verlieren Sie den Zugriff auf alle Ihre AI-Chatbots und Daten</li>
+              <li>Ihre Instagram-Verbindungen werden dauerhaft entfernt</li>
+              <li>Alle Abonnement-Zahlungen werden gekündigt</li>
+              <li>Sie können Ihr Konto nach 30 Tagen nicht mehr wiederherstellen</li>
             </ul>
             <p className="text-yellow-400">
-              <strong>Note:</strong> If you have an active subscription, consider cancelling it before deleting your account to avoid future charges.
+              <strong>Hinweis:</strong> Wenn Sie ein aktives Abonnement haben, sollten Sie es vor dem Löschen Ihres Kontos kündigen, um zukünftige Gebühren zu vermeiden.
             </p>
           </div>
         </div>
@@ -131,17 +131,17 @@ export default function DeleteAccountPage() {
         {/* Alternative Options */}
         <div className="bg-[#15192a]/80 backdrop-blur-lg rounded-xl shadow-2xl p-8 mb-8">
           <h2 className="text-2xl font-bold mb-6 text-[#f3aacb]">
-            Alternative Options
+            Alternative Optionen
           </h2>
           <div className="space-y-4 text-gray-300">
             <p>
-              Before deleting your account, consider these alternatives:
+              Bevor Sie Ihr Konto löschen, sollten Sie diese Alternativen in Betracht ziehen:
             </p>
             <ul className="list-disc list-inside space-y-2">
-              <li><strong>Deactivate account:</strong> Temporarily disable your account instead of permanent deletion</li>
-              <li><strong>Export data:</strong> Download your AI-Chatbots and data before deletion</li>
-              <li><strong>Contact support:</strong> If you're experiencing issues, our support team can help</li>
-              <li><strong>Change settings:</strong> Adjust privacy settings or remove specific data</li>
+              <li><strong>Konto deaktivieren:</strong> Deaktivieren Sie Ihr Konto vorübergehend anstatt es dauerhaft zu löschen</li>
+              <li><strong>Daten exportieren:</strong> Laden Sie Ihre AI-Chatbots und Daten vor der Löschung herunter</li>
+              <li><strong>Support kontaktieren:</strong> Wenn Sie Probleme haben, kann unser Support-Team helfen</li>
+              <li><strong>Einstellungen ändern:</strong> Passen Sie Datenschutzeinstellungen an oder entfernen Sie bestimmte Daten</li>
             </ul>
           </div>
         </div>
@@ -149,20 +149,20 @@ export default function DeleteAccountPage() {
         {/* Contact Information */}
         <div className="bg-[#15192a]/80 backdrop-blur-lg rounded-xl shadow-2xl p-8">
           <h2 className="text-2xl font-bold mb-6 text-[#f3aacb]">
-            Need Help?
+            Brauchen Sie Hilfe?
           </h2>
           <div className="space-y-4 text-gray-300">
             <p>
-              If you need assistance with account deletion or have questions, please contact us:
+              Wenn Sie Hilfe beim Löschen Ihres Kontos benötigen oder Fragen haben, kontaktieren Sie uns:
             </p>
             <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <h3 className="text-lg font-semibold text-[#a3bffa] mb-2">Email Support</h3>
+                <h3 className="text-lg font-semibold text-[#a3bffa] mb-2">E-Mail-Support</h3>
                 <p>marcorudolph09@proton.me</p>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-[#a3bffa] mb-2">Response Time</h3>
-                <p>Within 24-48 hours</p>
+                <h3 className="text-lg font-semibold text-[#a3bffa] mb-2">Antwortzeit</h3>
+                <p>Innerhalb von 24-48 Stunden</p>
               </div>
             </div>
           </div>
@@ -174,7 +174,7 @@ export default function DeleteAccountPage() {
             href="/"
             className="inline-block bg-[#f3aacb] text-[#334269] font-bold px-8 py-3 rounded-lg hover:bg-[#e6a3c4] transition-colors"
           >
-            Back to Home
+            Zurück zur Startseite
           </Link>
         </div>
       </div>

@@ -111,7 +111,7 @@ export default function LandingPage() {
                     </li>
                     <li className="flex items-center">
                       <span className="w-2 h-2 bg-[#334269] rounded-full mr-3"></span>
-                      Custom persona creation
+                      Custom AI-Chatbot creation
                     </li>
                   </ul>
                 </div>
@@ -126,7 +126,7 @@ export default function LandingPage() {
           </div>
           <div className="flex flex-col items-center gap-2 md:gap-4 select-none pointer-events-none text-center">
             <span className="text-2xl md:text-4xl font-bold text-white drop-shadow-lg bg-gradient-to-r from-[#f3aacb] via-[#e6ebfc] to-[#a3bffa] bg-clip-text text-transparent animate-pulse text-center">
-              Craft your digital persona.
+              Craft your AI-Chatbot.
             </span>
             <span className="text-lg md:text-2xl font-semibold text-white drop-shadow-md bg-gradient-to-r from-[#a3bffa] via-[#f3aacb] to-[#e6ebfc] bg-clip-text text-transparent animate-fade-in text-center">
               AI takes over your Instagram DMs & comments—just the way you want.
@@ -167,7 +167,11 @@ export default function LandingPage() {
             </h2>
             {/* Steps as vertical timeline */}
             <div className="flex flex-col gap-8 relative pl-8 md:pl-12">
-              {["Set your persona and preferences","Connect your Instagram account", "Watch as the AI handles your DMs for you"].map((step, index, arr) => (
+              {[
+                "1️⃣ Gestalte deinen AI-Chatbot\nLege Persönlichkeit, Schreibstil und Antworten fest – genau so, wie dein Bot klingen soll.",
+                "2️⃣ Verbinde deine Kanäle\nVerknüpfe Instagram oder andere Plattformen mit deinem AI-Chatbot.",
+                "3️⃣ Lass ihn für dich chatten\nDein AI-Chatbot beantwortet automatisch Nachrichten in deinem Stil – rund um die Uhr."
+              ].map((step, index, arr) => (
                 <div key={index} className="flex items-start relative">
                   {/* Timeline connector */}
                   <div className="flex flex-col items-center mr-6">
@@ -178,9 +182,9 @@ export default function LandingPage() {
                       <div className="w-1 h-12 md:h-16 bg-gradient-to-b from-[#f3aacb] to-transparent opacity-60"></div>
                     )}
                   </div>
-                  <span className="text-lg md:text-2xl font-semibold text-white drop-shadow-md pt-2">
+                  <div className="text-lg md:text-2xl font-semibold text-white drop-shadow-md pt-2 whitespace-pre-line">
                     {step}
-                  </span>
+                  </div>
                 </div>
               ))}
             </div>

@@ -8,6 +8,10 @@ interface EditValueModalProps {
   title: string;
   currentValue: string;
   placeholder: string;
+  subtitle?: string;
+  buttonText?: string;
+  cancelText?: string;
+  editText?: string;
 }
 
 export default function EditValueModal({
@@ -16,7 +20,11 @@ export default function EditValueModal({
   onSave,
   title,
   currentValue,
-  placeholder
+  placeholder,
+  subtitle,
+  buttonText = 'Aktualisieren',
+  cancelText = 'Abbrechen',
+  editText = 'Wert bearbeiten'
 }: EditValueModalProps) {
   const [value, setValue] = useState(currentValue);
 
@@ -42,13 +50,13 @@ export default function EditValueModal({
       <DialogContent className="bg-white text-gray-900 max-w-md">
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold text-gray-800">
-            Wert bearbeiten
+            {editText}
           </DialogTitle>
         </DialogHeader>
         
         <div className="py-4">
           <p className="text-sm text-gray-600 mb-4">
-            Bearbeite den Wert für &ldquo;{title}&rdquo;
+            {subtitle || `Bearbeite den Wert für "${title}"`}
           </p>
           
           <input
@@ -67,14 +75,14 @@ export default function EditValueModal({
             onClick={onClose}
             className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
-            Abbrechen
+            {cancelText}
           </button>
           <button
             onClick={handleSave}
             disabled={!value.trim() || value.trim() === currentValue}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            Aktualisieren
+            {buttonText}
           </button>
         </DialogFooter>
       </DialogContent>
