@@ -190,23 +190,13 @@ function DashboardContent() {
   // Check user subscription status
   const checkUserSubscription = useCallback(async () => {
     try {
-      const { data, error } = await supabase.auth.getSession();
-      if (error || !data.session?.user?.id) {
-        setIsProUser(false);
-        return;
-      }
-      
-      const userId = data.session.user.id;
-      console.log('Checking subscription for user:', userId);
-      
-      // Fetch user subscription from API
-      const response = await fetch(`/api/subscription?userId=${userId}`);
-      if (response.ok) {
-        const subscriptionData = await response.json();
-        console.log('Subscription data:', subscriptionData);
-        setIsProUser(subscriptionData.isPro || false);
+      const res = await fetch('/api/subscription');
+      if (res.ok) {
+        const data = await res.json();
+        console.log('Subscription data:', data);
+        setIsProUser(data.isPro || false);
       } else {
-        console.error('Failed to fetch subscription data');
+        console.error('Failed to fetch subscription data:', res.status);
         setIsProUser(false);
       }
     } catch (error) {
@@ -482,8 +472,17 @@ function DashboardContent() {
   }, []);
 
   const handleInstagramLogin = () => {
+    const clientId = process.env.NEXT_PUBLIC_INSTAGRAM_CLIENT_ID;
+    const redirectUri = process.env.NEXT_PUBLIC_SITE_URL ? `${process.env.NEXT_PUBLIC_SITE_URL}/api/instagram/callback` : 'https://www.rudolpho-chat.de/api/instagram/callback';
+    
+    if (!clientId) {
+      console.error('Instagram client ID not configured');
+      alert('Instagram integration not configured');
+      return;
+    }
+    
     window.location.href =
-      'https://www.instagram.com/oauth/authorize?force_reauth=true&client_id=1031545482523645&redirect_uri=https://www.rudolpho-chat.de/api/instagram/callback&response_type=code&scope=instagram_business_basic%2Cinstagram_business_manage_messages%2Cinstagram_business_manage_comments%2Cinstagram_business_content_publish%2Cinstagram_business_manage_insights';
+      `https://www.instagram.com/oauth/authorize?force_reauth=true&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=instagram_business_basic%2Cinstagram_business_manage_messages%2Cinstagram_business_manage_comments%2Cinstagram_business_content_publish%2Cinstagram_business_manage_insights`;
   };
 
 
@@ -642,7 +641,7 @@ function DashboardContent() {
     } finally {
       setSaving(false);
     }
-  }, [personality, productLinks, fetchPersonas, supabase, currentPersonaId, t]);
+  }, [personality, productLinks, fetchPersonas, supabase, currentPersonaId, t, selectedPersonaId]);
 
   useEffect(() => {
     let mounted = true;

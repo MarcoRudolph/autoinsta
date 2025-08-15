@@ -3,13 +3,16 @@ import { db } from '@/drizzle';
 import { users } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
 
-// Admin secret key - in production, move to env var (e.g., process.env.ADMIN_SECRET)
-const ADMIN_SECRET = 'your-admin-secret-key-here';
-
 export async function POST(req: NextRequest) {
 	try {
 		const body = await req.json();
 		const { userId, adminSecret } = body;
+
+		const ADMIN_SECRET = process.env.ADMIN_SECRET;
+		if (!ADMIN_SECRET) {
+			console.error('ADMIN_SECRET environment variable not set');
+			return NextResponse.json({ error: 'Admin secret not configured' }, { status: 500 });
+		}
 
 		if (adminSecret !== ADMIN_SECRET) {
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

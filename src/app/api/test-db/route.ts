@@ -1,32 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { db } from '@/drizzle';
-import { users } from '@/drizzle/schema';
+import { users } from '@/drizzle/schema/users';
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
-    console.log('Testing database connection...');
-    
-    // Test database connection by counting users
-    const userCount = await db.select().from(users);
-    
-    console.log(`Database connection successful. Found ${userCount.length} users in custom table.`);
-    
-    return NextResponse.json({
-      success: true,
-      message: 'Database connection successful',
-      userCount: userCount.length,
-      users: userCount.map(u => ({ id: u.id, email: u.email, subscriptionStatus: u.subscriptionStatus }))
+    const result = await db.select().from(users);
+    return NextResponse.json({ 
+      success: true, 
+      count: result.length,
+      users: result.map(user => ({ id: user.id, email: user.email }))
     });
-    
   } catch (error) {
-    console.error('Database connection test failed:', error);
-    return NextResponse.json(
-      { 
-        success: false,
-        error: 'Database connection failed', 
-        details: error instanceof Error ? error.message : 'Unknown error' 
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Database error', details: String(error) }, { status: 500 });
   }
 }

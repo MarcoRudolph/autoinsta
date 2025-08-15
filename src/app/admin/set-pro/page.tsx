@@ -11,8 +11,8 @@ export default function AdminSetProPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<AdminResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [userId, setUserId] = useState('94c84fde-0cd1-43e6-827b-13c7db1baa21'); // Your user ID
-  const [adminSecret, setAdminSecret] = useState('your-admin-secret-key-here');
+  const [userId, setUserId] = useState(''); // Remove hardcoded user ID
+  const [adminSecret, setAdminSecret] = useState(''); // Remove hardcoded admin secret
 
   const handleSetPro = async () => {
     setIsLoading(true);

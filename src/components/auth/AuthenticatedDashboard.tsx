@@ -26,7 +26,18 @@ const AuthenticatedDashboard = () => {
 
 
 
-  const handleInstagramLogin = () => { window.location.href = 'https://www.instagram.com/oauth/authorize?force_reauth=true&client_id=1031545482523645&redirect_uri=https://www.rudolpho-chat.de/api/instagram/callback&response_type=code&scope=instagram_business_basic%2Cinstagram_business_manage_messages%2Cinstagram_business_manage_comments%2Cinstagram_business_content_publish%2Cinstagram_business_manage_insights'; };
+  const handleInstagramLogin = () => { 
+    const clientId = process.env.NEXT_PUBLIC_INSTAGRAM_CLIENT_ID;
+    const redirectUri = process.env.NEXT_PUBLIC_SITE_URL ? `${process.env.NEXT_PUBLIC_SITE_URL}/api/instagram/callback` : 'https://www.rudolpho-chat.de/api/instagram/callback';
+    
+    if (!clientId) {
+      console.error('Instagram client ID not configured');
+      alert('Instagram integration not configured');
+      return;
+    }
+    
+    window.location.href = `https://www.instagram.com/oauth/authorize?force_reauth=true&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=instagram_business_basic%2Cinstagram_business_manage_messages%2Cinstagram_business_manage_comments%2Cinstagram_business_content_publish%2Cinstagram_business_manage_insights`; 
+  };
   useEffect(() => { function handleClickOutside(event: MouseEvent) { if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) { setUserDropdownOpen(false); } } if (userDropdownOpen) { document.addEventListener('mousedown', handleClickOutside); } return () => { document.removeEventListener('mousedown', handleClickOutside); }; }, [userDropdownOpen]);
   useEffect(() => { const getUserEmail = async () => { const { data: { user } } = await supabase.auth.getUser(); if (user?.email) { setUserEmail(user.email); } }; getUserEmail(); }, [supabase]);
 

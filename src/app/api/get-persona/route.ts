@@ -4,6 +4,16 @@ import { db } from '@/drizzle';
 import { personas } from '@/drizzle/schema/personas';
 import { eq } from 'drizzle-orm';
 
+type PersonaData = {
+  data?: {
+    personality?: Record<string, unknown>;
+    productLinks?: unknown[];
+  };
+  personality?: Record<string, unknown>;
+  productLinks?: unknown[];
+  [key: string]: unknown;
+};
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const id = searchParams.get('id');
@@ -18,7 +28,7 @@ export async function GET(req: NextRequest) {
     console.log('Raw persona data from DB:', JSON.stringify(result[0].data, null, 2));
     
     // Handle double-wrapped data structure: the actual persona data is in result[0].data.data
-    const personaData = result[0].data;
+    const personaData = result[0].data as PersonaData; // Proper type instead of any
     const actualPersona = personaData?.data || personaData;
     
     console.log('Extracted persona data:', JSON.stringify(actualPersona, null, 2));
