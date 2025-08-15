@@ -21,7 +21,9 @@
     "Bevorzuge stabile, dokumentierte APIs. Füge JSDoc-Kommentare für öffentliche Utilities hinzu.",
     "Folge allen Konventionen aus .cursor/rules/core.mdc und nextjs.instructions.md.",
     "Wenn externe Doku nötig ist: nutze die Regeln in perplexity-tool.mdc rein für Recherche; Code-Entscheidungen müssen zu unseren Projektregeln passen.",
-    "Frage nicht nach abschließender Bestätigung; setze die Änderungen direkt um."
+    "Frage nicht nach abschließender Bestätigung; setze die Änderungen direkt um.",
+    "Erstele keine Routen, um Operationen in der Datenbank  durchzuführen oder andere Workarounds zu implementieren. Bei Workarounds fragst du vorher perplexity."
+  
   ]
 }
   

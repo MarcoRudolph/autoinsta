@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 
 interface FacebookLoginButtonProps {
   className?: string;
@@ -10,7 +9,6 @@ interface FacebookLoginButtonProps {
 
 export default function FacebookLoginButton({ className = '', children }: FacebookLoginButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
 
   const handleFacebookLogin = async () => {
     setIsLoading(true);

@@ -34,7 +34,7 @@ export default function DeleteAccountPage() {
                   <li>Log in to your AI-Chatbot account at <span className="text-[#f3aacb]">rudolpho-chat.de</span></li>
                   <li>Navigate to the Dashboard</li>
                   <li>Click on your profile icon in the top-right corner</li>
-                  <li>Select "Settings" from the dropdown menu</li>
+                  <li>Select &quot;Settings&quot; from the dropdown menu</li>
                 </ol>
               </div>
 
@@ -44,9 +44,9 @@ export default function DeleteAccountPage() {
                   Step 2: Find Account Deletion Option
                 </h3>
                 <ol className="list-decimal list-inside space-y-2 text-gray-300">
-                  <li>In the Settings page, scroll down to find "Account Management"</li>
-                  <li>Look for the "Delete Account" or "Permanently Delete Account" section</li>
-                  <li>Click on the "Delete Account" button</li>
+                  <li>In the Settings page, scroll down to find &quot;Account Management&quot;</li>
+                  <li>Look for the &quot;Delete Account&quot; or &quot;Permanently Delete Account&quot; section</li>
+                  <li>Click on the &quot;Delete Account&quot; button</li>
                 </ol>
               </div>
 
@@ -58,8 +58,8 @@ export default function DeleteAccountPage() {
                 <ol className="list-decimal list-inside space-y-2 text-gray-300">
                   <li>You will be prompted to enter your password for security verification</li>
                   <li>Read the deletion warning carefully - this action is irreversible</li>
-                  <li>Type "DELETE" in the confirmation field</li>
-                  <li>Click "Permanently Delete My Account"</li>
+                  <li>Type &quot;DELETE&quot; in the confirmation field</li>
+                  <li>Click &quot;Permanently Delete My Account&quot;</li>
                 </ol>
               </div>
 
@@ -140,7 +140,7 @@ export default function DeleteAccountPage() {
             <ul className="list-disc list-inside space-y-2">
               <li><strong>Deactivate account:</strong> Temporarily disable your account instead of permanent deletion</li>
               <li><strong>Export data:</strong> Download your AI-Chatbots and data before deletion</li>
-              <li><strong>Contact support:</strong> If you're experiencing issues, our support team can help</li>
+              <li><strong>Contact support:</strong> If you&apos;re experiencing issues, our support team can help</li>
               <li><strong>Change settings:</strong> Adjust privacy settings or remove specific data</li>
             </ul>
           </div>

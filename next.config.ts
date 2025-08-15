@@ -1,10 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Ensure we're using the App Router
-  experimental: {
-    appDir: true,
-  },
+  // App Router is now the default in Next.js 13+
+  // No need for experimental.appDir configuration
   
   // Disable webpack bundle analyzer for now to avoid conflicts
   // webpack: (config, { isServer, dev }) => {

@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, integer, uuid } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, boolean, integer } from 'drizzle-orm/pg-core';
 import { users } from './users';
 
 export const subscriptions = pgTable('subscriptions', {
@@ -7,7 +7,7 @@ export const subscriptions = pgTable('subscriptions', {
   customerId: text('customer_id').notNull(), // Stripe customer ID
   
   // User relationship
-  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   
   // Subscription details
   status: text('status').notNull(), // 'trialing', 'active', 'past_due', 'canceled', 'incomplete', 'incomplete_expired', 'unpaid', 'paused'

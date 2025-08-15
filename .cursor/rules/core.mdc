@@ -31,7 +31,7 @@ This document outlines the coding standards, preferred libraries, naming convent
 * **Frontend Framework:** Next.js (App Router).
 * **UI Library:** React.
 * **Component Library:** Shadcn
-* **Styling:** Tailwind CSS for all styling. Use Shadcn UI components as a base and customize with Tailwind utilities. Avoid raw CSS files where possible, except for global styles.
+* **Styling:** Tailwind CSS for all styling. Use Shadcn UI components as a base and customize with Tailwind utilities. Avoid raw CSS files where possible, except for global styles. Erzeuge Komponenten nur als Variant-Props auf Basis von shadcn/ui; keine freien Inline-Styles.
 * **Database ORM:** Drizzle ORM for PostgreSQL.
 * **Authentication:** own tables and UI for authentication. 
 * **Validation:** Zod for all schema validation (frontend and backend).

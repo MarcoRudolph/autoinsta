@@ -22,22 +22,36 @@ export interface UserSubscription {
  * Get user's current subscription plan
  */
 export async function getUserPlan(userId: string): Promise<SubscriptionPlan> {
-  const subscription = await db.query.subscriptions.findFirst({
-    where: and(
-      eq(subscriptions.userId, userId),
-      eq(subscriptions.status, 'active')
-    ),
-    orderBy: [desc(subscriptions.createdAt)],
-  });
-  
-  if (!subscription) return 'free';
-  
-  // Check if subscription is still active (not expired)
-  if (subscription.currentPeriodEnd && subscription.currentPeriodEnd > new Date()) {
-    return subscription.plan as SubscriptionPlan;
+  try {
+    const subscription = await db.query.subscriptions.findFirst({
+      where: and(
+        eq(subscriptions.userId, userId),
+        eq(subscriptions.status, 'active')
+      ),
+      orderBy: [desc(subscriptions.createdAt)],
+    });
+
+    if (!subscription) return 'free';
+
+    // Check if subscription is still active (not expired)
+    if (subscription.currentPeriodEnd && subscription.currentPeriodEnd > new Date()) {
+      return subscription.plan as SubscriptionPlan;
+    }
+
+    return 'free';
+  } catch (error) {
+    console.log('Subscriptions table query failed in getUserPlan, falling back to users table:', error);
+    // Fallback to users table
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+    });
+    
+    if (user?.isPro || user?.subscriptionPlan === 'pro' || user?.subscriptionPlan === 'enterprise') {
+      return 'pro';
+    }
+    
+    return 'free';
   }
-  
-  return 'free';
 }
 
 /**
@@ -149,25 +163,37 @@ export async function getUserSubscription(userId: string): Promise<UserSubscript
   
   if (!user) return null;
   
-  const activeSubscription = await db.query.subscriptions.findFirst({
-    where: and(
-      eq(subscriptions.userId, userId),
-      eq(subscriptions.status, 'active')
-    ),
-    orderBy: [desc(subscriptions.createdAt)],
-  });
+  let activeSubscription = null;
+  
+  // Try to get active subscription, but don't fail if subscriptions table doesn't exist
+  try {
+    activeSubscription = await db.query.subscriptions.findFirst({
+      where: and(
+        eq(subscriptions.userId, userId),
+        eq(subscriptions.status, 'active')
+      ),
+      orderBy: [desc(subscriptions.createdAt)],
+    });
+  } catch (error) {
+    console.log('Subscriptions table query failed, falling back to users table:', error);
+    // If subscriptions table doesn't exist or query fails, just use user table data
+  }
+  
+  // Fallback to user table fields if no active subscription found
+  const isPro = activeSubscription ? (activeSubscription.plan === 'pro' || activeSubscription.plan === 'enterprise') : 
+                (user.isPro || user.subscriptionPlan === 'pro' || user.subscriptionPlan === 'enterprise');
   
   return {
     id: user.id,
     email: user.email,
     stripeCustomerId: user.stripeCustomerId,
-    subscriptionStatus: activeSubscription?.status as SubscriptionStatus || 'free',
-    subscriptionPlan: activeSubscription?.plan as SubscriptionPlan || 'free',
-    subscriptionStartDate: activeSubscription?.currentPeriodStart || null,
-    subscriptionEndDate: activeSubscription?.currentPeriodEnd || null,
-    isPro: activeSubscription ? (activeSubscription.plan === 'pro' || activeSubscription.plan === 'enterprise') : false,
+    subscriptionStatus: activeSubscription?.status as SubscriptionStatus || user.subscriptionStatus as SubscriptionStatus || 'free',
+    subscriptionPlan: activeSubscription?.plan as SubscriptionPlan || user.subscriptionPlan as SubscriptionPlan || 'free',
+    subscriptionStartDate: activeSubscription?.currentPeriodStart || (user.subscriptionStartDate ? new Date(user.subscriptionStartDate) : null),
+    subscriptionEndDate: activeSubscription?.currentPeriodEnd || (user.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null),
+    isPro: isPro,
     cancelAtPeriodEnd: activeSubscription?.cancelAtPeriodEnd || false,
-    currentPeriodEnd: activeSubscription?.currentPeriodEnd || null,
+    currentPeriodEnd: activeSubscription?.currentPeriodEnd || (user.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null),
   };
 }
 

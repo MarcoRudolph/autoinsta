@@ -48,6 +48,11 @@ export default function Footer() {
                   Dashboard
                 </Link>
               </li>
+              <li>
+                <Link href="/documentation" className="hover:text-[#f3aacb] transition-colors">
+                  Dokumentation
+                </Link>
+              </li>
             </ul>
           </div>
 

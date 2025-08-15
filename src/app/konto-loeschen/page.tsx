@@ -34,7 +34,7 @@ export default function KontoLoeschenPage() {
                   <li>Melden Sie sich bei Ihrem AI-Chatbot-Konto auf <span className="text-[#f3aacb]">rudolpho-chat.de</span> an</li>
                   <li>Navigieren Sie zum Dashboard</li>
                   <li>Klicken Sie auf Ihr Profilbild in der oberen rechten Ecke</li>
-                  <li>Wählen Sie "Einstellungen" aus dem Dropdown-Menü</li>
+                                     <li>Wählen Sie &quot;Einstellungen&quot; aus dem Dropdown-Menü</li>
                 </ol>
               </div>
 
@@ -44,9 +44,9 @@ export default function KontoLoeschenPage() {
                   Schritt 2: Konto-Löschung finden
                 </h3>
                 <ol className="list-decimal list-inside space-y-2 text-gray-300">
-                  <li>Scrollen Sie auf der Einstellungsseite nach unten zu "Kontoverwaltung"</li>
-                  <li>Suchen Sie nach dem Abschnitt "Konto löschen" oder "Konto dauerhaft löschen"</li>
-                  <li>Klicken Sie auf den "Konto löschen" Button</li>
+                                     <li>Scrollen Sie auf der Einstellungsseite nach unten zu &quot;Kontoverwaltung&quot;</li>
+                   <li>Suchen Sie nach dem Abschnitt &quot;Konto löschen&quot; oder &quot;Konto dauerhaft löschen&quot;</li>
+                   <li>Klicken Sie auf den &quot;Konto löschen&quot; Button</li>
                 </ol>
               </div>
 
@@ -58,8 +58,8 @@ export default function KontoLoeschenPage() {
                 <ol className="list-decimal list-inside space-y-2 text-gray-300">
                   <li>Sie werden aufgefordert, Ihr Passwort zur Sicherheitsüberprüfung einzugeben</li>
                   <li>Lesen Sie die Löschwarnung sorgfältig - diese Aktion ist unwiderruflich</li>
-                  <li>Geben Sie "LÖSCHEN" in das Bestätigungsfeld ein</li>
-                  <li>Klicken Sie auf "Mein Konto dauerhaft löschen"</li>
+                                     <li>Geben Sie &quot;LÖSCHEN&quot; in das Bestätigungsfeld ein</li>
+                   <li>Klicken Sie auf &quot;Mein Konto dauerhaft löschen&quot;</li>
                 </ol>
               </div>
 

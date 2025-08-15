@@ -15,13 +15,34 @@ export async function POST(req: NextRequest) {
     if (!personaId || !userId) {
       return NextResponse.json({ error: 'Missing personaId or userId' }, { status: 400 });
     }
+    
+    console.log(`Setting active persona: ${personaId} for user: ${userId}`);
+    
     // Fetch all personas for this user
     const allPersonas = await db.select().from(personas).where(eq(personas.userId, userId));
+    console.log(`Found ${allPersonas.length} personas for user`);
     // Set active=false for all, active=true for the selected one
     for (const p of allPersonas) {
-      const data = { ...(p.data as PersonaData), active: p.id === personaId };
+      const data = p.data as PersonaData;
+      const isActive = p.id === personaId;
+      
+      // Ensure personality object exists
+      const personality = data.personality || {};
+      
+      // Set active in both places to ensure compatibility
+      const updatedData = {
+        ...data,
+        active: isActive,
+        personality: {
+          ...personality,
+          active: isActive
+        }
+      };
+      
+      console.log(`Updating persona ${p.id} with active=${isActive}, data:`, updatedData);
+      
       await db.update(personas)
-        .set({ data })
+        .set({ data: updatedData })
         .where(eq(personas.id, p.id));
     }
     // Return the updated active persona

@@ -6,34 +6,62 @@ export async function POST() {
     return NextResponse.json({ error: 'Missing OpenAI API key' }, { status: 500 });
   }
 
-  // Use inline structure instead of reading from file system
+  // Use the exact same structure that gets saved (Personality type)
   const structureJson = JSON.stringify({
     "name": "",
-    "age": 0,
-    "location": "",
-    "occupation": "",
-    "personality": {
-      "traits": [],
-      "communication_style": "",
-      "tone": ""
+    "description": "",
+    "childhoodExperiences": {
+      "personalDevelopment": [],
+      "sexuality": [],
+      "generalExperiences": [],
+      "socialEnvironmentFriendships": [],
+      "educationLearning": [],
+      "familyRelationships": []
     },
-    "interests": [],
-    "background": "",
-    "communication_preferences": {
-      "response_length": "",
-      "emoji_usage": "",
-      "formality_level": ""
+    "emotionalTriggers": [],
+    "characterTraits": [],
+    "positiveTraits": {
+      "socialCommunicative": [],
+      "professionalCognitive": [],
+      "personalIntrinsic": []
     },
-    "goals_and_motivations": [],
-    "typical_responses": {
-      "greeting": "",
-      "question_about_services": "",
-      "compliment": "",
-      "complaint": ""
-    }
+    "negativeTraits": [],
+    "areasOfInterest": [],
+    "communicationStyle": {
+      "tone": "",
+      "wordChoice": "",
+      "responsePatterns": "",
+      "humor": {
+        "humorEnabled": false,
+        "humorTypes": [],
+        "humorIntensity": "",
+        "humorExclusionTopics": []
+      }
+    },
+    "delayMin": 5,
+    "delayMax": 10
   });
 
-  const prompt = `Fill out the following JSON structure with a realistic, detailed persona for a social media dashboard app. Use English for all fields. Only return a valid JSON object, matching the structure exactly. Do not add or remove fields.\n\nStructure:\n${structureJson}`;
+  const prompt = `Fill out the following JSON structure with a realistic, detailed persona for a social media dashboard app. Use English for all fields. Only return a valid JSON object, matching the structure exactly. Do not add or remove fields.
+
+For characterTraits, areasOfInterest, and other arrays, provide 3-5 realistic items.
+For emotionalTriggers, provide 3-5 specific situations or topics that would trigger emotional responses (positive or negative) for this persona.
+For communicationStyle.tone, wordChoice, and responsePatterns, provide descriptive text about how the persona communicates.
+For childhoodExperiences sections, provide 2-3 relevant experiences for each category:
+- personalDevelopment: experiences that shaped their personal growth
+- sexuality: experiences related to their understanding of relationships and identity
+- generalExperiences: significant life events from childhood
+- socialEnvironmentFriendships: experiences with friends and social situations
+- educationLearning: experiences in school or learning environments
+- familyRelationships: experiences with family members
+For communicationStyle.humor:
+- Set humorEnabled to true if the persona uses humor in communication
+- For humorTypes, provide 2-3 types like "witty", "sarcastic", "playful", "dry", "self-deprecating"
+- For humorIntensity, use "light", "moderate", or "high"
+- For humorExclusionTopics, list 2-3 topics they avoid joking about
+
+Structure:
+${structureJson}`;
 
   try {
     const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {

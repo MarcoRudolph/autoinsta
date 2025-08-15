@@ -26,7 +26,9 @@ const messages = {
       unsavedChangesDescription: "Changes to the current AI-Chatbot have not been saved. Do you still want to continue?",
       continue: "Continue",
       personaDeleted: "AI-Chatbot deleted successfully",
-      deleteConfirm: "Do you really want to delete",
+      deleteConfirm: "Delete",
+      deleteConfirmTitle: "Delete AI-Chatbot",
+      deleteConfirmMessage: "Do you really want to delete the AI-Chatbot '{name}'? This action cannot be undone.",
       deleteError: "Failed to delete AI-Chatbot",
       noUserLoggedIn: "No user logged in. Please log in.",
       invalidPersona: "Please select a valid AI-Chatbot.",
@@ -44,13 +46,16 @@ const messages = {
       commentSettings: "Comment Settings",
       autorespondingToDMs: "Autoresponding to DMs",
       autorespondingToComments: "Autoresponding to comments",
-      delayOfAnswers: "Delay of answers",
+      delayOfResponse: "Delay of response",
       from: "from",
       till: "till",
       selectPersona: "-- Select AI-Chatbot --",
       yourPersonas: "Your AI-Chatbots",
       activatePersona: "Activate AI-Chatbot",
       noPersonasYet: "no AI-Chatbots yet",
+      active: "Active",
+      inactive: "Inactive",
+      liveChatbot: "Live Chatbot",
       logout: "Logout",
       userProfile: "User Profile",
       craftPersona: "Create AI-Chatbot",
@@ -135,7 +140,9 @@ const messages = {
       unsavedChangesDescription: "Änderungen an dem aktuellen AI-Chatbot wurden nicht gespeichert. Möchtest du trotzdem fortfahren?",
       continue: "Fortfahren",
       personaDeleted: "AI-Chatbot erfolgreich gelöscht",
-      deleteConfirm: "Möchtest du wirklich löschen",
+      deleteConfirm: "Löschen",
+      deleteConfirmTitle: "AI-Chatbot löschen",
+      deleteConfirmMessage: "Möchtest du wirklich den AI-Chatbot '{name}' löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
       deleteError: "Fehler beim Löschen des AI-Chatbots",
       noUserLoggedIn: "Kein Benutzer angemeldet. Bitte einloggen.",
       invalidPersona: "Bitte wählen Sie einen gültigen AI-Chatbot aus.",
@@ -153,13 +160,16 @@ const messages = {
       commentSettings: "Kommentar-Einstellungen",
       autorespondingToDMs: "Automatische DM-Antworten",
       autorespondingToComments: "Automatische Kommentar-Antworten",
-      delayOfAnswers: "Antwortverzögerung",
+      delayOfResponse: "Antwortverzögerung",
       from: "von",
       till: "bis",
       selectPersona: "-- AI-Chatbot auswählen --",
       yourPersonas: "Deine AI-Chatbots",
       activatePersona: "AI-Chatbot aktivieren",
       noPersonasYet: "noch keine AI-Chatbots",
+      active: "Aktiv",
+      inactive: "Inaktiv",
+      liveChatbot: "Live Chatbot",
       logout: "Abmelden",
       userProfile: "Benutzerprofil",
       craftPersona: "AI-Chatbot erstellen",
@@ -244,7 +254,7 @@ export function useI18n(locale: string = 'en') {
         }, value);
       }
       
-      return value || key;
+      return typeof value === 'string' ? value : key;
     };
 
     const tCommon = (key: string) => {

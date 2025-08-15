@@ -5,7 +5,7 @@ import { ReactNode } from 'react';
 
 interface LocaleProviderProps {
   locale: string;
-  messages: any;
+  messages: Record<string, unknown>;
   children: ReactNode;
 }
 

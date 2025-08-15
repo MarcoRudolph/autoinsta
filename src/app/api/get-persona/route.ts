@@ -15,7 +15,14 @@ export async function GET(req: NextRequest) {
     if (!result.length) {
       return NextResponse.json({ error: 'Persona not found' }, { status: 404 });
     }
-    return NextResponse.json({ persona: result[0].data });
+    console.log('Raw persona data from DB:', JSON.stringify(result[0].data, null, 2));
+    
+    // Handle double-wrapped data structure: the actual persona data is in result[0].data.data
+    const personaData = result[0].data;
+    const actualPersona = personaData?.data || personaData;
+    
+    console.log('Extracted persona data:', JSON.stringify(actualPersona, null, 2));
+    return NextResponse.json({ persona: actualPersona });
   } catch (error) {
     return NextResponse.json({ error: 'Database error', details: String(error) }, { status: 500 });
   }

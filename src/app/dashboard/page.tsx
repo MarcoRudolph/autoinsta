@@ -37,6 +37,8 @@ type Personality = {
       humorExclusionTopics: string[];
     };
   };
+  delayMin?: number;
+  delayMax?: number;
   userId?: string;
 };
 
@@ -83,7 +85,9 @@ function DashboardContent() {
         humorIntensity: '',
         humorExclusionTopics: []
       }
-    }
+    },
+    delayMin: 5,
+    delayMax: 10
   });
   
   // Product links state - now part of persona data
@@ -96,12 +100,12 @@ function DashboardContent() {
   
   const [dmSettings, setDmSettings] = useState({
     active: false,
-    duration: { from: '', until: '' },
+    duration: { from: '09:00', until: '22:00' },
     productLinks: [] as string[],
   });
   const [commentSettings, setCommentSettings] = useState({
     active: false,
-    duration: { from: '', until: '' },
+    duration: { from: '09:00', until: '22:00' },
     productLinks: [] as string[],
   });
   const [instagramConnected, setInstagramConnected] = useState(false);
@@ -114,6 +118,9 @@ function DashboardContent() {
   // AI Template daily limit state
   const [aiTemplateCount, setAiTemplateCount] = useState(0);
   const [lastAiTemplateDate, setLastAiTemplateDate] = useState<string>('');
+  
+  // Subscription state
+  const [isProUser, setIsProUser] = useState(false);
   // Unsaved changes dialog hooks
   const [lastLoadedPersona, setLastLoadedPersona] = useState<typeof personality>(personality);
   const [pendingPersonaId, setPendingPersonaId] = useState<string | null>(null);
@@ -139,6 +146,10 @@ function DashboardContent() {
     placeholder: string;
     onSave: (oldValue: string, newValue: string) => void;
   } | null>(null);
+
+  // Delete confirmation dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [personaToDelete, setPersonaToDelete] = useState<{id: string, name: string} | null>(null);
 
   // Helper function to check if a persona is empty (has no meaningful content)
   const isPersonaEmpty = (persona: typeof personality): boolean => {
@@ -176,7 +187,37 @@ function DashboardContent() {
 
 
 
+  // Check user subscription status
+  const checkUserSubscription = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (error || !data.session?.user?.id) {
+        setIsProUser(false);
+        return;
+      }
+      
+      const userId = data.session.user.id;
+      console.log('Checking subscription for user:', userId);
+      
+      // Fetch user subscription from API
+      const response = await fetch(`/api/subscription?userId=${userId}`);
+      if (response.ok) {
+        const subscriptionData = await response.json();
+        console.log('Subscription data:', subscriptionData);
+        setIsProUser(subscriptionData.isPro || false);
+      } else {
+        console.error('Failed to fetch subscription data');
+        setIsProUser(false);
+      }
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+      setIsProUser(false);
+    }
+  }, []);
+
   const handleActivatePersona = async (id: string) => {
+    console.log('handleActivatePersona called with id:', id);
+    
     // Get userId from session
     const { data, error } = await supabase.auth.getSession();
     if (error || !data.session?.user?.id) {
@@ -184,15 +225,27 @@ function DashboardContent() {
       return;
     }
     const userId = data.session.user.id;
+    console.log('User ID:', userId);
+    
     try {
+      console.log('Sending request to set active persona...');
       const res = await fetch('/api/set-active-persona', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ personaId: id, userId }),
       });
+      
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      
       const result = await res.json();
       console.log('Set active persona result:', result);
+      
+      console.log('Fetching updated personas...');
       await fetchPersonas();
+      console.log('Personas updated');
+      
     } catch (err) {
       console.error('Error setting active persona:', err);
       alert('Fehler beim Aktivieren der Persona.');
@@ -202,19 +255,25 @@ function DashboardContent() {
   // Fetch personas from API
   const fetchPersonas = useCallback(async () => {
     try {
+      console.log('Fetching personas...');
       const res = await fetch('/api/list-personas');
       if (res.ok) {
         const data = await res.json();
+        console.log('Raw personas data:', data);
+        console.log('Raw personas data.personas:', data.personas);
+        console.log('Raw personas data.personas details:', JSON.stringify(data.personas, null, 2));
+        
         // Filter out any null or invalid personas
         const validPersonas = (data.personas || []).filter((persona: {id: string, name: string, active?: boolean}) => 
           persona && persona.id && persona.name && persona.id !== null && persona.name !== null
         );
+        console.log('Valid personas:', validPersonas);
+        console.log('Valid personas names:', validPersonas.map((p: {id: string, name: string, active?: boolean}) => ({ id: p.id, name: p.name })));
+        console.log('Valid personas full details:', JSON.stringify(validPersonas, null, 2));
         setPersonas(validPersonas);
         
-        // Only set selected persona if we have valid personas
-        if (validPersonas.length === 1) {
-          setSelectedPersonaId(validPersonas[0].id);
-        } else if (validPersonas.length === 0) {
+        // Only clear selected persona if we have no personas
+        if (validPersonas.length === 0) {
           setSelectedPersonaId('');
           setCurrentPersonaId(null);
         }
@@ -237,11 +296,17 @@ function DashboardContent() {
     fetchPersonas();
   }, [fetchPersonas]);
 
+  // Check subscription status on component mount
+  useEffect(() => {
+    checkUserSubscription();
+  }, [checkUserSubscription]);
+
   // Check if user can generate AI template
   const canGenerateAITemplate = useCallback(() => {
     const today = new Date().toDateString();
-    return lastAiTemplateDate === today && aiTemplateCount < 2;
-  }, [lastAiTemplateDate, aiTemplateCount]);
+    const dailyLimit = isProUser ? 10 : 2; // Pro users get 10, free users get 2
+    return lastAiTemplateDate === today && aiTemplateCount < dailyLimit;
+  }, [lastAiTemplateDate, aiTemplateCount, isProUser]);
 
   const handleGetAITemplate = useCallback(async () => {
     // Check daily limit first
@@ -259,7 +324,61 @@ function DashboardContent() {
       const data = await res.json();
       console.log('Parsed JSON from /api/generate-persona:', data);
       if (data && data.persona) {
-        setPersonality(data.persona);
+        console.log('Mapping AI persona to dashboard structure...');
+        
+        // AI API now returns the exact same structure that gets saved
+        const aiPersona = data.persona;
+        console.log('AI Persona structure:', aiPersona);
+        
+        // The AI response is already in the correct Personality format
+        // Just ensure all required fields are present with defaults
+        const mappedPersonality = {
+          name: aiPersona?.name || '',
+          description: aiPersona?.description || '',
+          childhoodExperiences: aiPersona?.childhoodExperiences || {
+            personalDevelopment: [],
+            sexuality: [],
+            generalExperiences: [],
+            socialEnvironmentFriendships: [],
+            educationLearning: [],
+            familyRelationships: []
+          },
+          emotionalTriggers: aiPersona?.emotionalTriggers || [],
+          characterTraits: aiPersona?.characterTraits || [],
+          positiveTraits: aiPersona?.positiveTraits || {
+            socialCommunicative: [],
+            professionalCognitive: [],
+            personalIntrinsic: []
+          },
+          negativeTraits: aiPersona?.negativeTraits || [],
+          areasOfInterest: aiPersona?.areasOfInterest || [],
+          communicationStyle: {
+            tone: aiPersona?.communicationStyle?.tone || '',
+            wordChoice: aiPersona?.communicationStyle?.wordChoice || '',
+            responsePatterns: aiPersona?.communicationStyle?.responsePatterns || '',
+            humor: aiPersona?.communicationStyle?.humor || {
+              humorEnabled: false,
+              humorTypes: [],
+              humorIntensity: '',
+              humorExclusionTopics: []
+            }
+          },
+          delayMin: aiPersona?.delayMin || 5,
+          delayMax: aiPersona?.delayMax || 10
+        };
+        
+        console.log('Mapped personality:', mappedPersonality);
+        console.log('Character Traits from AI:', mappedPersonality.characterTraits);
+        console.log('Areas of Interest from AI:', mappedPersonality.areasOfInterest);
+        console.log('Communication Style from AI:', mappedPersonality.communicationStyle);
+        console.log('Humor from AI:', aiPersona?.communicationStyle?.humor);
+        console.log('Mapped Humor:', mappedPersonality.communicationStyle.humor);
+        console.log('Childhood Experiences from AI:', aiPersona?.childhoodExperiences);
+        console.log('Mapped Childhood Experiences:', mappedPersonality.childhoodExperiences);
+        console.log('Emotional Triggers from AI:', aiPersona?.emotionalTriggers);
+        console.log('Mapped Emotional Triggers:', mappedPersonality.emotionalTriggers);
+        
+        setPersonality(mappedPersonality);
         console.log('Persona state updated with AI template.');
         
         // Update daily limit counter
@@ -285,9 +404,75 @@ function DashboardContent() {
       const data = await res.json();
       // Accept both {personality: {...}} and flat persona
       if (data.personality) {
-        setPersonality(data.personality);
+        setPersonality({
+          name: data.personality?.name || '',
+          description: data.personality?.description || '',
+          childhoodExperiences: data.personality?.childhoodExperiences || {
+            personalDevelopment: [],
+            sexuality: [],
+            generalExperiences: [],
+            socialEnvironmentFriendships: [],
+            educationLearning: [],
+            familyRelationships: []
+          },
+          emotionalTriggers: data.personality?.emotionalTriggers || [],
+          characterTraits: data.personality?.characterTraits || [],
+          positiveTraits: data.personality?.positiveTraits || {
+            socialCommunicative: [],
+            professionalCognitive: [],
+            personalIntrinsic: []
+          },
+          negativeTraits: data.personality?.negativeTraits || [],
+          areasOfInterest: data.personality?.areasOfInterest || [],
+          communicationStyle: {
+            tone: data.personality?.communicationStyle?.tone || '',
+            wordChoice: data.personality?.communicationStyle?.wordChoice || '',
+            responsePatterns: data.personality?.communicationStyle?.responsePatterns || '',
+            humor: {
+              humorEnabled: data.personality?.communicationStyle?.humor?.humorEnabled || false,
+              humorTypes: data.personality?.communicationStyle?.humor?.humorTypes || [],
+              humorIntensity: data.personality?.communicationStyle?.humor?.humorIntensity || '',
+              humorExclusionTopics: data.personality?.communicationStyle?.humor?.humorExclusionTopics || []
+            }
+          },
+          delayMin: data.personality?.delayMin || 5,
+          delayMax: data.personality?.delayMax || 10
+        });
       } else {
-        setPersonality(data);
+        setPersonality({
+          name: data?.name || '',
+          description: data?.description || '',
+          childhoodExperiences: data?.childhoodExperiences || {
+            personalDevelopment: [],
+            sexuality: [],
+            generalExperiences: [],
+            socialEnvironmentFriendships: [],
+            educationLearning: [],
+            familyRelationships: []
+          },
+          emotionalTriggers: data?.emotionalTriggers || [],
+          characterTraits: data?.characterTraits || [],
+          positiveTraits: data?.positiveTraits || {
+            socialCommunicative: [],
+            professionalCognitive: [],
+            personalIntrinsic: []
+          },
+          negativeTraits: data?.negativeTraits || [],
+          areasOfInterest: data?.areasOfInterest || [],
+          communicationStyle: {
+            tone: data?.communicationStyle?.tone || '',
+            wordChoice: data?.communicationStyle?.wordChoice || '',
+            responsePatterns: data?.communicationStyle?.responsePatterns || '',
+            humor: {
+              humorEnabled: data?.communicationStyle?.humor?.humorEnabled || false,
+              humorTypes: data?.communicationStyle?.humor?.humorTypes || [],
+              humorIntensity: data?.communicationStyle?.humor?.humorIntensity || '',
+              humorExclusionTopics: data?.communicationStyle?.humor?.humorExclusionTopics || []
+            }
+          },
+          delayMin: data?.delayMin || 5,
+          delayMax: data?.delayMax || 10
+        });
       }
       console.log('Persona state filled from template.json');
     } catch (err) {
@@ -362,8 +547,9 @@ function DashboardContent() {
   // Get remaining attempts for today
   const getRemainingAttempts = () => {
     const today = new Date().toDateString();
-    if (lastAiTemplateDate !== today) return 2;
-    return Math.max(0, 2 - aiTemplateCount);
+    const dailyLimit = isProUser ? 10 : 2;
+    if (lastAiTemplateDate !== today) return dailyLimit;
+    return Math.max(0, dailyLimit - aiTemplateCount);
   };
 
   useEffect(() => {
@@ -406,6 +592,9 @@ function DashboardContent() {
         personality: { ...personality, userId },
         productLinks: productLinks
       };
+      console.log('Saving persona data:', JSON.stringify(personaData, null, 2));
+      console.log('Personality name being saved:', personality.name);
+      console.log('Full personality object being saved:', JSON.stringify(personality, null, 2));
       
       if (currentPersonaId) {
         // Edit existing persona
@@ -418,7 +607,7 @@ function DashboardContent() {
         const responseJson = await res.json();
         console.log('Edit persona response:', responseJson);
         if (!res.ok) throw new Error('Failed to edit persona');
-        setSaveMessage(t('dashboard.personaUpdated'));
+        setSaveMessage(String(t('dashboard.personaUpdated') || 'AI-Chatbot updated!'));
       } else {
         // Create new persona
         const personaData: PersonaData = {
@@ -426,6 +615,7 @@ function DashboardContent() {
           productLinks: productLinks
         };
         console.log('Saving persona:', personaData);
+        console.log('Name in personaData.personality.name:', personaData.personality.name);
         const res = await fetch('/api/save-persona', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -434,12 +624,20 @@ function DashboardContent() {
         const responseJson = await res.json();
         console.log('Save persona response:', responseJson);
         if (!res.ok) throw new Error('Failed to save persona');
-        setSaveMessage(t('dashboard.personaSaved'));
+        setSaveMessage(String(t('dashboard.personaSaved') || 'AI-Chatbot saved!'));
       }
+      
+      // Store current selection before fetching personas
+      const currentSelection = selectedPersonaId;
       await fetchPersonas();
+      
+      // Restore the selection after fetching
+      if (currentSelection) {
+        setSelectedPersonaId(currentSelection);
+      }
     } catch (err) {
       console.error('Error saving persona:', err);
-      alert(t('dashboard.saveError'));
+      alert('dashboard.saveError');
       // Do not set a green message on error
     } finally {
       setSaving(false);
@@ -474,8 +672,8 @@ function DashboardContent() {
       return;
     }
     
-    setSelectedPersonaId(id);
-    setCurrentPersonaId(id);
+    setSelectedPersonaId(String(id));
+    setCurrentPersonaId(String(id));
     // Only show unsaved changes dialog if current persona has meaningful content
     if (!isEqual(personality, lastLoadedPersona) && !isPersonaEmpty(personality)) {
       setPendingPersonaId(id);
@@ -507,8 +705,8 @@ function DashboardContent() {
             setLastLoadedPersona(data.persona as unknown as Personality);
           }
           
-          setSelectedPersonaId(id);
-          setCurrentPersonaId(id);
+          setSelectedPersonaId(String(id));
+          setCurrentPersonaId(String(id));
         } else {
           console.warn('No valid persona data received:', data);
           alert(t('dashboard.noValidPersonaData'));
@@ -523,25 +721,84 @@ function DashboardContent() {
     }
   };
 
-  const handleDeletePersona = async () => {
-    if (!selectedPersonaId) return;
-    const persona = personas.find(p => p.id === selectedPersonaId);
-    if (!persona) return;
-    const confirmed = window.confirm(`${t('dashboard.deleteConfirm')} '${persona.name}'?`);
-    if (!confirmed) return;
+  const handleDeletePersona = () => {
+    console.log('Delete button clicked!');
+    console.log('selectedPersonaId:', selectedPersonaId, 'type:', typeof selectedPersonaId);
+    console.log('personas:', personas);
+    console.log('Persona IDs:', personas.map(p => ({ id: p.id, type: typeof p.id, name: p.name })));
+    console.log('Full personas array:', JSON.stringify(personas, null, 2));
+    
+    if (!selectedPersonaId) {
+      console.log('No selectedPersonaId, returning');
+      return;
+    }
+    
+    const persona = personas.find(p => {
+      const match1 = p.id === selectedPersonaId;
+      const match2 = p.id === String(selectedPersonaId);
+      const match3 = String(p.id) === selectedPersonaId;
+      console.log(`Comparing persona ${p.id} (${typeof p.id}) with selectedPersonaId ${selectedPersonaId} (${typeof selectedPersonaId}): match1=${match1}, match2=${match2}, match3=${match3}`);
+      return match1 || match2 || match3;
+    });
+    console.log('Found persona:', persona);
+    
+    if (!persona) {
+      console.log('No persona found, returning');
+      return;
+    }
+    
+    console.log('Setting persona to delete:', { id: selectedPersonaId, name: persona.name });
+    console.log('Opening delete dialog');
+    
+    // Set the persona to delete and open the confirmation dialog
+    setPersonaToDelete({ id: selectedPersonaId, name: persona.name });
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeletePersona = async () => {
+    console.log('confirmDeletePersona called');
+    console.log('personaToDelete:', personaToDelete);
+    
+    if (!personaToDelete) {
+      console.log('No personaToDelete, returning');
+      return;
+    }
+    
     try {
+      console.log('Making delete API call to /api/delete-persona');
+      console.log('Request body:', { id: personaToDelete.id });
+      
       const res = await fetch(`/api/delete-persona`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: selectedPersonaId }),
+        body: JSON.stringify({ id: personaToDelete.id }),
       });
-      if (!res.ok) throw new Error('Failed to delete persona');
+      
+      console.log('Delete API response status:', res.status);
+      console.log('Delete API response ok:', res.ok);
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('Delete API error response:', errorText);
+        throw new Error(`Failed to delete persona: ${res.status} ${errorText}`);
+      }
+      
+      // Refresh the personas list
       await fetchPersonas();
-      if (selectedPersonaId === currentPersonaId) {
+      
+      // If the deleted persona was the current one, reset the form
+      if (personaToDelete.id === currentPersonaId) {
         setPersonality({
           name: '',
           description: '',
-          childhoodExperiences: {},
+          childhoodExperiences: {
+            personalDevelopment: [],
+            sexuality: [],
+            generalExperiences: [],
+            socialEnvironmentFriendships: [],
+            educationLearning: [],
+            familyRelationships: []
+          },
           emotionalTriggers: [],
           characterTraits: [],
           positiveTraits: {
@@ -562,13 +819,23 @@ function DashboardContent() {
               humorExclusionTopics: [],
             },
           },
+          delayMin: 5,
+          delayMax: 10
         });
         setProductLinks([]);
         setCurrentPersonaId(null);
         setSelectedPersonaId('');
       }
-    } catch {
+      
+      // Close the dialog and reset the persona to delete
+      setDeleteDialogOpen(false);
+      setPersonaToDelete(null);
+      
+    } catch (error) {
+      console.error('Delete error:', error);
       alert(t('dashboard.deleteError'));
+      setDeleteDialogOpen(false);
+      setPersonaToDelete(null);
     }
   };
 
@@ -618,7 +885,7 @@ function DashboardContent() {
               {/* User Info */}
               <div className="px-4 py-3 border-b border-gray-100">
                 <p className="text-sm font-medium text-gray-900 truncate">{userEmail}</p>
-                <p className="text-xs text-gray-500">{t('dashboard.userType')}</p>
+                <p className="text-xs text-gray-500">{String(t('dashboard.userType') || 'rudolpho-chat User')}</p>
               </div>
               
               {/* Menu Items */}
@@ -659,8 +926,8 @@ function DashboardContent() {
             </div>
           )}
         </div>
-        <h1 className="text-4xl font-extrabold tracking-wide">{t('dashboard.title')}</h1>
-        <p className="text-sm mt-2 opacity-80">{t('dashboard.automateInstagram')}</p>
+        <h1 className="text-4xl font-extrabold tracking-wide">{String(t('dashboard.title') || 'Dashboard')}</h1>
+        <p className="text-sm mt-2 opacity-80">{String(t('dashboard.automateInstagram') || 'Automate your Instagram interactions')}</p>
         <button
           onClick={handleInstagramLogin}
           className={`mt-4 border font-semibold py-2 px-4 rounded-lg transition shadow-none ${instagramConnected ? 'bg-green-600 border-green-600 text-white' : 'bg-transparent text-white border-white hover:bg-white hover:text-indigo-700'}`}
@@ -716,75 +983,121 @@ function DashboardContent() {
                         humorIntensity: '',
                         humorExclusionTopics: []
                       }
-                    }
+                    },
+                    delayMin: 5,
+                    delayMax: 10
                   });
-                  setProductLinks([]);
                   setCurrentPersonaId(null);
                   setSelectedPersonaId('');
+                  setProductLinks([]);
                 }}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                className="border border-white text-white font-semibold py-2 px-4 rounded-lg hover:bg-white hover:text-indigo-700 transition shadow-none bg-transparent"
               >
                 {t('dashboard.newPersona')}
               </button>
             )}
           </div>
           
-          {/* Basic Info */}
-          <div className="mb-6">
-            <input
-              type="text"
-              placeholder={t('dashboard.personality.placeholder.name')}
-              className="w-full p-2 border rounded mb-2 text-blue-900 bg-blue-50"
-              value={personality.name}
-              onChange={e => setPersonality(prev => ({ ...prev, name: e.target.value }))}
-            />
-            <textarea
-              placeholder={t('dashboard.personality.placeholder.description')}
-              className="w-full p-2 border rounded h-20 text-blue-900 bg-blue-50"
-              value={personality.description}
-              onChange={e => setPersonality(prev => ({ ...prev, description: e.target.value }))}
-            />
-          </div>
+          {/* Scrollable form container */}
+          <div className="max-h-[70vh] overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin', scrollbarColor: '#4a5568 #2d3748' }}>
+            <div className="space-y-6">
+              {/* Basic Info */}
+              <div className="mb-6">
+                <input
+                  type="text"
+                  placeholder={t('dashboard.personality.placeholder.name')}
+                  className="w-full p-2 border rounded mb-2 text-blue-900 bg-blue-50"
+                  value={personality.name || ''}
+                  onChange={e => setPersonality(prev => ({ ...prev, name: e.target.value }))}
+                />
+                <textarea
+                  placeholder={t('dashboard.personality.placeholder.description')}
+                  className="w-full p-2 border rounded h-20 text-blue-900 bg-blue-50"
+                  value={personality.description || ''}
+                  onChange={e => setPersonality(prev => ({ ...prev, description: e.target.value }))}
+                />
+              </div>
 
-          {/* Childhood Experiences */}
-          {Object.keys(personality.childhoodExperiences).map((section: string) => {
-            const isPersonalDev = section === 'personalDevelopment';
-            
-            const addItem = (newItem: string) => {
-              if (newItem && newItem.trim()) {
-                setPersonality(prev => ({
-                  ...prev,
-                  childhoodExperiences: {
-                    ...prev.childhoodExperiences,
-                    [section]: [...(prev.childhoodExperiences[section as keyof typeof prev.childhoodExperiences] || []), newItem.trim()]
+              {/* Childhood Experiences */}
+              {Object.keys(personality.childhoodExperiences || {}).map((section: string) => {
+                
+                const addItem = (newItem: string) => {
+                  if (newItem && newItem.trim()) {
+                    setPersonality(prev => ({
+                      ...prev,
+                      childhoodExperiences: {
+                        ...prev.childhoodExperiences,
+                        [section]: [...(prev.childhoodExperiences[section as keyof typeof prev.childhoodExperiences] || []), newItem.trim()]
+                      }
+                    }));
                   }
-                }));
-              }
-            };
+                };
 
-            const removeItem = (index: number) => {
-              setPersonality(prev => ({
-                ...prev,
-                childhoodExperiences: {
-                  ...prev.childhoodExperiences,
-                  [section]: (prev.childhoodExperiences[section as keyof typeof prev.childhoodExperiences] || []).filter((_, idx) => idx !== index)
-                }
-              }));
-            };
+                const removeItem = (index: number) => {
+                  setPersonality(prev => ({
+                    ...prev,
+                    childhoodExperiences: {
+                      ...prev.childhoodExperiences,
+                      [section]: (prev.childhoodExperiences[section as keyof typeof prev.childhoodExperiences] || []).filter((_, idx) => idx !== index)
+                    }
+                  }));
+                };
 
-            return (
-              <div key={section} className="mb-6">
+                return (
+                  <div key={section} className="mb-6">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="font-medium capitalize">
+                        {t(`dashboard.personality.${section}`)}
+                      </h3>
+                      <button
+                        onClick={() => {
+                          const sectionTitle = t(`dashboard.personality.${section}`);
+                          openAddModal(
+                            sectionTitle,
+                            t('dashboard.personality.addNew'),
+                            addItem
+                          );
+                        }}
+                        className="text-blue-500 hover:text-blue-700 text-lg font-bold w-6 h-6 flex items-center justify-center rounded-full hover:bg-blue-100 transition-colors"
+                      >
+                        +
+                      </button>
+                    </div>
+                    
+                    <ul className="mt-2 space-y-2">
+                      {(personality.childhoodExperiences[section as keyof typeof personality.childhoodExperiences] || []).map((item, idx) => (
+                        <li key={idx} className="bg-blue-100 text-blue-900 px-4 py-2 rounded shadow-sm flex items-center justify-between">
+                          <span>{item}</span>
+                          <button
+                            onClick={() => removeItem(idx)}
+                            className="text-red-500 hover:text-red-700 text-sm ml-2"
+                          >
+                            ×
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
+
+              {/* Character Traits */}
+              <div className="mb-6">
                 <div className="flex items-center gap-2 mb-2">
-                  <h3 className="font-medium capitalize">
-                    {t(`dashboard.personality.${section}`)}
-                  </h3>
+                  <h3 className="font-medium">Character Traits</h3>
                   <button
                     onClick={() => {
-                      const sectionTitle = t(`dashboard.personality.${section}`);
                       openAddModal(
-                        sectionTitle,
-                        t('dashboard.personality.addNew'),
-                        addItem
+                        'Character Traits',
+                        'Neuen Charakterzug hinzufügen',
+                        (newTrait: string) => {
+                          if (newTrait && newTrait.trim()) {
+                            setPersonality(prev => ({
+                              ...prev,
+                              characterTraits: [...prev.characterTraits, newTrait.trim()]
+                            }));
+                          }
+                        }
                       );
                     }}
                     className="text-blue-500 hover:text-blue-700 text-lg font-bold w-6 h-6 flex items-center justify-center rounded-full hover:bg-blue-100 transition-colors"
@@ -792,113 +1105,208 @@ function DashboardContent() {
                     +
                   </button>
                 </div>
-                
-                <ul className="mt-2 space-y-2">
-                  {(personality.childhoodExperiences[section as keyof typeof personality.childhoodExperiences] || []).map((item, idx) => (
-                    <li key={idx} className="bg-blue-100 text-blue-900 px-4 py-2 rounded shadow-sm flex items-center justify-between">
-                      <span>{item}</span>
+                <div className="flex flex-wrap gap-2">
+                  {(personality.characterTraits || []).map((trait: string, index: number) => (
+                    <span
+                      key={index}
+                      className="bg-gray-100 text-blue-900 px-3 py-1 rounded-full flex items-center"
+                    >
+                      {trait}
                       <button
-                        onClick={() => removeItem(idx)}
-                        className="text-red-500 hover:text-red-700 text-sm ml-2"
+                        className="ml-2 text-red-500 text-sm"
+                        onClick={() => {
+                          setPersonality(prev => ({
+                            ...prev,
+                            characterTraits: prev.characterTraits.filter((_, idx) => idx !== index)
+                          }));
+                        }}
                       >
                         ×
                       </button>
-                    </li>
+                    </span>
                   ))}
-                </ul>
+                </div>
               </div>
-            );
-          })}
 
-          {/* Character Traits */}
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-2">
-              <h3 className="font-medium">Character Traits</h3>
-              <button
-                onClick={() => {
-                  openAddModal(
-                    'Character Traits',
-                    'Neuen Charakterzug hinzufügen',
-                    (newTrait: string) => {
+              {/* Positive Traits */}
+              <div className="mb-6">
+                <h3 className="font-medium mb-2">Positive Traits</h3>
+                <div className="space-y-3">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className="text-sm font-medium text-gray-500">Personal & Intrinsic</h4>
+                      <button
+                        onClick={() => {
+                          openAddModal(
+                            'Personal & Intrinsic',
+                            'Neuen persönlichen & intrinsischen Zug hinzufügen',
+                            (newTrait: string) => {
+                              if (newTrait && newTrait.trim()) {
+                                setPersonality(prev => ({
+                                  ...prev,
+                                  positiveTraits: {
+                                    ...prev.positiveTraits,
+                                    personalIntrinsic: [...prev.positiveTraits.personalIntrinsic, newTrait.trim()]
+                                  }
+                                }));
+                              }
+                            }
+                          );
+                        }}
+                        className="text-green-500 hover:text-green-700 text-sm font-bold w-5 h-5 flex items-center justify-center rounded-full hover:bg-green-100 transition-colors"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {(personality.positiveTraits?.personalIntrinsic || []).map((trait: string, index: number) => (
+                        <span key={index} className="bg-green-100 text-green-900 px-3 py-1 rounded-full text-sm flex items-center">
+                          {trait}
+                          <button
+                            onClick={() => {
+                              setPersonality(prev => ({
+                                ...prev,
+                                positiveTraits: {
+                                  ...prev.positiveTraits,
+                                  personalIntrinsic: prev.positiveTraits.personalIntrinsic.filter((_, idx) => idx !== index)
+                                }
+                              }));
+                            }}
+                            className="ml-2 text-red-500 hover:text-red-700 text-xs"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className="text-sm font-medium text-gray-500">Social & Communicative</h4>
+                      <button
+                        onClick={() => {
+                          openAddModal(
+                            'Social & Communicative',
+                            'Neuen sozialen & kommunikativen Zug hinzufügen',
+                            (newTrait: string) => {
+                              if (newTrait && newTrait.trim()) {
+                                setPersonality(prev => ({
+                                  ...prev,
+                                  positiveTraits: {
+                                    ...prev.positiveTraits,
+                                    socialCommunicative: [...prev.positiveTraits.socialCommunicative, newTrait.trim()]
+                                  }
+                                }));
+                              }
+                            }
+                          );
+                        }}
+                        className="text-blue-500 hover:text-blue-700 text-sm font-bold w-5 h-5 flex items-center justify-center rounded-full hover:bg-blue-100 transition-colors"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {(personality.positiveTraits?.socialCommunicative || []).map((trait: string, index: number) => (
+                        <span key={index} className="bg-blue-100 text-blue-900 px-3 py-1 rounded-full text-sm flex items-center">
+                          {trait}
+                          <button
+                            onClick={() => {
+                              setPersonality(prev => ({
+                                ...prev,
+                                positiveTraits: {
+                                  ...prev.positiveTraits,
+                                  socialCommunicative: prev.positiveTraits.socialCommunicative.filter((_, idx) => idx !== index)
+                                }
+                              }));
+                            }}
+                            className="ml-2 text-red-500 hover:text-red-700 text-xs"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className="text-sm font-medium text-gray-500">{t('dashboard.personality.professionalCognitive')}</h4>
+                      <button
+                        onClick={() => {
+                          openAddModal(
+                            t('dashboard.personality.professionalCognitive'),
+                            t('dashboard.personality.addNewTrait'),
+                            (newTrait: string) => {
+                              if (newTrait && newTrait.trim()) {
+                                setPersonality(prev => ({
+                                  ...prev,
+                                  positiveTraits: {
+                                    ...prev.positiveTraits,
+                                    professionalCognitive: [...prev.positiveTraits.professionalCognitive, newTrait.trim()]
+                                  }
+                                }));
+                              }
+                            }
+                          );
+                        }}
+                        className="text-purple-500 hover:text-purple-700 text-sm font-bold w-5 h-5 flex items-center justify-center rounded-full hover:bg-purple-100 transition-colors"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {(personality.positiveTraits?.professionalCognitive || []).map((trait: string, index: number) => (
+                        <span key={index} className="bg-purple-100 text-purple-900 px-3 py-1 rounded-full text-sm flex items-center">
+                          {trait}
+                          <button
+                            onClick={() => {
+                              setPersonality(prev => ({
+                                ...prev,
+                                positiveTraits: {
+                                  ...prev.positiveTraits,
+                                  professionalCognitive: prev.positiveTraits.professionalCognitive.filter((_, idx) => idx !== index)
+                                }
+                              }));
+                            }}
+                            className="ml-2 text-red-500 hover:text-red-700 text-xs"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Negative Traits */}
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="font-medium">{t('dashboard.personality.negativeTraits')}</h3>
+                  <button
+                    onClick={() => {
+                      const newTrait = prompt(t('dashboard.personality.addNewTrait'));
                       if (newTrait && newTrait.trim()) {
                         setPersonality(prev => ({
                           ...prev,
-                          characterTraits: [...prev.characterTraits, newTrait.trim()]
+                          negativeTraits: [...prev.negativeTraits, newTrait.trim()]
                         }));
                       }
-                    }
-                  );
-                }}
-                className="text-blue-500 hover:text-blue-700 text-lg font-bold w-6 h-6 flex items-center justify-center rounded-full hover:bg-blue-100 transition-colors"
-              >
-                +
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {personality.characterTraits.map((trait: string, index: number) => (
-                <span
-                  key={index}
-                  className="bg-gray-100 text-blue-900 px-3 py-1 rounded-full flex items-center"
-                >
-                  {trait}
-                  <button
-                    className="ml-2 text-red-500 text-sm"
-                    onClick={() => {
-                      setPersonality(prev => ({
-                        ...prev,
-                        characterTraits: prev.characterTraits.filter((_, idx) => idx !== index)
-                      }));
                     }}
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Positive Traits */}
-          <div className="mb-6">
-            <h3 className="font-medium mb-2">Positive Traits</h3>
-            <div className="space-y-3">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <h4 className="text-sm font-medium text-gray-500">Personal & Intrinsic</h4>
-                  <button
-                    onClick={() => {
-                      openAddModal(
-                        'Personal & Intrinsic',
-                        'Neuen persönlichen & intrinsischen Zug hinzufügen',
-                        (newTrait: string) => {
-                          if (newTrait && newTrait.trim()) {
-                            setPersonality(prev => ({
-                              ...prev,
-                              positiveTraits: {
-                                ...prev.positiveTraits,
-                                personalIntrinsic: [...prev.positiveTraits.personalIntrinsic, newTrait.trim()]
-                              }
-                            }));
-                          }
-                        }
-                      );
-                    }}
-                    className="text-green-500 hover:text-green-700 text-sm font-bold w-5 h-5 flex items-center justify-center rounded-full hover:bg-green-100 transition-colors"
+                    className="text-red-500 hover:text-red-700 text-lg font-bold w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-100 transition-colors"
                   >
                     +
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {personality.positiveTraits.personalIntrinsic.map((trait: string, index: number) => (
-                    <span key={index} className="bg-green-100 text-green-900 px-3 py-1 rounded-full text-sm flex items-center">
+                  {(personality.negativeTraits || []).map((trait: string, index: number) => (
+                    <span key={index} className="bg-red-100 text-red-900 px-3 py-1 rounded-full text-sm flex items-center">
                       {trait}
                       <button
                         onClick={() => {
                           setPersonality(prev => ({
                             ...prev,
-                            positiveTraits: {
-                              ...prev.positiveTraits,
-                              personalIntrinsic: prev.positiveTraits.personalIntrinsic.filter((_, idx) => idx !== index)
-                            }
+                            negativeTraits: prev.negativeTraits.filter((_, idx) => idx !== index)
                           }));
                         }}
                         className="ml-2 text-red-500 hover:text-red-700 text-xs"
@@ -909,44 +1317,35 @@ function DashboardContent() {
                   ))}
                 </div>
               </div>
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <h4 className="text-sm font-medium text-gray-500">Social & Communicative</h4>
+
+              {/* Areas of Interest */}
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="font-medium">{t('dashboard.personality.areasOfInterest')}</h3>
                   <button
                     onClick={() => {
-                      openAddModal(
-                        'Social & Communicative',
-                        'Neuen sozialen & kommunikativen Zug hinzufügen',
-                        (newTrait: string) => {
-                          if (newTrait && newTrait.trim()) {
-                            setPersonality(prev => ({
-                              ...prev,
-                              positiveTraits: {
-                                ...prev.positiveTraits,
-                                socialCommunicative: [...prev.positiveTraits.socialCommunicative, newTrait.trim()]
-                              }
-                            }));
-                          }
-                        }
-                      );
+                      const newInterest = prompt(t('dashboard.personality.addNewInterest'));
+                      if (newInterest && newInterest.trim()) {
+                        setPersonality(prev => ({
+                          ...prev,
+                          areasOfInterest: [...prev.areasOfInterest, newInterest.trim()]
+                        }));
+                      }
                     }}
-                    className="text-blue-500 hover:text-blue-700 text-sm font-bold w-5 h-5 flex items-center justify-center rounded-full hover:bg-blue-100 transition-colors"
+                    className="text-yellow-500 hover:text-yellow-700 text-lg font-bold w-6 h-6 flex items-center justify-center rounded-full hover:bg-yellow-100 transition-colors"
                   >
                     +
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {personality.positiveTraits.socialCommunicative.map((trait: string, index: number) => (
-                    <span key={index} className="bg-blue-100 text-blue-900 px-3 py-1 rounded-full text-sm flex items-center">
-                      {trait}
+                  {(personality.areasOfInterest || []).map((interest: string, index: number) => (
+                    <span key={index} className="bg-yellow-100 text-yellow-900 px-3 py-1 rounded-full text-sm flex items-center">
+                      {interest}
                       <button
                         onClick={() => {
                           setPersonality(prev => ({
                             ...prev,
-                            positiveTraits: {
-                              ...prev.positiveTraits,
-                              socialCommunicative: prev.positiveTraits.socialCommunicative.filter((_, idx) => idx !== index)
-                            }
+                            areasOfInterest: prev.areasOfInterest.filter((_, idx) => idx !== index)
                           }));
                         }}
                         className="ml-2 text-red-500 hover:text-red-700 text-xs"
@@ -957,44 +1356,35 @@ function DashboardContent() {
                   ))}
                 </div>
               </div>
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <h4 className="text-sm font-medium text-gray-500">{t('dashboard.personality.professionalCognitive')}</h4>
+
+              {/* Emotional Triggers */}
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="font-medium">{t('dashboard.personality.emotionalTriggers')}</h3>
                   <button
                     onClick={() => {
-                      openAddModal(
-                        t('dashboard.personality.professionalCognitive'),
-                        t('dashboard.personality.addNewTrait'),
-                        (newTrait: string) => {
-                          if (newTrait && newTrait.trim()) {
-                            setPersonality(prev => ({
-                              ...prev,
-                              positiveTraits: {
-                                ...prev.positiveTraits,
-                                professionalCognitive: [...prev.positiveTraits.professionalCognitive, newTrait.trim()]
-                              }
-                            }));
-                          }
-                        }
-                      );
+                      const newTrigger = prompt(t('dashboard.personality.addNewTrigger'));
+                      if (newTrigger && newTrigger.trim()) {
+                        setPersonality(prev => ({
+                          ...prev,
+                          emotionalTriggers: [...prev.emotionalTriggers, newTrigger.trim()]
+                        }));
+                      }
                     }}
-                    className="text-purple-500 hover:text-purple-700 text-sm font-bold w-5 h-5 flex items-center justify-center rounded-full hover:bg-purple-100 transition-colors"
+                    className="text-orange-500 hover:text-orange-700 text-lg font-bold w-6 h-6 flex items-center justify-center rounded-full hover:bg-orange-100 transition-colors"
                   >
                     +
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {personality.positiveTraits.professionalCognitive.map((trait: string, index: number) => (
-                    <span key={index} className="bg-purple-100 text-purple-900 px-3 py-1 rounded-full text-sm flex items-center">
-                      {trait}
+                  {(personality.emotionalTriggers || []).map((trigger: string, index: number) => (
+                    <span key={index} className="bg-orange-100 text-orange-900 px-3 py-1 rounded-full text-sm flex items-center">
+                      {trigger}
                       <button
                         onClick={() => {
                           setPersonality(prev => ({
                             ...prev,
-                            positiveTraits: {
-                              ...prev.positiveTraits,
-                              professionalCognitive: prev.positiveTraits.professionalCognitive.filter((_, idx) => idx !== index)
-                            }
+                            emotionalTriggers: prev.emotionalTriggers.filter((_, idx) => idx !== index)
                           }));
                         }}
                         className="ml-2 text-red-500 hover:text-red-700 text-xs"
@@ -1005,380 +1395,270 @@ function DashboardContent() {
                   ))}
                 </div>
               </div>
-            </div>
-          </div>
 
-          {/* Negative Traits */}
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-2">
-              <h3 className="font-medium">{t('dashboard.personality.negativeTraits')}</h3>
-              <button
-                onClick={() => {
-                  const newTrait = prompt(t('dashboard.personality.addNewTrait'));
-                  if (newTrait && newTrait.trim()) {
-                    setPersonality(prev => ({
-                      ...prev,
-                      negativeTraits: [...prev.negativeTraits, newTrait.trim()]
-                    }));
-                  }
-                }}
-                className="text-red-500 hover:text-red-700 text-lg font-bold w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-100 transition-colors"
-              >
-                +
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {personality.negativeTraits.map((trait: string, index: number) => (
-                <span key={index} className="bg-red-100 text-red-900 px-3 py-1 rounded-full text-sm flex items-center">
-                  {trait}
-                  <button
-                    onClick={() => {
-                      setPersonality(prev => ({
-                        ...prev,
-                        negativeTraits: prev.negativeTraits.filter((_, idx) => idx !== index)
-                      }));
-                    }}
-                    className="ml-2 text-red-500 hover:text-red-700 text-xs"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Areas of Interest */}
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-2">
-              <h3 className="font-medium">{t('dashboard.personality.areasOfInterest')}</h3>
-              <button
-                onClick={() => {
-                  const newInterest = prompt(t('dashboard.personality.addNewInterest'));
-                  if (newInterest && newInterest.trim()) {
-                    setPersonality(prev => ({
-                      ...prev,
-                      areasOfInterest: [...prev.areasOfInterest, newInterest.trim()]
-                    }));
-                  }
-                }}
-                className="text-yellow-500 hover:text-yellow-700 text-lg font-bold w-6 h-6 flex items-center justify-center rounded-full hover:bg-yellow-100 transition-colors"
-              >
-                +
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {personality.areasOfInterest.map((interest: string, index: number) => (
-                <span key={index} className="bg-yellow-100 text-yellow-900 px-3 py-1 rounded-full text-sm flex items-center">
-                  {interest}
-                  <button
-                    onClick={() => {
-                      setPersonality(prev => ({
-                        ...prev,
-                        areasOfInterest: prev.areasOfInterest.filter((_, idx) => idx !== index)
-                      }));
-                    }}
-                    className="ml-2 text-red-500 hover:text-red-700 text-xs"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Emotional Triggers */}
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-2">
-              <h3 className="font-medium">Emotional Triggers</h3>
-              <button
-                onClick={() => {
-                  const newTrigger = prompt(t('dashboard.personality.addNewTrigger'));
-                  if (newTrigger && newTrigger.trim()) {
-                    setPersonality(prev => ({
-                      ...prev,
-                      emotionalTriggers: [...prev.emotionalTriggers, newTrigger.trim()]
-                    }));
-                  }
-                }}
-                className="text-orange-500 hover:text-orange-700 text-lg font-bold w-6 h-6 flex items-center justify-center rounded-full hover:bg-orange-100 transition-colors"
-              >
-                +
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {personality.emotionalTriggers.map((trigger: string, index: number) => (
-                <span key={index} className="bg-orange-100 text-orange-900 px-3 py-1 rounded-full text-sm flex items-center">
-                  {trigger}
-                  <button
-                    onClick={() => {
-                      setPersonality(prev => ({
-                        ...prev,
-                        emotionalTriggers: prev.emotionalTriggers.filter((_, idx) => idx !== index)
-                      }));
-                    }}
-                    className="ml-2 text-red-500 hover:text-red-700 text-xs"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Communication Style */}
-          <div className="mb-6">
-            <h3 className="font-medium mb-2">Communication Style</h3>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Tone</label>
-                <input
-                  type="text"
-                  className="w-full p-2 border rounded text-blue-900 bg-blue-50"
-                  value={personality.communicationStyle.tone}
-                  onChange={e => setPersonality(prev => ({ 
-                    ...prev, 
-                    communicationStyle: { ...prev.communicationStyle, tone: e.target.value }
-                  }))}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Word Choice</label>
-                <input
-                  type="text"
-                  className="w-full p-2 border rounded text-blue-900 bg-blue-50"
-                  value={personality.communicationStyle.wordChoice}
-                  onChange={e => setPersonality(prev => ({ 
-                    ...prev, 
-                    communicationStyle: { ...prev.communicationStyle, wordChoice: e.target.value }
-                  }))}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Response Patterns</label>
-                <input
-                  type="text"
-                  className="w-full p-2 border rounded text-blue-900 bg-blue-50"
-                  value={personality.communicationStyle.responsePatterns}
-                  onChange={e => setPersonality(prev => ({ 
-                    ...prev, 
-                    communicationStyle: { ...prev.communicationStyle, responsePatterns: e.target.value }
-                  }))}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Humor</label>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={personality.communicationStyle.humor.humorEnabled}
-                      onChange={e => setPersonality(prev => ({ 
-                        ...prev, 
-                        communicationStyle: { 
-                          ...prev.communicationStyle, 
-                          humor: { ...prev.communicationStyle.humor, humorEnabled: e.target.checked }
-                        }
-                      }))}
-                      className="accent-blue-500"
-                    />
-                    <span className="text-sm">Humor Enabled</span>
-                  </div>
+              {/* Communication Style */}
+              <div className="mb-6">
+                <h3 className="font-medium mb-2">Communication Style</h3>
+                <div className="space-y-3">
                   <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <label className="block text-xs text-gray-500">Humor Types</label>
-                      <button
-                        onClick={() => {
-                          const newType = prompt(t('dashboard.personality.addNewHumorType'));
-                          if (newType && newType.trim()) {
-                            setPersonality(prev => ({
-                              ...prev,
-                              communicationStyle: {
-                                ...prev.communicationStyle,
-                                humor: {
-                                  ...prev.communicationStyle.humor,
-                                  humorTypes: [...prev.communicationStyle.humor.humorTypes, newType.trim()]
-                                }
-                              }
-                            }));
-                          }
-                        }}
-                        className="text-pink-500 hover:text-pink-700 text-xs font-bold w-4 h-4 flex items-center justify-center rounded-full hover:bg-pink-100 transition-colors"
-                      >
-                        +
-                      </button>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {personality.communicationStyle.humor.humorTypes.map((type: string, index: number) => (
-                        <span key={index} className="bg-pink-100 text-pink-900 px-2 py-1 rounded text-xs flex items-center">
-                          {type}
-                          <button
-                            onClick={() => {
-                              setPersonality(prev => ({
-                                ...prev,
-                                communicationStyle: {
-                                  ...prev.communicationStyle,
-                                  humor: {
-                                    ...prev.communicationStyle.humor,
-                                    humorTypes: prev.communicationStyle.humor.humorTypes.filter((_, idx) => idx !== index)
-                                  }
-                                }
-                              }));
-                            }}
-                            className="ml-1 text-red-500 hover:text-red-700 text-xs"
-                          >
-                            ×
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Humor Intensity</label>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">Tone</label>
                     <input
                       type="text"
-                      className="w-full p-2 border rounded text-blue-900 bg-blue-50 text-sm"
-                      value={personality.communicationStyle.humor.humorIntensity}
+                      className="w-full p-2 border rounded text-blue-900 bg-blue-50"
+                      value={personality.communicationStyle?.tone || ''}
                       onChange={e => setPersonality(prev => ({ 
                         ...prev, 
-                        communicationStyle: { 
-                          ...prev.communicationStyle, 
-                          humor: { ...prev.communicationStyle.humor, humorIntensity: e.target.value }
-                        }
+                        communicationStyle: { ...prev.communicationStyle, tone: e.target.value }
                       }))}
                     />
                   </div>
                   <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <label className="block text-xs text-gray-500">Humor Exclusion Topics</label>
-                      <button
-                        onClick={() => {
-                          const newTopic = prompt(t('dashboard.personality.addNewExclusionTopic'));
-                          if (newTopic && newTopic.trim()) {
-                            setPersonality(prev => ({
-                              ...prev,
-                              communicationStyle: {
-                                ...prev.communicationStyle,
-                                humor: {
-                                  ...prev.communicationStyle.humor,
-                                  humorExclusionTopics: [...prev.communicationStyle.humor.humorExclusionTopics, newTopic.trim()]
-                                }
-                              }
-                            }));
-                          }
-                        }}
-                        className="text-gray-500 hover:text-gray-700 text-xs font-bold w-4 h-4 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
-                      >
-                        +
-                      </button>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {personality.communicationStyle.humor.humorExclusionTopics.map((topic: string, index: number) => (
-                        <span key={index} className="bg-gray-100 text-gray-900 px-2 py-1 rounded text-xs flex items-center">
-                          {topic}
+                    <label className="block text-sm font-medium text-gray-600 mb-1">Word Choice</label>
+                    <input
+                      type="text"
+                      className="w-full p-2 border rounded text-blue-900 bg-blue-50"
+                      value={personality.communicationStyle?.wordChoice || ''}
+                      onChange={e => setPersonality(prev => ({ 
+                        ...prev, 
+                        communicationStyle: { ...prev.communicationStyle, wordChoice: e.target.value }
+                      }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">Response Patterns</label>
+                    <input
+                      type="text"
+                      className="w-full p-2 border rounded text-blue-900 bg-blue-50"
+                      value={personality.communicationStyle?.responsePatterns || ''}
+                      onChange={e => setPersonality(prev => ({ 
+                        ...prev, 
+                        communicationStyle: { ...prev.communicationStyle, responsePatterns: e.target.value }
+                      }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">Humor</label>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={personality.communicationStyle?.humor?.humorEnabled || false}
+                          onChange={e => setPersonality(prev => ({ 
+                            ...prev, 
+                            communicationStyle: { 
+                              ...prev.communicationStyle, 
+                              humor: { ...prev.communicationStyle.humor, humorEnabled: e.target.checked }
+                            }
+                          }))}
+                          className="accent-blue-500"
+                        />
+                        <span className="text-sm">Humor Enabled</span>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <label className="block text-xs text-gray-500">Humor Types</label>
                           <button
                             onClick={() => {
-                              setPersonality(prev => ({
-                                ...prev,
-                                communicationStyle: {
-                                  ...prev.communicationStyle,
-                                  humor: {
-                                    ...prev.communicationStyle.humor,
-                                    humorExclusionTopics: prev.communicationStyle.humor.humorExclusionTopics.filter((_, idx) => idx !== index)
+                              const newType = prompt(t('dashboard.personality.addNewHumorType'));
+                              if (newType && newType.trim()) {
+                                setPersonality(prev => ({
+                                  ...prev,
+                                  communicationStyle: {
+                                    ...prev.communicationStyle,
+                                    humor: {
+                                      ...prev.communicationStyle.humor,
+                                      humorTypes: [...prev.communicationStyle.humor.humorTypes, newType.trim()]
+                                    }
                                   }
-                                }
-                              }));
+                                }));
+                              }
                             }}
-                            className="ml-1 text-red-500 hover:text-red-700 text-xs"
+                            className="text-pink-500 hover:text-pink-700 text-xs font-bold w-4 h-4 flex items-center justify-center rounded-full hover:bg-pink-100 transition-colors"
                           >
-                            ×
+                            +
                           </button>
-                        </span>
-                      ))}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {(personality.communicationStyle?.humor?.humorTypes || []).map((type: string, index: number) => (
+                            <span key={index} className="bg-pink-100 text-pink-900 px-2 py-1 rounded text-xs flex items-center">
+                              {type}
+                              <button
+                                onClick={() => {
+                                  setPersonality(prev => ({
+                                    ...prev,
+                                    communicationStyle: {
+                                      ...prev.communicationStyle,
+                                      humor: {
+                                        ...prev.communicationStyle.humor,
+                                        humorTypes: prev.communicationStyle.humor.humorTypes.filter((_, idx) => idx !== index)
+                                      }
+                                    }
+                                  }));
+                                }}
+                                className="ml-1 text-red-500 hover:text-red-700 text-xs"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Humor Intensity</label>
+                        <input
+                          type="text"
+                          className="w-full p-2 border rounded text-blue-900 bg-blue-50 text-sm"
+                          value={personality.communicationStyle?.humor?.humorIntensity || ''}
+                          onChange={e => setPersonality(prev => ({ 
+                            ...prev, 
+                            communicationStyle: { 
+                              ...prev.communicationStyle, 
+                              humor: { ...prev.communicationStyle.humor, humorIntensity: e.target.value }
+                            }
+                          }))}
+                        />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <label className="block text-xs text-gray-500">Humor Exclusion Topics</label>
+                          <button
+                            onClick={() => {
+                              const newTopic = prompt(t('dashboard.personality.addNewExclusionTopic'));
+                              if (newTopic && newTopic.trim()) {
+                                setPersonality(prev => ({
+                                  ...prev,
+                                  communicationStyle: {
+                                    ...prev.communicationStyle,
+                                    humor: {
+                                      ...prev.communicationStyle.humor,
+                                      humorExclusionTopics: [...prev.communicationStyle.humor.humorExclusionTopics, newTopic.trim()]
+                                    }
+                                  }
+                                }));
+                              }
+                            }}
+                            className="text-gray-500 hover:text-gray-700 text-xs font-bold w-4 h-4 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+                          >
+                            +
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {(personality.communicationStyle?.humor?.humorExclusionTopics || []).map((topic: string, index: number) => (
+                            <span key={index} className="bg-gray-100 text-gray-900 px-2 py-1 rounded text-xs flex items-center">
+                              {topic}
+                              <button
+                                onClick={() => {
+                                  setPersonality(prev => ({
+                                    ...prev,
+                                    communicationStyle: {
+                                      ...prev.communicationStyle,
+                                      humor: {
+                                        ...prev.communicationStyle.humor,
+                                        humorExclusionTopics: prev.communicationStyle.humor.humorExclusionTopics.filter((_, idx) => idx !== index)
+                                      }
+                                    }
+                                  }));
+                                }}
+                                className="ml-1 text-red-500 hover:text-red-700 text-xs"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
 
-          {/* Add more sections for other persona components */}
-          <div className="flex justify-between items-end mt-6">
-            <div className="flex gap-2">
-              <div className="flex flex-col gap-1">
-                <button
-                  className="border border-blue-500 text-blue-500 font-semibold py-2 px-4 rounded-lg hover:bg-blue-500 hover:text-white transition shadow-none bg-transparent disabled:opacity-60 disabled:cursor-not-allowed"
-                  type="button"
-                  onClick={handleGetAITemplate}
-                  disabled={loadingAI || !canGenerateAITemplate()}
-                >
-                  {loadingAI ? 'Generating...' : 'Get AI template'}
-                </button>
-                <span className="text-xs text-gray-400">
-                  {getRemainingAttempts()} von 2 Versuchen heute übrig
-                </span>
+              {/* Add more sections for other persona components */}
+              <div className="flex justify-between items-end mt-6">
+                <div className="flex gap-2">
+                  <div className="flex flex-col gap-1">
+                    <button
+                      className="border border-blue-500 text-blue-500 font-semibold py-2 px-4 rounded-lg hover:bg-blue-500 hover:text-white transition shadow-none bg-transparent disabled:opacity-60 disabled:cursor-not-allowed"
+                      type="button"
+                      onClick={handleGetAITemplate}
+                      disabled={loadingAI || !canGenerateAITemplate()}
+                    >
+                      {loadingAI ? 'Generating...' : 'Get AI template'}
+                    </button>
+                    <span className="text-xs text-gray-400">
+                      {getRemainingAttempts()} von {isProUser ? 10 : 2} Versuchen heute übrig
+                      {isProUser && <span className="text-green-400 ml-1">(Pro)</span>}
+                    </span>
+                  </div>
+                  <button
+                    className="border border-gray-500 text-gray-500 font-semibold py-2 px-4 rounded-lg hover:bg-gray-500 hover:text-white transition shadow-none bg-transparent disabled:opacity-60"
+                    type="button"
+                    onClick={handleFillWithTemplate}
+                  >
+                    Fill with template.json
+                  </button>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    className="border border-white text-white font-semibold py-2 px-6 rounded-lg hover:bg-white hover:text-indigo-700 transition shadow-none bg-transparent"
+                    onClick={handleSavePersona}
+                    disabled={saving}
+                  >
+                    {saving ? tCommon('loading') : t('dashboard.savePersona')}
+                  </button>
+                  <button 
+                    className="border border-white text-white font-semibold py-2 px-6 rounded-lg hover:bg-white hover:text-indigo-700 transition shadow-none bg-transparent"
+                    onClick={() => {
+                      // Keep the current persona name and description, only clear the values
+                      const currentName = personality.name;
+                      const currentDescription = personality.description;
+                      setPersonality({
+                        name: currentName,
+                        description: currentDescription,
+                        childhoodExperiences: {
+                          personalDevelopment: [],
+                          sexuality: [],
+                          generalExperiences: [],
+                          socialEnvironmentFriendships: [],
+                          educationLearning: [],
+                          familyRelationships: []
+                        },
+                        emotionalTriggers: [],
+                        characterTraits: [],
+                        positiveTraits: {
+                          socialCommunicative: [],
+                          professionalCognitive: [],
+                          personalIntrinsic: []
+                        },
+                        negativeTraits: [],
+                        areasOfInterest: [],
+                        communicationStyle: {
+                          tone: '',
+                          wordChoice: '',
+                          responsePatterns: '',
+                          humor: {
+                            humorEnabled: false,
+                            humorTypes: [],
+                            humorIntensity: '',
+                            humorExclusionTopics: []
+                          }
+                        }
+                      });
+                      // Don't clear currentPersonaId and selectedPersonaId to keep the persona context
+                    }}
+                  >
+                    Clear Values
+                  </button>
+                  <button 
+                    className={`border border-red-500 text-red-500 font-semibold py-2 px-6 rounded-lg hover:bg-red-600 hover:text-white transition shadow-none bg-transparent ${
+                      !selectedPersonaId ? 'opacity-50 cursor-not-allowed' : ''
+                    }`} 
+                    onClick={handleDeletePersona}
+                    disabled={!selectedPersonaId}
+                  >
+                    {tCommon('delete')}
+                  </button>
+                </div>
               </div>
-              <button
-                className="border border-gray-500 text-gray-500 font-semibold py-2 px-4 rounded-lg hover:bg-gray-500 hover:text-white transition shadow-none bg-transparent disabled:opacity-60"
-                type="button"
-                onClick={handleFillWithTemplate}
-              >
-                Fill with template.json
-              </button>
-            </div>
-            <div className="flex gap-2">
-              <button
-                className="border border-white text-white font-semibold py-2 px-6 rounded-lg hover:bg-white hover:text-indigo-700 transition shadow-none bg-transparent"
-                onClick={handleSavePersona}
-                disabled={saving}
-              >
-                {saving ? tCommon('loading') : t('dashboard.savePersona')}
-              </button>
-              <button 
-                className="border border-white text-white font-semibold py-2 px-6 rounded-lg hover:bg-white hover:text-indigo-700 transition shadow-none bg-transparent"
-                onClick={() => {
-                  // Keep the current persona name and description, only clear the values
-                  const currentName = personality.name;
-                  const currentDescription = personality.description;
-                  setPersonality({
-                    name: currentName,
-                    description: currentDescription,
-                    childhoodExperiences: {
-                      personalDevelopment: [],
-                      sexuality: [],
-                      generalExperiences: [],
-                      socialEnvironmentFriendships: [],
-                      educationLearning: [],
-                      familyRelationships: []
-                    },
-                    emotionalTriggers: [],
-                    characterTraits: [],
-                    positiveTraits: {
-                      socialCommunicative: [],
-                      professionalCognitive: [],
-                      personalIntrinsic: []
-                    },
-                    negativeTraits: [],
-                    areasOfInterest: [],
-                    communicationStyle: {
-                      tone: '',
-                      wordChoice: '',
-                      responsePatterns: '',
-                      humor: {
-                        humorEnabled: false,
-                        humorTypes: [],
-                        humorIntensity: '',
-                        humorExclusionTopics: []
-                      }
-                    }
-                  });
-                  // Don't clear currentPersonaId and selectedPersonaId to keep the persona context
-                }}
-              >
-                Clear Values
-              </button>
-              <button className="border border-white text-white font-semibold py-2 px-6 rounded-lg hover:bg-red-600 hover:text-white transition shadow-none bg-transparent" onClick={handleDeletePersona}>
-                {tCommon('delete')}
-              </button>
             </div>
           </div>
         </div>
@@ -1397,7 +1677,32 @@ function DashboardContent() {
               {t('dashboard.yourPersonas')}
             </h2>
             {Array.isArray(personas) && personas.length > 0 ? (
-              <div className="flex items-center gap-4">
+              <div className="space-y-2">
+                {/* Live Chatbot Indicator */}
+                {(() => {
+                  const activePersona = personas.find(p => p.active);
+                  if (activePersona) {
+                    return (
+                      <div className="flex items-center gap-2">
+                        <span 
+                          className="text-sm font-medium text-green-500"
+                          style={{
+                            fontFamily: '"Inter", sans-serif',
+                            fontWeight: '600'
+                          }}
+                        >
+                          {t('dashboard.liveChatbot')}:
+                        </span>
+                        <span className="text-sm text-white font-medium">
+                          {activePersona.name}
+                        </span>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+                
+                <div className="flex items-center gap-4">
                 <select
                   className="p-2 border rounded text-black min-w-[220px]" // wider dropdown
                   value={selectedPersonaId}
@@ -1406,25 +1711,71 @@ function DashboardContent() {
                   <option value="">{t('dashboard.selectPersona')}</option>
                   {personas.filter(persona => persona && persona.id && persona.name).map((persona) => (
                     <option key={persona.id} value={persona.id}>
-                      {persona.name}
+                      {persona.name} {persona.active ? ' (Live)' : ''}
                     </option>
                   ))}
                 </select>
-                {/* Only show Activate button if persona is not active */}
+                
+                {/* Active Switch - Always Show */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-400">Active</span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={selectedPersonaId ? personas.find(p => p.id === selectedPersonaId || p.id === String(selectedPersonaId) || String(p.id) === selectedPersonaId)?.active || false : false}
+                                          className={`relative inline-flex h-6 w-12 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#f3aacb] border border-gray-300 ${
+                        selectedPersonaId ? (personas.find(p => p.id === selectedPersonaId || p.id === String(selectedPersonaId) || String(p.id) === selectedPersonaId)?.active ? 'bg-green-500' : 'bg-gray-300') : 'bg-gray-300'
+                      }`}
+                  >
+                                          <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200 ${
+                        selectedPersonaId ? (personas.find(p => p.id === selectedPersonaId || p.id === String(selectedPersonaId) || String(p.id) === selectedPersonaId)?.active ? 'translate-x-6' : 'translate-x-1') : 'translate-x-1'
+                      }`} />
+                  </button>
+                </div>
+                
+                {/* Active/Inactive Switch */}
                 {(() => {
-                  const selected = personas.find(p => p.id === selectedPersonaId);
-                  if (selected && !selected.active) {
-                    return (
-                      <button
-                        className="border border-green-500 text-green-600 font-semibold py-2 px-4 rounded-lg hover:bg-green-500 hover:text-white transition shadow-none bg-transparent"
-                        onClick={() => handleActivatePersona(selectedPersonaId)}
-                      >
-                        {t('dashboard.activatePersona')}
-                      </button>
-                    );
+                  console.log('Debug - selectedPersonaId:', selectedPersonaId);
+                  console.log('Debug - personas:', personas);
+                  console.log('Debug - personas length:', personas.length);
+                  
+                  if (selectedPersonaId) {
+                    const selected = personas.find(p => p.id === selectedPersonaId || p.id === String(selectedPersonaId) || String(p.id) === selectedPersonaId);
+                    console.log('Debug - selected persona:', selected);
+                    if (selected) {
+                      return (
+                        <div className="flex items-center gap-2">
+                          <span 
+                            className={`text-sm font-medium ${
+                              selected.active ? 'text-green-500' : 'text-gray-400'
+                            }`}
+                            style={{
+                              fontFamily: '"Inter", sans-serif',
+                              fontWeight: '500'
+                            }}
+                          >
+                            {selected.active ? t('dashboard.active') : t('dashboard.inactive')}
+                          </span>
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={selected.active}
+                            onClick={() => handleActivatePersona(selected.id)}
+                            className={`relative inline-flex h-6 w-12 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#f3aacb] border border-gray-300
+                              ${selected.active ? 'bg-green-500' : 'bg-gray-300'}`}
+                          >
+                            <span
+                              className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200
+                                ${selected.active ? 'translate-x-6' : 'translate-x-1'}`}
+                            />
+                          </button>
+                        </div>
+                      );
+                    }
                   }
                   return null;
                 })()}
+                </div>
               </div>
             ) : (
               <span className="text-gray-400">{t('dashboard.noPersonasYet')}</span>
@@ -1461,31 +1812,73 @@ function DashboardContent() {
             <div className="space-y-4">
               {/* Delay of answers caption and duration fields */}
               <div className="mb-2">
-                <span className="block font-semibold mb-1">{t('dashboard.delayOfAnswers')}</span>
+                <span className="block font-semibold mb-1">{t('dashboard.delayOfResponse')}</span>
                 <div className="flex gap-4 items-center">
-                  <label className="text-sm font-medium" htmlFor="dm-from">{t('dashboard.from')}</label>
-                  <input
-                    id="dm-from"
-                    type="time"
-                    className="p-2 border rounded text-black"
-                    value={dmSettings.duration.from}
-                    onChange={e => setDmSettings(prev => ({
-                      ...prev,
-                      duration: { ...prev.duration, from: e.target.value }
-                    }))}
-                  />
-                  <label className="text-sm font-medium" htmlFor="dm-till">{t('dashboard.till')}</label>
-                  <input
-                    id="dm-till"
-                    type="time"
-                    className="p-2 border rounded text-black"
-                    value={dmSettings.duration.until}
-                    onChange={e => setDmSettings(prev => ({
-                      ...prev,
-                      duration: { ...prev.duration, until: e.target.value }
-                    }))}
-                  />
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      max="1000"
+                      placeholder="5"
+                      className="w-16 p-1 border rounded text-black text-sm"
+                      value={personality.delayMin || ''}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value) || 0;
+                        setPersonality(prev => ({
+                          ...prev,
+                          delayMin: value
+                        }));
+                      }}
+                      onBlur={() => {
+                        // Validate and save on blur
+                        const min = personality.delayMin || 0;
+                        const max = personality.delayMax || 10;
+                        if (min >= 0 && min <= 1000 && max >= 0 && max <= 1000 && min <= max) {
+                          handleSavePersona();
+                        }
+                      }}
+                    />
+                    <span className="text-sm text-white">-</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="1000"
+                      placeholder="10"
+                      className="w-16 p-1 border rounded text-black text-sm"
+                      value={personality.delayMax || ''}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value) || 0;
+                        setPersonality(prev => ({
+                          ...prev,
+                          delayMax: value
+                        }));
+                      }}
+                      onBlur={() => {
+                        // Validate and save on blur
+                        const min = personality.delayMin || 0;
+                        const max = personality.delayMax || 10;
+                        if (min >= 0 && min <= 1000 && max >= 0 && max <= 1000 && min <= max) {
+                          handleSavePersona();
+                        }
+                      }}
+                    />
+                    <span className="text-sm text-white">minutes</span>
+                  </div>
                 </div>
+                {(personality.delayMin !== undefined || personality.delayMax !== undefined) && (
+                  <div className="mt-1">
+                    {(() => {
+                      const min = personality.delayMin || 0;
+                      const max = personality.delayMax || 10;
+                      if (min < 0 || min > 1000 || max < 0 || max > 1000) {
+                        return <span className="text-red-400 text-xs">Values must be between 0-1000</span>;
+                      } else if (min > max) {
+                        return <span className="text-red-400 text-xs">Minimum must be less than or equal to maximum</span>;
+                      }
+                      return null;
+                    })()}
+                  </div>
+                )}
               </div>
               
               {/* Remove the Product Links section from here - it will be moved to its own card */}
@@ -1523,31 +1916,73 @@ function DashboardContent() {
             </div>
             {/* Delay of answers caption and duration fields for comments */}
             <div className="mb-2">
-              <span className="block font-semibold mb-1">{t('dashboard.delayOfAnswers')}</span>
+              <span className="block font-semibold mb-1">{t('dashboard.delayOfResponse')}</span>
               <div className="flex gap-4 items-center">
-                <label className="text-sm font-medium" htmlFor="comment-from">{t('dashboard.from')}</label>
-                <input
-                  id="comment-from"
-                  type="time"
-                  className="p-2 border rounded text-black"
-                  value={commentSettings?.duration?.from || ''}
-                  onChange={e => setCommentSettings(prev => ({
-                    ...prev,
-                    duration: { ...prev.duration, from: e.target.value }
-                  }))}
-                />
-                <label className="text-sm font-medium" htmlFor="comment-till">{t('dashboard.till')}</label>
-                <input
-                  id="comment-till"
-                  type="time"
-                  className="p-2 border rounded text-black"
-                  value={commentSettings?.duration?.until || ''}
-                  onChange={e => setCommentSettings(prev => ({
-                    ...prev,
-                    duration: { ...prev.duration, until: e.target.value }
-                  }))}
-                />
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="0"
+                    max="1000"
+                    placeholder="5"
+                    className="w-16 p-1 border rounded text-black text-sm"
+                    value={personality.delayMin || ''}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 0;
+                      setPersonality(prev => ({
+                        ...prev,
+                        delayMin: value
+                      }));
+                    }}
+                    onBlur={() => {
+                      // Validate and save on blur
+                      const min = personality.delayMin || 0;
+                      const max = personality.delayMax || 10;
+                      if (min >= 0 && min <= 1000 && max >= 0 && max <= 1000 && min <= max) {
+                        handleSavePersona();
+                      }
+                    }}
+                  />
+                  <span className="text-sm text-white">-</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="1000"
+                    placeholder="10"
+                    className="w-16 p-1 border rounded text-black text-sm"
+                    value={personality.delayMax || ''}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 0;
+                      setPersonality(prev => ({
+                        ...prev,
+                        delayMax: value
+                      }));
+                    }}
+                    onBlur={() => {
+                      // Validate and save on blur
+                      const min = personality.delayMin || 0;
+                      const max = personality.delayMax || 10;
+                      if (min >= 0 && min <= 1000 && max >= 0 && max <= 1000 && min <= max) {
+                        handleSavePersona();
+                      }
+                    }}
+                  />
+                  <span className="text-sm text-white">minutes</span>
+                </div>
               </div>
+              {(personality.delayMin !== undefined || personality.delayMax !== undefined) && (
+                <div className="mt-1">
+                  {(() => {
+                    const min = personality.delayMin || 0;
+                    const max = personality.delayMax || 10;
+                    if (min < 0 || min > 1000 || max < 0 || max > 1000) {
+                      return <span className="text-red-400 text-xs">Values must be between 0-1000</span>;
+                    } else if (min > max) {
+                      return <span className="text-red-400 text-xs">Minimum must be less than or equal to maximum</span>;
+                    }
+                    return null;
+                  })()}
+                </div>
+              )}
             </div>
           </div>
 
@@ -1674,6 +2109,35 @@ function DashboardContent() {
           editText={t('dashboard.productLinks.modalTitle')}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="bg-white text-black">
+          <DialogHeader>
+            <DialogTitle>{t('dashboard.deleteConfirmTitle')}</DialogTitle>
+            <DialogDescription>
+              {personaToDelete && t('dashboard.deleteConfirmMessage', { name: personaToDelete.name })}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <button
+              className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+              onClick={() => {
+                setDeleteDialogOpen(false);
+                setPersonaToDelete(null);
+              }}
+            >
+              {tCommon('cancel')}
+            </button>
+            <button
+              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              onClick={confirmDeletePersona}
+            >
+              {t('dashboard.deleteConfirm')}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
 
     </div>
