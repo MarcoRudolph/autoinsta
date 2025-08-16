@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 // Official Drizzle ORM folder: src/drizzle
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/drizzle';

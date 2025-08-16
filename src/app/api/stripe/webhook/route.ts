@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe, mapPriceToPlan } from '@/lib/stripe';
 import { db } from '@/drizzle';

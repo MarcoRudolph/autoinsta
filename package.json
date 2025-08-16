@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "pages:build": "npx @cloudflare/next-on-pages",
+    "preview": "npm run pages:build && wrangler pages dev",
+    "deploy": "npm run pages:build && wrangler pages deploy"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.14",
@@ -33,6 +36,7 @@
     "zod": "^4.0.2"
   },
   "devDependencies": {
+    "@cloudflare/next-on-pages": "^1.13.13",
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
@@ -40,7 +44,6 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/uuid": "^10.0.0",
-    "@types/webpack-bundle-analyzer": "^4.7.0",
     "autoprefixer": "^10.4.21",
     "drizzle-kit": "^0.31.4",
     "eslint": "^9",
@@ -48,7 +51,6 @@
     "postcss": "^8.5.6",
     "rimraf": "^6.0.1",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5",
-    "webpack-bundle-analyzer": "^4.10.2"
+    "typescript": "^5"
   }
 }

@@ -1,21 +1,22 @@
-import type { NextConfig } from "next";
-import { BundleAnalyzerPlugin } from 'webpack-bundle-analyzer';
-
-const nextConfig: NextConfig = {
-  webpack: (config, { isServer, dev }) => {
-    if (!dev && !isServer) {
-      config.plugins.push(
-        new BundleAnalyzerPlugin({
-          analyzerMode: 'static',
-          openAnalyzer: false,
-          reportFilename: './bundle-analysis.html',
-          generateStatsFile: true,
-          statsFilename: './bundle-stats.json',
-        })
-      );
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  // Standard Next.js Build für Cloudflare Pages
+  output: 'standalone',
+  experimental: {
+    // Für bessere Cloudflare Pages Kompatibilität
+    serverComponentsExternalPackages: ['pg', 'bcryptjs']
+  },
+  // Cloudflare Pages benötigt diese Einstellung
+  trailingSlash: false,
+  // Wichtig: Kein Edge Runtime für PostgreSQL
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      // Server-seitige Module korrekt behandeln
+      config.externals = config.externals || [];
+      config.externals.push('pg-native');
     }
     return config;
-  },
+  }
 };
 
 export default nextConfig;

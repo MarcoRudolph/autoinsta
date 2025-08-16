@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { NextResponse } from 'next/server';
 import { db } from '@/drizzle';
 import { users } from '@/drizzle/schema/users';

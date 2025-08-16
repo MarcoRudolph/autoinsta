@@ -1,0 +1,18 @@
+# Next.js Build-Caches & Artefakte
+.next/
+!.next/BUILD_ID           # optional: falls du es brauchst
+
+# Lokale Dev-Dateien
+.env.local
+*.log
+npm-debug.log*
+yarn-debug.log*
+.pnpm-store/
+.yarn/
+.DS_Store
+
+# Dependencies
+node_modules/
+
+# Vercel-Ordner komplett ignorieren (next-on-pages erzeugt eigenes Output)
+.vercel/
