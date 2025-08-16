@@ -16,6 +16,11 @@ export async function createSubscriptionCheckout(
   cancelUrl?: string
 ) {
   try {
+    // Check if Stripe is available
+    if (!stripe) {
+      throw new Error('Stripe is not configured');
+    }
+
     // Initialize Supabase client
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -93,6 +98,11 @@ export async function createSubscriptionCheckout(
  */
 export async function createBillingPortal(userId: string, returnUrl?: string) {
   try {
+    // Check if Stripe is available
+    if (!stripe) {
+      throw new Error('Stripe is not configured');
+    }
+
     // Initialize Supabase client
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -127,6 +137,11 @@ export async function createBillingPortal(userId: string, returnUrl?: string) {
  */
 export async function cancelSubscriptionAtPeriodEnd(userId: string) {
   try {
+    // Check if Stripe is available
+    if (!stripe) {
+      throw new Error('Stripe is not configured');
+    }
+
     // Initialize Supabase client
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -179,6 +194,11 @@ export async function cancelSubscriptionAtPeriodEnd(userId: string) {
  */
 export async function reactivateSubscription(userId: string) {
   try {
+    // Check if Stripe is available
+    if (!stripe) {
+      throw new Error('Stripe is not configured');
+    }
+
     // Initialize Supabase client
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,

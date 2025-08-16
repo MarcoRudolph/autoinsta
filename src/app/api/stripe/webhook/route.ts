@@ -37,6 +37,11 @@ function getObjectId(event: Stripe.Event): string | null {
  * Handle checkout session completed event
  */
 async function handleCheckoutSessionCompleted(event: Stripe.Event) {
+  if (!stripe) {
+    console.error('Stripe not configured for webhook');
+    return;
+  }
+
   const session = event.data.object as Stripe.Checkout.Session;
   const customerId = session.customer as string | null;
   const appUserId = session.metadata?.appUserId;
@@ -119,6 +124,11 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event) {
  * Handle subscription changes (created, updated, deleted)
  */
 async function handleSubscriptionChange(event: Stripe.Event) {
+  if (!stripe) {
+    console.error('Stripe not configured for webhook');
+    return;
+  }
+
   const payload = event.data.object as Stripe.Subscription;
   
   try {
@@ -215,6 +225,11 @@ async function handleSubscriptionChange(event: Stripe.Event) {
  * Handle invoice events
  */
 async function handleInvoice(event: Stripe.Event) {
+  if (!stripe) {
+    console.error('Stripe not configured for webhook');
+    return;
+  }
+
   const invoice = event.data.object as Stripe.Invoice;
   const subId = typeof invoice.subscription === 'string' ? invoice.subscription : invoice.subscription?.id;
   if (!subId) return;
@@ -248,6 +263,11 @@ async function handleInvoice(event: Stripe.Event) {
  * Main webhook handler
  */
 export async function POST(req: NextRequest) {
+  // Check if Stripe is available
+  if (!stripe) {
+    return new NextResponse('Stripe not configured', { status: 500 });
+  }
+
   const sig = req.headers.get('stripe-signature');
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
