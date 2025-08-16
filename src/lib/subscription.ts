@@ -1,6 +1,4 @@
-import { eq, and, desc } from 'drizzle-orm';
-import { db } from '../drizzle';
-import { users, subscriptions } from '../drizzle/schema';
+import { createClient } from '@supabase/supabase-js';
 
 export type SubscriptionStatus = 'free' | 'trialing' | 'active' | 'past_due' | 'canceled' | 'incomplete' | 'incomplete_expired' | 'unpaid' | 'paused';
 export type SubscriptionPlan = 'free' | 'pro' | 'enterprise';
@@ -23,18 +21,25 @@ export interface UserSubscription {
  */
 export async function getUserPlan(userId: string): Promise<SubscriptionPlan> {
   try {
-    const subscription = await db.query.subscriptions.findFirst({
-      where: and(
-        eq(subscriptions.userId, userId),
-        eq(subscriptions.status, 'active')
-      ),
-      orderBy: [desc(subscriptions.createdAt)],
-    });
+    // Initialize Supabase client
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
 
-    if (!subscription) return 'free';
+    const { data: subscription, error } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('userId', userId)
+      .eq('status', 'active')
+      .order('createdAt', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error || !subscription) return 'free';
 
     // Check if subscription is still active (not expired)
-    if (subscription.currentPeriodEnd && subscription.currentPeriodEnd > new Date()) {
+    if (subscription.currentPeriodEnd && new Date(subscription.currentPeriodEnd) > new Date()) {
       return subscription.plan as SubscriptionPlan;
     }
 
@@ -42,15 +47,30 @@ export async function getUserPlan(userId: string): Promise<SubscriptionPlan> {
   } catch (error) {
     console.log('Subscriptions table query failed in getUserPlan, falling back to users table:', error);
     // Fallback to users table
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, userId),
-    });
-    
-    if (user?.isPro || user?.subscriptionPlan === 'pro' || user?.subscriptionPlan === 'enterprise') {
-      return 'pro';
+    try {
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .limit(1)
+        .single();
+
+      if (userError || !user) return 'free';
+      
+      if (user?.isPro || user?.subscriptionPlan === 'pro' || user?.subscriptionPlan === 'enterprise') {
+        return 'pro';
+      }
+      
+      return 'free';
+    } catch (fallbackError) {
+      console.error('Fallback query also failed:', fallbackError);
+      return 'free';
     }
-    
-    return 'free';
   }
 }
 
@@ -66,23 +86,51 @@ export async function isUserPro(userId: string): Promise<boolean> {
  * Get user's active subscription details
  */
 export async function getUserActiveSubscription(userId: string) {
-  return await db.query.subscriptions.findFirst({
-    where: and(
-      eq(subscriptions.userId, userId),
-      eq(subscriptions.status, 'active')
-    ),
-    orderBy: [desc(subscriptions.createdAt)],
-  });
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    const { data: subscription, error } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('userId', userId)
+      .eq('status', 'active')
+      .order('createdAt', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error) return null;
+    return subscription;
+  } catch (error) {
+    console.error('Error getting user active subscription:', error);
+    return null;
+  }
 }
 
 /**
  * Get user's subscription history
  */
 export async function getUserSubscriptionHistory(userId: string) {
-  return await db.query.subscriptions.findMany({
-    where: eq(subscriptions.userId, userId),
-    orderBy: [desc(subscriptions.createdAt)],
-  });
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    const { data: subscriptions, error } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('userId', userId)
+      .order('createdAt', { ascending: false });
+
+    if (error) return [];
+    return subscriptions || [];
+  } catch (error) {
+    console.error('Error getting user subscription history:', error);
+    return [];
+  }
 }
 
 /**
@@ -99,29 +147,58 @@ export async function updateUserSubscription(
   }
 ): Promise<void> {
   // Find user by stripeCustomerId
-  const user = await db.query.users.findFirst({
-    where: eq(users.stripeCustomerId, stripeCustomerId),
-  });
-  
-  if (!user) return;
-  
-  // Update or create subscription record
-  const existingSubscription = await db.query.subscriptions.findFirst({
-    where: eq(subscriptions.userId, user.id),
-    orderBy: [desc(subscriptions.createdAt)],
-  });
-  
-  if (existingSubscription) {
-    await db.update(subscriptions)
-      .set({
-        status: subscriptionData.status,
-        plan: subscriptionData.plan,
-        currentPeriodStart: subscriptionData.startDate,
-        currentPeriodEnd: subscriptionData.endDate,
-        cancelAtPeriodEnd: subscriptionData.cancelAtPeriodEnd,
-        updatedAt: new Date(),
-      })
-      .where(eq(subscriptions.subscriptionId, existingSubscription.subscriptionId));
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('stripeCustomerId', stripeCustomerId)
+      .limit(1)
+      .single();
+
+    if (userError || !user) return;
+    
+    // Update or create subscription record
+    const existingSubscription = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('userId', user.id)
+      .order('createdAt', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (existingSubscription.data) {
+      await supabase
+        .from('subscriptions')
+        .update({
+          status: subscriptionData.status,
+          plan: subscriptionData.plan,
+          currentPeriodStart: subscriptionData.startDate,
+          currentPeriodEnd: subscriptionData.endDate,
+          cancelAtPeriodEnd: subscriptionData.cancelAtPeriodEnd,
+          updatedAt: new Date(),
+        })
+        .eq('subscriptionId', existingSubscription.data.subscriptionId);
+    } else {
+      await supabase
+        .from('subscriptions')
+        .insert({
+          userId: user.id,
+          status: subscriptionData.status,
+          plan: subscriptionData.plan,
+          currentPeriodStart: subscriptionData.startDate,
+          currentPeriodEnd: subscriptionData.endDate,
+          cancelAtPeriodEnd: subscriptionData.cancelAtPeriodEnd,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+    }
+  } catch (error) {
+    console.error('Error updating user subscription:', error);
   }
 }
 
@@ -129,27 +206,41 @@ export async function updateUserSubscription(
  * Cancel user subscription
  */
 export async function cancelUserSubscription(stripeCustomerId: string): Promise<void> {
-  const user = await db.query.users.findFirst({
-    where: eq(users.stripeCustomerId, stripeCustomerId),
-  });
-  
-  if (!user) return;
-  
-  const activeSubscription = await db.query.subscriptions.findFirst({
-    where: and(
-      eq(subscriptions.userId, user.id),
-      eq(subscriptions.status, 'active')
-    ),
-    orderBy: [desc(subscriptions.createdAt)],
-  });
-  
-  if (activeSubscription) {
-    await db.update(subscriptions)
-      .set({
-        status: 'canceled',
-        updatedAt: new Date(),
-      })
-      .where(eq(subscriptions.subscriptionId, activeSubscription.subscriptionId));
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('stripeCustomerId', stripeCustomerId)
+      .limit(1)
+      .single();
+
+    if (userError || !user) return;
+    
+    const activeSubscription = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('userId', user.id)
+      .eq('status', 'active')
+      .order('createdAt', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (activeSubscription.data) {
+      await supabase
+        .from('subscriptions')
+        .update({
+          status: 'canceled',
+          updatedAt: new Date(),
+        })
+        .eq('subscriptionId', activeSubscription.data.subscriptionId);
+    }
+  } catch (error) {
+    console.error('Error canceling user subscription:', error);
   }
 }
 
@@ -157,44 +248,65 @@ export async function cancelUserSubscription(stripeCustomerId: string): Promise<
  * Get subscription details for a user
  */
 export async function getUserSubscription(userId: string): Promise<UserSubscription | null> {
-  const user = await db.query.users.findFirst({
-    where: eq(users.id, userId),
-  });
-  
-  if (!user) return null;
-  
-  let activeSubscription = null;
-  
-  // Try to get active subscription, but don't fail if subscriptions table doesn't exist
   try {
-    activeSubscription = await db.query.subscriptions.findFirst({
-      where: and(
-        eq(subscriptions.userId, userId),
-        eq(subscriptions.status, 'active')
-      ),
-      orderBy: [desc(subscriptions.createdAt)],
-    });
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .limit(1)
+      .single();
+
+    if (userError || !user) return null;
+    
+    let activeSubscription = null;
+    
+    // Try to get active subscription, but don't fail if subscriptions table doesn't exist
+    try {
+      const { data: subscription, error: subscriptionError } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('userId', userId)
+        .eq('status', 'active')
+        .order('createdAt', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (subscriptionError) {
+        console.log('Subscriptions table query failed, falling back to users table:', subscriptionError);
+        // If subscriptions table doesn't exist or query fails, just use user table data
+      } else {
+        activeSubscription = subscription;
+      }
+    } catch (error) {
+      console.log('Subscriptions table query failed, falling back to users table:', error);
+      // If subscriptions table doesn't exist or query fails, just use user table data
+    }
+    
+    // Fallback to user table fields if no active subscription found
+    const isPro = activeSubscription ? (activeSubscription.plan === 'pro' || activeSubscription.plan === 'enterprise') : 
+                  (user.isPro || user.subscriptionPlan === 'pro' || user.subscriptionPlan === 'enterprise');
+    
+    return {
+      id: user.id,
+      email: user.email,
+      stripeCustomerId: user.stripeCustomerId,
+      subscriptionStatus: activeSubscription?.status as SubscriptionStatus || user.subscriptionStatus as SubscriptionStatus || 'free',
+      subscriptionPlan: activeSubscription?.plan as SubscriptionPlan || user.subscriptionPlan as SubscriptionPlan || 'free',
+      subscriptionStartDate: activeSubscription?.currentPeriodStart || (user.subscriptionStartDate ? new Date(user.subscriptionStartDate) : null),
+      subscriptionEndDate: activeSubscription?.currentPeriodEnd || (user.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null),
+      isPro: isPro,
+      cancelAtPeriodEnd: activeSubscription?.cancelAtPeriodEnd || false,
+      currentPeriodEnd: activeSubscription?.currentPeriodEnd || (user.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null),
+    };
   } catch (error) {
-    console.log('Subscriptions table query failed, falling back to users table:', error);
-    // If subscriptions table doesn't exist or query fails, just use user table data
+    console.error('Error getting user subscription:', error);
+    return null;
   }
-  
-  // Fallback to user table fields if no active subscription found
-  const isPro = activeSubscription ? (activeSubscription.plan === 'pro' || activeSubscription.plan === 'enterprise') : 
-                (user.isPro || user.subscriptionPlan === 'pro' || user.subscriptionPlan === 'enterprise');
-  
-  return {
-    id: user.id,
-    email: user.email,
-    stripeCustomerId: user.stripeCustomerId,
-    subscriptionStatus: activeSubscription?.status as SubscriptionStatus || user.subscriptionStatus as SubscriptionStatus || 'free',
-    subscriptionPlan: activeSubscription?.plan as SubscriptionPlan || user.subscriptionPlan as SubscriptionPlan || 'free',
-    subscriptionStartDate: activeSubscription?.currentPeriodStart || (user.subscriptionStartDate ? new Date(user.subscriptionStartDate) : null),
-    subscriptionEndDate: activeSubscription?.currentPeriodEnd || (user.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null),
-    isPro: isPro,
-    cancelAtPeriodEnd: activeSubscription?.cancelAtPeriodEnd || false,
-    currentPeriodEnd: activeSubscription?.currentPeriodEnd || (user.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null),
-  };
 }
 
 /**
@@ -207,7 +319,7 @@ export async function isSubscriptionExpiringSoon(userId: string): Promise<boolea
   const sevenDaysFromNow = new Date();
   sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
   
-  return subscription.currentPeriodEnd <= sevenDaysFromNow;
+  return new Date(subscription.currentPeriodEnd) <= sevenDaysFromNow;
 }
 
 /**
@@ -218,7 +330,7 @@ export async function getDaysUntilExpiry(userId: string): Promise<number | null>
   if (!subscription?.currentPeriodEnd) return null;
   
   const now = new Date();
-  const expiry = subscription.currentPeriodEnd;
+  const expiry = new Date(subscription.currentPeriodEnd);
   const diffTime = expiry.getTime() - now.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   

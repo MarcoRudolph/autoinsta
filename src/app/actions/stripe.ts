@@ -1,9 +1,7 @@
 'use server';
 
 import { stripe } from '@/lib/stripe';
-import { db } from '@/drizzle';
-import { users, subscriptions } from '@/drizzle/schema';
-import { eq, desc } from 'drizzle-orm';
+import { createClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 
 // Price ID for the 10 Euro monthly product
@@ -18,12 +16,21 @@ export async function createSubscriptionCheckout(
   cancelUrl?: string
 ) {
   try {
-    // Get user details
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, userId),
-    });
+    // Initialize Supabase client
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
 
-    if (!user) {
+    // Get user details
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .limit(1)
+      .single();
+
+    if (userError || !user) {
       throw new Error('User not found');
     }
 
@@ -38,12 +45,18 @@ export async function createSubscriptionCheckout(
       customerId = customer.id;
       
       // Update user with Stripe customer ID
-      await db.update(users)
-        .set({ 
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ 
           stripeCustomerId: customerId,
-          updatedAt: new Date(),
+          updatedAt: new Date().toISOString(),
         })
-        .where(eq(users.id, userId));
+        .eq('id', userId);
+
+      if (updateError) {
+        console.error('Error updating user with Stripe customer ID:', updateError);
+        throw updateError;
+      }
     }
 
     // Create checkout session
@@ -80,11 +93,20 @@ export async function createSubscriptionCheckout(
  */
 export async function createBillingPortal(userId: string, returnUrl?: string) {
   try {
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, userId),
-    });
+    // Initialize Supabase client
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
 
-    if (!user?.stripeCustomerId) {
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .limit(1)
+      .single();
+
+    if (userError || !user?.stripeCustomerId) {
       throw new Error('No Stripe customer found');
     }
 
@@ -105,13 +127,23 @@ export async function createBillingPortal(userId: string, returnUrl?: string) {
  */
 export async function cancelSubscriptionAtPeriodEnd(userId: string) {
   try {
-    // Get user's active subscription
-    const userSubscription = await db.query.subscriptions.findFirst({
-      where: eq(subscriptions.userId, userId),
-      orderBy: [desc(subscriptions.createdAt)],
-    });
+    // Initialize Supabase client
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
 
-    if (!userSubscription?.subscriptionId) {
+    // Get user's active subscription
+    const { data: userSubscription, error: subscriptionError } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('userId', userId)
+      .eq('status', 'active')
+      .order('createdAt', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (subscriptionError || !userSubscription?.subscriptionId) {
       throw new Error('No active subscription found');
     }
 
@@ -121,12 +153,18 @@ export async function cancelSubscriptionAtPeriodEnd(userId: string) {
     });
 
     // Update local database
-    await db.update(subscriptions)
-      .set({
+    const { error: updateError } = await supabase
+      .from('subscriptions')
+      .update({
         cancelAtPeriodEnd: true,
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString(),
       })
-      .where(eq(subscriptions.subscriptionId, userSubscription.subscriptionId));
+      .eq('subscriptionId', userSubscription.subscriptionId);
+
+    if (updateError) {
+      console.error('Error updating subscription:', updateError);
+      throw updateError;
+    }
 
     revalidatePath('/dashboard');
     return { success: true };
@@ -141,12 +179,22 @@ export async function cancelSubscriptionAtPeriodEnd(userId: string) {
  */
 export async function reactivateSubscription(userId: string) {
   try {
-    const userSubscription = await db.query.subscriptions.findFirst({
-      where: eq(subscriptions.userId, userId),
-      orderBy: [desc(subscriptions.createdAt)],
-    });
+    // Initialize Supabase client
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
 
-    if (!userSubscription?.subscriptionId) {
+    const { data: userSubscription, error: subscriptionError } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('userId', userId)
+      .eq('status', 'active')
+      .order('createdAt', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (subscriptionError || !userSubscription?.subscriptionId) {
       throw new Error('No active subscription found');
     }
 
@@ -156,12 +204,18 @@ export async function reactivateSubscription(userId: string) {
     });
 
     // Update local database
-    await db.update(subscriptions)
-      .set({
+    const { error: updateError } = await supabase
+      .from('subscriptions')
+      .update({
         cancelAtPeriodEnd: false,
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString(),
       })
-      .where(eq(subscriptions.subscriptionId, userSubscription.subscriptionId));
+      .eq('subscriptionId', userSubscription.subscriptionId);
+
+    if (updateError) {
+      console.error('Error updating subscription:', updateError);
+      throw updateError;
+    }
 
     revalidatePath('/dashboard');
     return { success: true };

@@ -1,9 +1,7 @@
 export const runtime = 'edge';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/drizzle';
-import { personas } from '@/drizzle/schema/personas';
-import { eq, and } from 'drizzle-orm';
+import { createClient } from '@supabase/supabase-js';
 
 type PersonaData = {
   name?: string;
@@ -20,11 +18,27 @@ export async function POST(req: NextRequest) {
     
     console.log(`Setting active persona: ${personaId} for user: ${userId}`);
     
+    // Initialize Supabase client
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    
     // Fetch all personas for this user
-    const allPersonas = await db.select().from(personas).where(eq(personas.userId, userId));
-    console.log(`Found ${allPersonas.length} personas for user`);
+    const { data: allPersonas, error: fetchError } = await supabase
+      .from('personas')
+      .select('*')
+      .eq('userId', userId);
+
+    if (fetchError) {
+      console.error('Error fetching personas:', fetchError);
+      return NextResponse.json({ error: 'Failed to fetch personas', details: fetchError.message }, { status: 500 });
+    }
+
+    console.log(`Found ${allPersonas?.length || 0} personas for user`);
+    
     // Set active=false for all, active=true for the selected one
-    for (const p of allPersonas) {
+    for (const p of allPersonas || []) {
       const data = p.data as PersonaData;
       const isActive = p.id === personaId;
       
@@ -43,13 +57,32 @@ export async function POST(req: NextRequest) {
       
       console.log(`Updating persona ${p.id} with active=${isActive}, data:`, updatedData);
       
-      await db.update(personas)
-        .set({ data: updatedData })
-        .where(eq(personas.id, p.id));
+      // Update persona using Supabase
+      const { error: updateError } = await supabase
+        .from('personas')
+        .update({ data: updatedData })
+        .eq('id', p.id);
+
+      if (updateError) {
+        console.error(`Error updating persona ${p.id}:`, updateError);
+      }
     }
+    
     // Return the updated active persona
-    const updated = await db.select().from(personas).where(and(eq(personas.id, personaId), eq(personas.userId, userId)));
-    return NextResponse.json({ persona: updated[0] });
+    const { data: updated, error: getError } = await supabase
+      .from('personas')
+      .select('*')
+      .eq('id', personaId)
+      .eq('userId', userId)
+      .limit(1)
+      .single();
+
+    if (getError) {
+      console.error('Error fetching updated persona:', getError);
+      return NextResponse.json({ error: 'Failed to fetch updated persona', details: getError.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ persona: updated });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to set active persona', details: String(error) }, { status: 500 });
   }

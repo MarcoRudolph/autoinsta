@@ -1,9 +1,7 @@
 export const runtime = 'edge';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/drizzle';
-import { users } from '@/drizzle/schema';
-import { eq } from 'drizzle-orm';
+import { createClient } from '@supabase/supabase-js';
 
 export async function POST(req: NextRequest) {
 	try {
@@ -25,18 +23,32 @@ export async function POST(req: NextRequest) {
 
 		console.log('Setting user as pro (users table fallback):', userId);
 
-		// Update the users table directly (fallback path)
-		await db
-			.update(users)
-			.set({
+		// Initialize Supabase client
+		const supabase = createClient(
+			process.env.NEXT_PUBLIC_SUPABASE_URL!,
+			process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+		);
+
+		// Update the users table directly using Supabase
+		const { error: updateError } = await supabase
+			.from('users')
+			.update({
 				isPro: true,
 				subscriptionStatus: 'active',
 				subscriptionPlan: 'pro',
-				subscriptionStartDate: new Date(),
-				subscriptionEndDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
-				updatedAt: new Date(),
+				subscriptionStartDate: new Date().toISOString(),
+				subscriptionEndDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+				updatedAt: new Date().toISOString(),
 			})
-			.where(eq(users.id, userId));
+			.eq('id', userId);
+
+		if (updateError) {
+			console.error('Error updating user:', updateError);
+			return NextResponse.json(
+				{ error: 'Failed to update user', details: updateError.message },
+				{ status: 500 }
+			);
+		}
 
 		return NextResponse.json({
 			success: true,

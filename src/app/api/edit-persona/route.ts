@@ -1,9 +1,7 @@
 export const runtime = 'edge';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/drizzle';
-import { personas } from '@/drizzle/schema/personas';
-import { eq, and } from 'drizzle-orm';
+import { createClient } from '@supabase/supabase-js';
 
 export async function PATCH(req: NextRequest) {
   try {
@@ -11,11 +9,28 @@ export async function PATCH(req: NextRequest) {
     if (!personaId || !userId || !data) {
       return NextResponse.json({ error: 'Missing personaId, userId, or data' }, { status: 400 });
     }
-    const result = await db.update(personas)
-      .set({ data })
-      .where(and(eq(personas.id, personaId), eq(personas.userId, userId)))
-      .returning();
-    return NextResponse.json({ persona: result[0] });
+
+    // Initialize Supabase client
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    // Update persona using Supabase
+    const { data: result, error } = await supabase
+      .from('personas')
+      .update({ data })
+      .eq('id', personaId)
+      .eq('userId', userId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating persona:', error);
+      return NextResponse.json({ error: 'Failed to edit persona', details: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ persona: result });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to edit persona', details: String(error) }, { status: 500 });
   }

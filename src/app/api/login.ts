@@ -1,7 +1,7 @@
+export const runtime = 'edge';
+
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/drizzle';
-import { users } from '@/drizzle/schema';
-import { eq } from 'drizzle-orm';
+import { createClient } from '@supabase/supabase-js';
 import { compare } from 'bcryptjs';
 import { z } from 'zod';
 
@@ -15,12 +15,24 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { email, password } = loginSchema.parse(body);
 
-    // Find user
-    const found = await db.select().from(users).where(eq(users.email, email));
-    if (found.length === 0) {
+    // Initialize Supabase client
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    // Find user using Supabase
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .limit(1);
+
+    if (error || !users || users.length === 0) {
       return NextResponse.json({ code: 'INVALID_CREDENTIALS', message: 'Invalid email or password.' }, { status: 401 });
     }
-    const user = found[0];
+
+    const user = users[0];
 
     // Compare password
     const valid = await compare(password, user.passwordHash);

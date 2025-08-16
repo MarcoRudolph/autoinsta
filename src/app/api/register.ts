@@ -1,10 +1,9 @@
+export const runtime = 'edge';
+
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/drizzle';
-import { users } from '@/drizzle/schema';
-import { eq } from 'drizzle-orm';
+import { createClient } from '@supabase/supabase-js';
 import { hash } from 'bcryptjs';
 import { z } from 'zod';
-import { createClient } from '@supabase/supabase-js';
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -16,35 +15,55 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { email, password } = registerSchema.parse(body);
 
-    // Initialize Supabase client using environment variables
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Initialize Supabase client
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
 
-    // Create user with Supabase Auth
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-    if (signUpError || !signUpData.user) {
-      return NextResponse.json(
-        { code: 'SUPABASE_ERROR', message: signUpError?.message || 'Failed to register user.' },
-        { status: 400 },
-      );
+    // Check if user already exists
+    const { data: existingUsers, error: checkError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .limit(1);
+
+    if (checkError) {
+      console.error('Error checking existing user:', checkError);
+      return NextResponse.json({ code: 'INTERNAL_ERROR', message: 'Failed to check existing user.' }, { status: 500 });
     }
 
-    const userId = signUpData.user.id;
-
-    // Hash password for local storage
-    const passwordHash = await hash(password, 10);
-
-    // Sync user table with Supabase user id
-    const existing = await db.select().from(users).where(eq(users.id, userId));
-    if (existing.length === 0) {
-      await db.insert(users).values({ id: userId, email, passwordHash });
+    if (existingUsers && existingUsers.length > 0) {
+      return NextResponse.json({ code: 'USER_EXISTS', message: 'User already exists.' }, { status: 409 });
     }
 
-    return NextResponse.json({ user: signUpData.user }, { status: 201 });
+    // Hash password
+    const hashedPassword = await hash(password, 12);
+
+    // Create new user using Supabase
+    const { data: newUser, error: insertError } = await supabase
+      .from('users')
+      .insert({
+        email,
+        passwordHash: hashedPassword,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        subscriptionStatus: 'free',
+        subscriptionPlan: 'free',
+        isPro: false
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error('Error creating user:', insertError);
+      return NextResponse.json({ code: 'INTERNAL_ERROR', message: 'Failed to create user.' }, { status: 500 });
+    }
+
+    return NextResponse.json({ 
+      message: 'User registered successfully.',
+      userId: newUser.id 
+    }, { status: 201 });
   } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ code: 'VALIDATION_ERROR', message: error.issues }, { status: 400 });

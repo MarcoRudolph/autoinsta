@@ -1,7 +1,6 @@
 export const runtime = 'edge';
 
-import { db } from '@/drizzle';
-import { personas } from '@/drizzle/schema/personas';
+import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
 type PersonaData = {
@@ -27,11 +26,25 @@ type PersonaData = {
 
 export async function GET() {
   try {
-    const result = await db.select().from(personas);
+    // Initialize Supabase client
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    const { data: result, error } = await supabase
+      .from('personas')
+      .select('*');
+
+    if (error) {
+      console.error('Error fetching personas:', error);
+      return NextResponse.json({ error: 'Failed to list personas', details: error.message }, { status: 500 });
+    }
+
     console.log('Raw database result:', JSON.stringify(result, null, 2));
     
     // Map to include id, name, and active for dropdown
-    const personasList = result.map(row => {
+    const personasList = (result || []).map(row => {
       const data = row.data as PersonaData;
       console.log(`Processing persona ${row.id}:`, JSON.stringify(data, null, 2));
       console.log(`Persona ${row.id} - data type:`, typeof data);

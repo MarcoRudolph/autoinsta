@@ -1,13 +1,14 @@
 export const runtime = 'edge';
 
 import { NextResponse } from 'next/server';
-import { db } from '@/drizzle';
-import { users } from '@/drizzle/schema/users';
-import { createClient } from '@/lib/auth/supabaseClient.server';
+import { createClient } from '@supabase/supabase-js';
 
 export async function POST() {
   try {
-    const supabase = createClient();
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
     
     // Get all users from Supabase Auth
     const { data: authUsers, error } = await supabase.auth.admin.listUsers();
@@ -26,24 +27,40 @@ export async function POST() {
     for (const authUser of authUsers.users) {
       try {
         // Check if user already exists in our users table
-        const existingUser = await db.query.users.findFirst({
-          where: (users, { eq }) => eq(users.id, authUser.id)
-        });
+        const { data: existingUser, error: checkError } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', authUser.id)
+          .limit(1);
 
-        if (existingUser) {
+        if (checkError) {
+          console.error(`Error checking user ${authUser.id}:`, checkError);
+          errors++;
+          continue;
+        }
+
+        if (existingUser && existingUser.length > 0) {
           console.log(`User ${authUser.id} already exists, skipping`);
           skipped++;
           continue;
         }
 
         // Insert new user
-        await db.insert(users).values({
-          id: authUser.id,
-          email: authUser.email || '',
-          passwordHash: '', // Empty string for Supabase Auth users (no password hash)
-          createdAt: authUser.created_at ? new Date(authUser.created_at) : new Date(),
-          updatedAt: new Date(),
-        });
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert({
+            id: authUser.id,
+            email: authUser.email || '',
+            passwordHash: '', // Empty string for Supabase Auth users (no password hash)
+            createdAt: authUser.created_at ? new Date(authUser.created_at).toISOString() : new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          });
+
+        if (insertError) {
+          console.error(`Error inserting user ${authUser.id}:`, insertError);
+          errors++;
+          continue;
+        }
 
         console.log(`Synced user ${authUser.id} (${authUser.email})`);
         synced++;

@@ -1,7 +1,7 @@
 export const runtime = 'edge';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserSubscription } from '../../../lib/subscription';
+import { createClient } from '@supabase/supabase-js';
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,9 +15,21 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const subscription = await getUserSubscription(userId);
+    // Initialize Supabase client
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
 
-    if (!subscription) {
+    // Get user subscription from users table
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .limit(1)
+      .single();
+
+    if (error || !user) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
@@ -25,13 +37,13 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({
-      subscriptionStatus: subscription.subscriptionStatus,
-      subscriptionPlan: subscription.subscriptionPlan,
-      isPro: subscription.isPro,
-      subscriptionStartDate: subscription.subscriptionStartDate,
-      subscriptionEndDate: subscription.subscriptionEndDate,
-      cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
-      currentPeriodEnd: subscription.currentPeriodEnd,
+      subscriptionStatus: user.subscriptionStatus || 'free',
+      subscriptionPlan: user.subscriptionPlan || 'free',
+      isPro: user.isPro || false,
+      subscriptionStartDate: user.subscriptionStartDate,
+      subscriptionEndDate: user.subscriptionEndDate,
+      cancelAtPeriodEnd: false, // Not implemented in current schema
+      currentPeriodEnd: user.subscriptionEndDate,
     });
 
   } catch (error) {

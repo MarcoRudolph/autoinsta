@@ -1,10 +1,9 @@
 export const runtime = 'edge';
 
 // Official Drizzle ORM folder: src/drizzle
+
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/drizzle';
-import { personas } from '@/drizzle/schema/personas';
-import { eq } from 'drizzle-orm';
+import { createClient } from '@supabase/supabase-js';
 
 type PersonaData = {
   data?: {
@@ -23,14 +22,27 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Missing id' }, { status: 400 });
   }
   try {
-    const result = await db.select().from(personas).where(eq(personas.id, id)).limit(1);
-    if (!result.length) {
+    // Initialize Supabase client
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    const { data: result, error } = await supabase
+      .from('personas')
+      .select('*')
+      .eq('id', id)
+      .limit(1)
+      .single();
+
+    if (error || !result) {
       return NextResponse.json({ error: 'Persona not found' }, { status: 404 });
     }
-    console.log('Raw persona data from DB:', JSON.stringify(result[0].data, null, 2));
+
+    console.log('Raw persona data from DB:', JSON.stringify(result.data, null, 2));
     
-    // Handle double-wrapped data structure: the actual persona data is in result[0].data.data
-    const personaData = result[0].data as PersonaData; // Proper type instead of any
+    // Handle double-wrapped data structure: the actual persona data is in result.data.data
+    const personaData = result.data as PersonaData; // Proper type instead of any
     const actualPersona = personaData?.data || personaData;
     
     console.log('Extracted persona data:', JSON.stringify(actualPersona, null, 2));

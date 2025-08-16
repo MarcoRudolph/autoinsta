@@ -2,15 +2,11 @@ export const runtime = 'edge';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe, mapPriceToPlan } from '@/lib/stripe';
-import { db } from '@/drizzle';
-import { users, subscriptions, webhookEvents } from '@/drizzle/schema';
-import { eq } from 'drizzle-orm';
+import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 
 // Disable body parsing for raw body access
-export const config = {
-  api: { bodyParser: false },
-};
+export const dynamic = 'force-dynamic';
 
 /**
  * Convert Unix timestamp to Date
@@ -48,6 +44,12 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event) {
   if (!appUserId || !customerId) return;
 
   try {
+    // Initialize Supabase client
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
     // Re-fetch session for completeness
     const s = await stripe.checkout.sessions.retrieve(session.id, {
       expand: ['subscription', 'customer'],
@@ -61,38 +63,51 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event) {
       ? await stripe.subscriptions.retrieve(s.subscription)
       : s.subscription;
 
-    // Update user with Stripe customer ID
-    await db.update(users)
-      .set({ 
+    // Update user with Stripe customer ID using Supabase
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ 
         stripeCustomerId: customerId,
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString(),
       })
-      .where(eq(users.id, appUserId));
+      .eq('id', appUserId);
 
-    // Create subscription record
+    if (updateError) {
+      console.error('Error updating user with Stripe customer ID:', updateError);
+      throw updateError;
+    }
+
+    // Create subscription record using Supabase
     if (sub) {
       const price = sub.items.data[0]?.price;
       const planPriceId = price?.id ?? null;
       const productId = typeof price?.product === 'object' ? price.product?.id : null;
       const plan = mapPriceToPlan(planPriceId);
 
-      await db.insert(subscriptions).values({
-        subscriptionId: sub.id,
-        userId: appUserId,
-        customerId: customerId,
-        status: sub.status,
-        cancelAtPeriodEnd: sub.cancel_at_period_end ?? false,
-        currentPeriodStart: toDate(sub.current_period_start),
-        currentPeriodEnd: toDate(sub.current_period_end),
-        trialEnd: toDate(sub.trial_end),
-        priceId: planPriceId,
-        productId,
-        plan,
-        quantity: sub.items.data[0]?.quantity ?? 1,
-        latestInvoiceId: typeof sub.latest_invoice === 'string' ? sub.latest_invoice : sub.latest_invoice?.id ?? null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+      const { error: insertError } = await supabase
+        .from('subscriptions')
+        .insert({
+          subscriptionId: sub.id,
+          userId: appUserId,
+          customerId: customerId,
+          status: sub.status,
+          cancelAtPeriodEnd: sub.cancel_at_period_end ?? false,
+          currentPeriodStart: toDate(sub.current_period_start)?.toISOString(),
+          currentPeriodEnd: toDate(sub.current_period_end)?.toISOString(),
+          trialEnd: toDate(sub.trial_end)?.toISOString(),
+          priceId: planPriceId,
+          productId,
+          plan,
+          quantity: sub.items.data[0]?.quantity ?? 1,
+          latestInvoiceId: typeof sub.latest_invoice === 'string' ? sub.latest_invoice : sub.latest_invoice?.id ?? null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+
+      if (insertError) {
+        console.error('Error creating subscription record:', insertError);
+        throw insertError;
+      }
     }
   } catch (error) {
     console.error('Error handling checkout session completed:', error);
@@ -107,6 +122,12 @@ async function handleSubscriptionChange(event: Stripe.Event) {
   const payload = event.data.object as Stripe.Subscription;
   
   try {
+    // Initialize Supabase client
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
     // Re-fetch canonical subscription to avoid stale/out-of-order data
     const sub = await stripe.subscriptions.retrieve(payload.id, {
       expand: ['customer', 'items.data.price.product', 'latest_invoice.payment_intent'],
@@ -121,54 +142,69 @@ async function handleSubscriptionChange(event: Stripe.Event) {
     const productId = typeof price?.product === 'object' ? price.product?.id : null;
     const plan = mapPriceToPlan(planPriceId);
 
-    await db.transaction(async (tx) => {
-      const user = await tx.query.users.findFirst({
-        where: eq(users.email, email),
-      });
-      if (!user) throw new Error(`User not found for ${email}`);
+    // Get user ID first
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .limit(1)
+      .single();
 
-      // Try update first, then insert if not exists
-      const updated = await tx
-        .update(subscriptions)
-        .set({
-          userId: user.id,
-          customerId: typeof sub.customer === 'string' ? sub.customer : sub.customer.id,
-          status: sub.status,
-          cancelAtPeriodEnd: sub.cancel_at_period_end ?? false,
-          currentPeriodStart: toDate(sub.current_period_start),
-          currentPeriodEnd: toDate(sub.current_period_end),
-          trialEnd: toDate(sub.trial_end),
-          priceId: planPriceId,
-          productId,
-          plan,
-          quantity: sub.items.data[0]?.quantity ?? 1,
-          latestInvoiceId: typeof sub.latest_invoice === 'string' ? sub.latest_invoice : sub.latest_invoice?.id ?? null,
-          updatedAt: new Date(),
-        })
-        .where(eq(subscriptions.subscriptionId, sub.id))
-        .returning();
+    if (userError || !userData?.id) {
+      console.error('User not found for email:', email);
+      throw new Error(`User not found for ${email}`);
+    }
 
-      if (updated.length === 0) {
-        // Insert if not exists
-        await tx.insert(subscriptions).values({
+    const { error: updateError } = await supabase
+      .from('subscriptions')
+      .update({
+        userId: userData.id,
+        customerId: typeof sub.customer === 'string' ? sub.customer : sub.customer.id,
+        status: sub.status,
+        cancelAtPeriodEnd: sub.cancel_at_period_end ?? false,
+        currentPeriodStart: toDate(sub.current_period_start)?.toISOString(),
+        currentPeriodEnd: toDate(sub.current_period_end)?.toISOString(),
+        trialEnd: toDate(sub.trial_end)?.toISOString(),
+        priceId: planPriceId,
+        productId,
+        plan,
+        quantity: sub.items.data[0]?.quantity ?? 1,
+        latestInvoiceId: typeof sub.latest_invoice === 'string' ? sub.latest_invoice : sub.latest_invoice?.id ?? null,
+        updatedAt: new Date().toISOString(),
+      })
+      .eq('subscriptionId', sub.id)
+      .select()
+      .single();
+
+    if (updateError?.code === 'PGRST116') { // PGRST116: No rows found
+      const { error: insertError } = await supabase
+        .from('subscriptions')
+        .insert({
           subscriptionId: sub.id,
-          userId: user.id,
+          userId: userData.id,
           customerId: typeof sub.customer === 'string' ? sub.customer : sub.customer.id,
           status: sub.status,
           cancelAtPeriodEnd: sub.cancel_at_period_end ?? false,
-          currentPeriodStart: toDate(sub.current_period_start),
-          currentPeriodEnd: toDate(sub.current_period_end),
-          trialEnd: toDate(sub.trial_end),
+          currentPeriodStart: toDate(sub.current_period_start)?.toISOString(),
+          currentPeriodEnd: toDate(sub.current_period_end)?.toISOString(),
+          trialEnd: toDate(sub.trial_end)?.toISOString(),
           priceId: planPriceId,
           productId,
           plan,
           quantity: sub.items.data[0]?.quantity ?? 1,
           latestInvoiceId: typeof sub.latest_invoice === 'string' ? sub.latest_invoice : sub.latest_invoice?.id ?? null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         });
+
+      if (insertError) {
+        console.error('Error creating subscription record:', insertError);
+        throw insertError;
       }
-    });
+    } else if (updateError) {
+      console.error('Error updating subscription record:', updateError);
+      throw updateError;
+    }
   } catch (error) {
     console.error('Error handling subscription change:', error);
     throw error;
@@ -184,12 +220,24 @@ async function handleInvoice(event: Stripe.Event) {
   if (!subId) return;
 
   try {
-    await db.update(subscriptions)
-      .set({
+    // Initialize Supabase client
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    const { error: updateError } = await supabase
+      .from('subscriptions')
+      .update({
         latestInvoiceId: invoice.id,
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString(),
       })
-      .where(eq(subscriptions.subscriptionId, subId));
+      .eq('subscriptionId', subId);
+
+    if (updateError) {
+      console.error('Error updating invoice:', updateError);
+      throw updateError;
+    }
   } catch (error) {
     console.error('Error handling invoice:', error);
     throw error;
@@ -221,9 +269,16 @@ export async function POST(req: NextRequest) {
 
   try {
     // Check idempotency: skip if already processed
-    const alreadyProcessed = await db.query.webhookEvents.findFirst({
-      where: eq(webhookEvents.eventId, event.id),
-    });
+    // Initialize Supabase client for idempotency check
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    const { data: alreadyProcessed } = await supabase
+      .from('webhookEvents')
+      .select()
+      .eq('eventId', event.id);
 
     if (alreadyProcessed) {
       console.log(`Event ${event.id} already processed, skipping`);
@@ -253,13 +308,19 @@ export async function POST(req: NextRequest) {
     }
 
     // Record successful processing
-    await db.insert(webhookEvents).values({
-      eventId: event.id,
-      type: event.type,
-      objectId: getObjectId(event),
-      status: 'processed',
-      processedAt: new Date(),
-    });
+    const { error: insertError } = await supabase
+      .from('webhookEvents')
+      .insert({
+        eventId: event.id,
+        type: event.type,
+        objectId: getObjectId(event),
+        status: 'processed',
+        processedAt: new Date().toISOString(),
+      });
+
+    if (insertError) {
+      console.error('Failed to record webhook success:', insertError);
+    }
 
     return NextResponse.json({ received: true });
   } catch (error: unknown) {
@@ -268,14 +329,26 @@ export async function POST(req: NextRequest) {
 
     // Record failure for retry/DLQ
     try {
-      await db.insert(webhookEvents).values({
-        eventId: event.id,
-        type: event.type,
-        objectId: getObjectId(event),
-        status: 'failed',
-        error: errorMessage.slice(0, 500),
-        processedAt: new Date(),
-      });
+      // Initialize Supabase client for failure recording
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+
+      const { error: insertError } = await supabase
+        .from('webhookEvents')
+        .insert({
+          eventId: event.id,
+          type: event.type,
+          objectId: getObjectId(event),
+          status: 'failed',
+          error: errorMessage.slice(0, 500),
+          processedAt: new Date().toISOString(),
+        });
+
+      if (insertError) {
+        console.error('Failed to record webhook failure:', insertError);
+      }
     } catch (dbError) {
       console.error('Failed to record webhook failure:', dbError);
     }

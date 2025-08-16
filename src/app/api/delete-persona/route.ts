@@ -1,9 +1,7 @@
 export const runtime = 'edge';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/drizzle';
-import { personas } from '@/drizzle/schema/personas';
-import { eq } from 'drizzle-orm';
+import { createClient } from '@supabase/supabase-js';
 
 export async function DELETE(req: NextRequest) {
   try {
@@ -11,7 +9,24 @@ export async function DELETE(req: NextRequest) {
     if (!id) {
       return NextResponse.json({ error: 'Missing id' }, { status: 400 });
     }
-    await db.delete(personas).where(eq(personas.id, id));
+
+    // Initialize Supabase client
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    // Delete persona using Supabase
+    const { error } = await supabase
+      .from('personas')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting persona:', error);
+      return NextResponse.json({ error: 'Failed to delete persona', details: error.message }, { status: 500 });
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to delete persona', details: String(error) }, { status: 500 });
