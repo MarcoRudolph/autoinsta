@@ -6,7 +6,6 @@ import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 
 // Disable body parsing for raw body access
-export const dynamic = 'force-dynamic';
 
 /**
  * Convert Unix timestamp to Date
