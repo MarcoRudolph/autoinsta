@@ -6,6 +6,10 @@ node_modules/
 .next/static/chunks/
 .next/static/development/
 .next/static/webpack/
+.next/static/css/
+.next/static/media/
+.next/trace/
+.next/types/
 
 # Lokale Dev-Dateien
 .env.local
@@ -30,14 +34,18 @@ yarn-debug.log*
 .eslintcache
 *.tsbuildinfo
 
-# Nur die essentiellen Build-Dateien behalten
+# Nur die essentiellen Standalone-Build-Dateien behalten
 !.next/standalone/
-!.next/server/
-!.next/static/
-!.next/BUILD_ID
-!.next/prerender-manifest.json
-!.next/routes-manifest.json
-!.next/build-manifest.json
+!.next/standalone/.next/
+!.next/standalone/server.js
+!.next/standalone/package.json
 
 # Public Assets
 !public/
+
+# Wichtig: Alle anderen .next-Dateien ausschließen
+.next/
+!.next/standalone/
+!.next/standalone/.next/
+!.next/standalone/server.js
+!.next/standalone/package.json

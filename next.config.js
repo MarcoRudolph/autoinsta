@@ -4,20 +4,17 @@ const nextConfig = {
   // Der @cloudflare/next-on-pages Adapter kümmert sich um die Ausgabe
   trailingSlash: false,
   
-  // Webpack-Cache für Production deaktivieren (verhindert große Cache-Dateien)
+  // Webpack-Optimierungen für Cloudflare Pages
   webpack: (config, { dev }) => {
     if (!dev) {
-      // Memory-basierter Cache statt persistentem Cache
-      config.cache = { 
-        type: 'memory', 
-        maxMemoryGenerations: 0 
-      };
+      // Cache komplett deaktivieren für Production Builds
+      config.cache = false;
       
-      // Webpack-Cache-Ordner explizit ausschließen
-      if (config.cache) {
-        config.cache.buildDependencies = {
-          config: [__filename]
-        };
+      // Bundle-Analyse vermeiden
+      if (config.plugins) {
+        config.plugins = config.plugins.filter(
+          plugin => plugin.constructor.name !== 'BundleAnalyzerPlugin'
+        );
       }
     }
     
@@ -28,6 +25,8 @@ const nextConfig = {
   experimental: {
     // Optimiert die Bundle-Größe
     optimizePackageImports: ['lucide-react', '@radix-ui/react-dialog'],
+    // Reduziert die Build-Größe
+    outputFileTracingRoot: process.cwd(),
   },
   
   // Komprimierung aktivieren
@@ -35,6 +34,12 @@ const nextConfig = {
   
   // Source Maps nur in Development
   productionBrowserSourceMaps: false,
+  
+  // Output-Optimierungen
+  output: 'standalone',
+  
+  // Reduziert die Build-Größe
+  swcMinify: true,
 };
 
 module.exports = nextConfig;
