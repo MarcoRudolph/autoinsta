@@ -9,25 +9,39 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import AuthForm from '@/components/auth/AuthForm';
-import { createClient } from '@/lib/auth/supabaseClient.client';
 import CookieBanner from '@/components/CookieBanner';
 import Footer from '@/components/Footer';
 
 export default function LandingPage() {
   const router = useRouter();
-  const supabase = createClient();
   const [checkingSession, setCheckingSession] = useState(true);
 
   useEffect(() => {
     let mounted = true;
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session && mounted) {
-        router.replace('/dashboard');
+    
+    // Only import and create Supabase client on the client side
+    const checkSession = async () => {
+      try {
+        const { createClient } = await import('@/lib/auth/supabaseClient.client');
+        const supabase = createClient();
+        
+        const { data } = await supabase.auth.getSession();
+        if (data.session && mounted) {
+          router.replace('/dashboard');
+        }
+      } catch (error) {
+        console.error('Error checking session:', error);
+      } finally {
+        if (mounted) {
+          setCheckingSession(false);
+        }
       }
-      setCheckingSession(false);
-    });
+    };
+
+    checkSession();
+    
     return () => { mounted = false; };
-  }, [router, supabase]);
+  }, [router]);
 
   if (checkingSession) {
     return (

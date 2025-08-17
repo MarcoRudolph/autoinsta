@@ -1,6 +1,3 @@
-import { createClient } from '@supabase/supabase-js'
-
-
 export async function register(email: string, password: string) {
   const res = await fetch('/api/register', {
     method: 'POST',
@@ -19,16 +16,25 @@ export async function signUp(email: string, password: string) {
 }
 
 export async function signIn(email: string, password: string) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  const supabase = createClient(supabaseUrl, supabaseKey)
-
-  return supabase.auth.signInWithPassword({ email, password });
+  try {
+    const { createClient } = await import('@/lib/auth/supabaseClient.client');
+    const supabase = createClient();
+    
+    return supabase.auth.signInWithPassword({ email, password });
+  } catch (error) {
+    console.error('Error creating Supabase client:', error);
+    return { error: { message: 'Authentication service unavailable' } };
+  }
 }
 
 export async function signOut() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  const supabase = createClient(supabaseUrl, supabaseKey)
-  return supabase.auth.signOut();
+  try {
+    const { createClient } = await import('@/lib/auth/supabaseClient.client');
+    const supabase = createClient();
+    
+    return supabase.auth.signOut();
+  } catch (error) {
+    console.error('Error creating Supabase client:', error);
+    return { error: { message: 'Authentication service unavailable' } };
+  }
 } 

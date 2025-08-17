@@ -1,7 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/auth/supabaseClient.client";
 import Image from 'next/image';
 
 type User = { email?: string };
@@ -10,14 +9,23 @@ const Navbar: React.FC = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
-  const supabase = createClient();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
-    });
-  }, [supabase]);
+    const getUser = async () => {
+      try {
+        const { createClient } = await import('@/lib/auth/supabaseClient.client');
+        const supabase = createClient();
+        
+        const { data } = await supabase.auth.getUser();
+        setUser(data.user);
+      } catch (error) {
+        console.error('Error getting user:', error);
+      }
+    };
+    
+    getUser();
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

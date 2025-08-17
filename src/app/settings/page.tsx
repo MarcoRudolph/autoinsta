@@ -2,18 +2,21 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/auth/supabaseClient.client';
 import Link from 'next/link';
 
 export default function SettingsPage() {
   const router = useRouter();
-  const supabase = createClient();
   const [loading, setLoading] = useState(false);
 
   const handleLogout = async () => {
     try {
       setLoading(true);
       localStorage.clear();
+      
+      // Only import and create Supabase client on the client side
+      const { createClient } = await import('@/lib/auth/supabaseClient.client');
+      const supabase = createClient();
+      
       await supabase.auth.signOut();
       router.push('/');
     } catch (error) {

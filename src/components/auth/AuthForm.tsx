@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import { signIn, signUp } from '@/lib/auth';
-import { createClient } from '@/lib/auth/supabaseClient.client';
 import { useRouter } from 'next/navigation';
 
 export default function AuthForm() {
-  const supabase = createClient();
   const router = useRouter();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
@@ -15,10 +13,20 @@ export default function AuthForm() {
   const handleGoogle = async () => {
     setLoading(true);
     setError(null);
-    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
-    if (error) setError(error.message);
-    else router.push('/dashboard');
-    setLoading(false);
+    
+    try {
+      const { createClient } = await import('@/lib/auth/supabaseClient.client');
+      const supabase = createClient();
+      
+      const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
+      if (error) setError(error.message);
+      else router.push('/dashboard');
+    } catch (error) {
+      console.error('Google login error:', error);
+      setError('Google login failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleFacebook = async () => {

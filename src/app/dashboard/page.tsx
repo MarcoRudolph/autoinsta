@@ -2,7 +2,6 @@
 'use client';
 import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createClient } from '@/lib/auth/supabaseClient.client';
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import AddValueModal from '@/components/ui/AddValueModal';
 import EditValueModal from '@/components/ui/EditValueModal';
@@ -51,7 +50,6 @@ type PersonaData = {
 function DashboardContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const supabase = createClient();
   
   // All hooks must be called before any return or conditional return
   // Initial state: flat structure
@@ -208,16 +206,19 @@ function DashboardContent() {
   const handleActivatePersona = async (id: string) => {
     console.log('handleActivatePersona called with id:', id);
     
-    // Get userId from session
-    const { data, error } = await supabase.auth.getSession();
-    if (error || !data.session?.user?.id) {
-      alert(t('dashboard.noUserLoggedIn'));
-      return;
-    }
-    const userId = data.session.user.id;
-    console.log('User ID:', userId);
-    
     try {
+      // Get userId from session
+      const { createClient } = await import('@/lib/auth/supabaseClient.client');
+      const supabase = createClient();
+      
+      const { data, error } = await supabase.auth.getSession();
+      if (error || !data.session?.user?.id) {
+        alert(t('dashboard.noUserLoggedIn'));
+        return;
+      }
+      const userId = data.session.user.id;
+      console.log('User ID:', userId);
+      
       console.log('Sending request to set active persona...');
       const res = await fetch('/api/set-active-persona', {
         method: 'POST',
@@ -507,13 +508,20 @@ function DashboardContent() {
   // Get user email on component mount
   useEffect(() => {
     const getUserEmail = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user?.email) {
-        setUserEmail(user.email);
+      try {
+        const { createClient } = await import('@/lib/auth/supabaseClient.client');
+        const supabase = createClient();
+        
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.email) {
+          setUserEmail(user.email);
+        }
+      } catch (error) {
+        console.error('Error getting user email:', error);
       }
     };
     getUserEmail();
-  }, [supabase]);
+  }, []);
 
   // Check and initialize AI template daily limit
   useEffect(() => {
@@ -576,6 +584,9 @@ function DashboardContent() {
       let userId: string = personality.userId ?? '';
       if (!userId) {
         // Get userId from Supabase session
+        const { createClient } = await import('@/lib/auth/supabaseClient.client');
+        const supabase = createClient();
+        
         const { data, error } = await supabase.auth.getSession();
         if (error || !data.session?.user?.id) {
           alert(t('dashboard.noUserLoggedIn'));
@@ -641,18 +652,32 @@ function DashboardContent() {
     } finally {
       setSaving(false);
     }
-  }, [personality, productLinks, fetchPersonas, supabase, currentPersonaId, t, selectedPersonaId]);
+  }, [personality, productLinks, fetchPersonas, currentPersonaId, t, selectedPersonaId]);
 
   useEffect(() => {
     let mounted = true;
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session && mounted) {
-        router.replace('/');
+    
+    const checkSession = async () => {
+      try {
+        const { createClient } = await import('@/lib/auth/supabaseClient.client');
+        const supabase = createClient();
+        
+        const { data } = await supabase.auth.getSession();
+        if (!data.session && mounted) {
+          router.replace('/');
+        }
+      } catch (error) {
+        console.error('Error checking session:', error);
+      } finally {
+        if (mounted) {
+          setCheckingSession(false);
+        }
       }
-      setCheckingSession(false);
-    });
+    };
+    
+    checkSession();
     return () => { mounted = false; };
-  }, [router, supabase]);
+  }, [router]);
 
   if (checkingSession) {
     return (
@@ -849,6 +874,9 @@ function DashboardContent() {
       localStorage.clear();
       
       // Sign out from Supabase
+      const { createClient } = await import('@/lib/auth/supabaseClient.client');
+      const supabase = createClient();
+      
       await supabase.auth.signOut();
       
       // Redirect to home page
