@@ -9,22 +9,24 @@ export async function GET(request: NextRequest) {
   const error = searchParams.get('error');
   const errorDescription = searchParams.get('error_description');
 
+  // Get the site URL with proper fallback
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 
+    (process.env.NODE_ENV === 'production' ? 'https://rudolpho-chat.de' : 'http://localhost:3000');
+
   // Initialize Supabase client
   const supabase = createClient();
 
   if (error) {
     console.error('OAuth error:', error, errorDescription);
     return NextResponse.redirect(
-      new URL(`/dashboard?error=${encodeURIComponent(errorDescription || error)}`, 
-      process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000')
+      new URL(`/dashboard?error=${encodeURIComponent(errorDescription || error)}`, siteUrl)
     );
   }
 
   if (!code) {
     console.error('No authorization code received');
     return NextResponse.redirect(
-      new URL('/dashboard?error=No authorization code received', 
-      process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000')
+      new URL('/dashboard?error=No authorization code received', siteUrl)
     );
   }
 
@@ -35,29 +37,25 @@ export async function GET(request: NextRequest) {
     if (exchangeError) {
       console.error('Error exchanging code for session:', exchangeError);
       return NextResponse.redirect(
-        new URL(`/dashboard?error=${encodeURIComponent(exchangeError.message)}`, 
-        process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000')
+        new URL(`/dashboard?error=${encodeURIComponent(exchangeError.message)}`, siteUrl)
       );
     }
 
     if (data.session) {
       // Successfully authenticated
       return NextResponse.redirect(
-        new URL('/dashboard?status=success', 
-        process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000')
+        new URL('/dashboard?status=success', siteUrl)
       );
     } else {
       console.error('No session received after code exchange');
       return NextResponse.redirect(
-        new URL('/dashboard?error=Authentication failed', 
-        process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000')
+        new URL('/dashboard?error=Authentication failed', siteUrl)
       );
     }
   } catch (error) {
     console.error('Unexpected error during OAuth callback:', error);
     return NextResponse.redirect(
-      new URL('/dashboard?error=Unexpected error during authentication', 
-      process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000')
+      new URL('/dashboard?error=Unexpected error during authentication', siteUrl)
     );
   }
 }
