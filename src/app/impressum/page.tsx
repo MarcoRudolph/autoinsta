@@ -36,7 +36,7 @@ export default function Impressum() {
           Umsatzsteuer-Identifikationsnummer gemäß § 27 a Umsatzsteuergesetz:
         </p>
         <p className="bg-gray-50 p-4 rounded-lg">
-          <em>Wird bei Bedarf ergänzt</em>
+          <strong>DE455180377</strong>
         </p>
       </section>
 
