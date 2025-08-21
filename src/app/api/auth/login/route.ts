@@ -12,9 +12,9 @@ export async function POST(request: NextRequest) {
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get the site URL with proper fallback
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 
-      (process.env.NODE_ENV === 'production' ? 'https://rudolpho-chat.de' : 'http://localhost:3000');
+      // Get the site URL with proper fallback
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 
+    (process.env.NEXT_PUBLIC_APP_URL || 'https://rudolpho-chat.de');
 
     // Get the callback URL
     const callbackUrl = `${siteUrl}/api/auth/callback`;

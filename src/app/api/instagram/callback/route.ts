@@ -1,11 +1,11 @@
 export const runtime = 'edge';
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   // Get the site URL with proper fallback
   const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 
-    (process.env.NODE_ENV === 'production' ? 'https://rudolpho-chat.de' : 'http://localhost:3000');
+    (process.env.NEXT_PUBLIC_SITE_URL || 'https://rudolpho-chat.de');
 
   return NextResponse.redirect(new URL('/dashboard', siteUrl));
 }

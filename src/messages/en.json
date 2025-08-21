@@ -111,6 +111,35 @@
       "from": "From",
       "until": "Until",
       "productLinks": "Product Links"
+    },
+    "systemPrompt": {
+      "title": "System Prompt",
+      "subtitle": "Custom instructions to guide the AI's behavior and responses in conversations.",
+      "placeholder": "Enter a custom system prompt to guide the AI's behavior and responses..."
+    },
+    "downloadDocumentation": {
+      "title": "Download Complete Documentation",
+      "germanVersion": "German Version",
+      "englishVersion": "English Version",
+      "germanDescription": "Complete user guide in German",
+      "englishDescription": "Complete user guide in English",
+      "downloadPdf": "Download PDF"
+    },
+    "quickStartGuide": {
+      "title": "Quick Start Guide",
+      "step1": {
+        "title": "Sign Up",
+        "description": "Create an account via Google, Facebook or email"
+      },
+      "step2": {
+        "title": "Create AI-Chatbot",
+        "description": "Define personality and response behavior"
+      },
+      "step3": {
+        "title": "Connect Instagram",
+        "description": "Connect your Instagram account and activate the bot"
+      },
+      "getStarted": "Get Started"
     }
   },
   "modals": {

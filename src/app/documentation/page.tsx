@@ -2,17 +2,17 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useI18n } from '@/hooks/useI18n';
 
 export default function DocumentationPage() {
   const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'de'>('de');
+  const { t } = useI18n(selectedLanguage);
 
   const documentation = {
     en: {
       title: 'Documentation',
       subtitle: 'Complete guide to setting up and using your AI-Chatbot',
       languageLabel: 'Language:',
-      userGuideTitle: 'User Guide: Boost Your Date - AI-Chatbot Setup',
-      userGuideDescription: 'Welcome to Boost Your Date! This guide will walk you through the complete process of setting up and using your AI-Chatbot to automate your Instagram interactions.',
       sections: [
         {
           title: 'Getting Started - Login',
@@ -52,33 +52,31 @@ export default function DocumentationPage() {
       title: 'Dokumentation',
       subtitle: 'Vollständige Anleitung zur Einrichtung und Nutzung Ihres AI-Chatbots',
       languageLabel: 'Sprache:',
-      userGuideTitle: 'Benutzerhandbuch: Boost Your Date - AI-Chatbot Einrichtung',
-      userGuideDescription: 'Willkommen bei Boost Your Date! Diese Anleitung führt Sie durch den vollständigen Prozess der Einrichtung und Nutzung Ihres AI-Chatbots zur Automatisierung Ihrer Instagram-Interaktionen.',
       sections: [
-        {
-          title: 'Erste Schritte - Anmeldung',
-          content: 'Erfahren Sie, wie Sie ein Konto erstellen und auf Ihr Dashboard zugreifen können - über Facebook-Anmeldung, E-Mail-Registrierung oder bestehende Konten.'
-        },
-        {
-          title: 'Ersten AI-Chatbot erstellen',
-          content: 'Schritt-für-Schritt-Anleitung zur Erstellung Ihres ersten AI-Chatbots, Definition von Persönlichkeitsmerkmalen und Anpassung des Antwortverhaltens.'
-        },
+                 {
+           title: 'Anmeldung',
+           content: 'Mit Klick auf Jetzt ausprobieren gelangen Sie zu unseren Login Möglichkeiten. Sie können sich mit Ihrem Google- oder Facebookaccount anmelden. Natürlich können Sie sich auch mit E-Mail und Passwort registrieren.'
+         },
+                 {
+           title: 'Chatbot erstellen',
+           content: 'Im Dashboard angekommen, sehen Sie bereits die Felder für die Persönlichkeitserstellung. Geben Sie ihrem Chatbot einen Namen und fügen Sie je nach Zielgruppe Content zu den einzelnen Eigenschaften hinzu. Dieser wird während des Gesprächs herangezogen, wenn die Situation es zulässt.'
+         },
         {
           title: 'Instagram verbinden',
           content: 'Wie Sie Ihr Instagram-Konto verbinden, Zugriff autorisieren und die Verbindung für nahtlose Integration verifizieren.'
         },
-        {
-          title: 'Bot-Einstellungen konfigurieren',
-          content: 'Konfigurieren Sie Antwortzeiten, Betriebszeiten, Antwortfrequenz und Inhaltsfilterung zur Optimierung der AI-Chatbot-Performance.'
-        },
-        {
-          title: 'Produkt-Links einrichten',
-          content: 'Fügen Sie Ihre Produkte hinzu, konfigurieren Sie Werbestrategien und richten Sie Kauf-Tracking ein, um Verkäufe über Ihren AI-Chatbot zu fördern.'
-        },
-        {
-          title: 'AI-Chatbot aktivieren',
-          content: 'Überprüfen Sie Ihr Setup, testen Sie im Test-Modus und gehen Sie live mit Ihrem AI-Chatbot, während Sie Performance-Metriken überwachen.'
-        },
+                 {
+           title: 'Bot-Einstellungen konfigurieren',
+           content: 'Unter der Auswahl ihrer Chatbots können Sie Einstellungen tätigen wie System prompts, Antwortzeiten und Memory-Settings'
+         },
+                 {
+           title: 'Produkt-Links einrichten',
+           content: 'Fügen Sie Ihre Produkte hinzu, die ihr Chatbot während des Gesprächs vorschlägt, um Verkäufe zu fördern.'
+         },
+                 {
+           title: 'AI-Chatbot aktivieren',
+           content: 'Überprüfen Sie Ihr Setup, indem Sie einen AI-Chatbot aktivieren und dessen Verhalten testen. Sie können zunächst wahlweise nur Direct Messages aktivieren und Kommentare deaktiviert lassen – oder umgekehrt –, um die Funktionen schrittweise zu testen.'
+         },
         {
           title: 'Mehrere AI-Chatbots verwalten',
           content: 'Erstellen Sie zusätzliche AI-Chatbots, wechseln Sie zwischen ihnen und verwenden Sie verschiedene Persönlichkeiten für verschiedene Zielgruppen und Zwecke.'
@@ -135,17 +133,6 @@ export default function DocumentationPage() {
 
         {/* Documentation Overview */}
         <div className="bg-[#1e293b] rounded-lg p-8 mb-12 border border-gray-700">
-          <h2 className="text-2xl font-bold text-white mb-6" style={{
-            fontFamily: '"Inter", sans-serif',
-            letterSpacing: '-0.04em',
-            lineHeight: '1.2em'
-          }}>
-            {currentDoc.userGuideTitle}
-          </h2>
-          <p className="text-[#a3bffa] mb-8 text-lg">
-            {currentDoc.userGuideDescription}
-          </p>
-
           {/* Sections Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {currentDoc.sections.map((section, index) => (
@@ -172,13 +159,15 @@ export default function DocumentationPage() {
             letterSpacing: '-0.04em',
             lineHeight: '1.2em'
           }}>
-            Vollständige Dokumentation herunterladen
+            {selectedLanguage === 'de' ? 'Vollständige Dokumentation herunterladen' : 'Download Complete Documentation'}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-[#15192a] rounded-lg p-6 border border-gray-600">
-              <h3 className="text-lg font-semibold text-white mb-3">Deutsche Version</h3>
+              <h3 className="text-lg font-semibold text-white mb-3">
+                {selectedLanguage === 'de' ? 'Deutsche Version' : 'German Version'}
+              </h3>
               <p className="text-[#a3bffa] text-sm mb-4">
-                Vollständiges Benutzerhandbuch in deutscher Sprache
+                {selectedLanguage === 'de' ? 'Vollständiges Benutzerhandbuch in deutscher Sprache' : 'Complete user guide in German'}
               </p>
               <a
                 href="/docs/benutzerhandbuch.md"
@@ -188,13 +177,15 @@ export default function DocumentationPage() {
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                PDF herunterladen
+                {selectedLanguage === 'de' ? 'PDF herunterladen' : 'Download PDF'}
               </a>
             </div>
             <div className="bg-[#15192a] rounded-lg p-6 border border-gray-600">
-              <h3 className="text-lg font-semibold text-white mb-3">English Version</h3>
+              <h3 className="text-lg font-semibold text-white mb-3">
+                {selectedLanguage === 'de' ? 'English Version' : 'English Version'}
+              </h3>
               <p className="text-[#a3bffa] text-sm mb-4">
-                Complete user guide in English
+                {selectedLanguage === 'de' ? 'Complete user guide in English' : 'Complete user guide in English'}
               </p>
               <a
                 href="/docs/user-guide.md"
@@ -204,7 +195,7 @@ export default function DocumentationPage() {
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                Download PDF
+                {selectedLanguage === 'de' ? 'PDF herunterladen' : 'Download PDF'}
               </a>
             </div>
           </div>
@@ -217,34 +208,40 @@ export default function DocumentationPage() {
             letterSpacing: '-0.04em',
             lineHeight: '1.2em'
           }}>
-            Schnellstart-Anleitung
+            {selectedLanguage === 'de' ? 'Schnellstart-Anleitung' : 'Quick Start Guide'}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center">
               <div className="w-12 h-12 bg-gradient-to-r from-sky-700 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-white font-bold text-lg">1</span>
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">Anmelden</h3>
+              <h3 className="text-lg font-semibold text-white mb-2">
+                {selectedLanguage === 'de' ? 'Anmelden' : 'Sign Up'}
+              </h3>
               <p className="text-[#a3bffa] text-sm">
-                Erstellen Sie ein Konto über Facebook oder E-Mail
+                {selectedLanguage === 'de' ? 'Erstellen Sie ein Konto über Google, Facebook oder E-Mail' : 'Create an account via Google, Facebook or email'}
               </p>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 bg-gradient-to-r from-sky-700 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-white font-bold text-lg">2</span>
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">AI-Chatbot erstellen</h3>
+              <h3 className="text-lg font-semibold text-white mb-2">
+                {selectedLanguage === 'de' ? 'AI-Chatbot erstellen' : 'Create AI-Chatbot'}
+              </h3>
               <p className="text-[#a3bffa] text-sm">
-                Definieren Sie Persönlichkeit und Antwortverhalten
+                {selectedLanguage === 'de' ? 'Definieren Sie Persönlichkeit und Antwortverhalten' : 'Define personality and response behavior'}
               </p>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 bg-gradient-to-r from-sky-700 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-white font-bold text-lg">3</span>
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">Instagram verbinden</h3>
+              <h3 className="text-lg font-semibold text-white mb-2">
+                {selectedLanguage === 'de' ? 'Instagram verbinden' : 'Connect Instagram'}
+              </h3>
               <p className="text-[#a3bffa] text-sm">
-                Verbinden Sie Ihr Instagram-Konto und aktivieren Sie den Bot
+                {selectedLanguage === 'de' ? 'Verbinden Sie Ihr Instagram-Konto und aktivieren Sie den Bot' : 'Connect your Instagram account and activate the bot'}
               </p>
             </div>
           </div>
@@ -253,7 +250,7 @@ export default function DocumentationPage() {
               href="/dashboard"
               className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-sky-700 to-cyan-500 text-white rounded-lg hover:from-sky-600 hover:to-cyan-400 transition-all duration-200 font-medium"
             >
-              Jetzt loslegen
+              {selectedLanguage === 'de' ? 'Jetzt loslegen' : 'Get Started'}
               <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>

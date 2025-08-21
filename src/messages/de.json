@@ -111,6 +111,35 @@
       "from": "Von",
       "until": "Bis",
       "productLinks": "Produkt-Links"
+    },
+    "systemPrompt": {
+      "title": "System-Prompt",
+      "subtitle": "Benutzerdefinierte Anweisungen zur Steuerung des Verhaltens und der Antworten der KI in Gesprächen.",
+      "placeholder": "Geben Sie einen benutzerdefinierten System-Prompt ein, um das Verhalten und die Antworten der KI zu steuern..."
+    },
+    "downloadDocumentation": {
+      "title": "Vollständige Dokumentation herunterladen",
+      "germanVersion": "Deutsche Version",
+      "englishVersion": "English Version",
+      "germanDescription": "Vollständiges Benutzerhandbuch in deutscher Sprache",
+      "englishDescription": "Complete user guide in English",
+      "downloadPdf": "PDF herunterladen"
+    },
+    "quickStartGuide": {
+      "title": "Schnellstart-Anleitung",
+      "step1": {
+        "title": "Anmelden",
+        "description": "Erstellen Sie ein Konto über Google, Facebook oder E-Mail"
+      },
+      "step2": {
+        "title": "AI-Chatbot erstellen",
+        "description": "Definieren Sie Persönlichkeit und Antwortverhalten"
+      },
+      "step3": {
+        "title": "Instagram verbinden",
+        "description": "Verbinden Sie Ihr Instagram-Konto und aktivieren Sie den Bot"
+      },
+      "getStarted": "Jetzt loslegen"
     }
   },
   "modals": {

@@ -7,6 +7,7 @@ import AddValueModal from '@/components/ui/AddValueModal';
 import EditValueModal from '@/components/ui/EditValueModal';
 import { useI18n } from '@/hooks/useI18n';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import Footer from '@/components/Footer';
 
 import isEqual from 'lodash.isequal';
 
@@ -15,6 +16,7 @@ import isEqual from 'lodash.isequal';
 type Personality = {
   name: string;
   description: string;
+  systemPrompt?: string;
   childhoodExperiences: { [key: string]: string[] };
   emotionalTriggers: string[];
   characterTraits: string[];
@@ -56,6 +58,7 @@ function DashboardContent() {
   const [personality, setPersonality] = useState<Personality>({
     name: '',
     description: '',
+    systemPrompt: '',
     childhoodExperiences: {
       personalDevelopment: [],
       sexuality: [],
@@ -326,6 +329,7 @@ function DashboardContent() {
         const mappedPersonality = {
           name: aiPersona?.name || '',
           description: aiPersona?.description || '',
+          systemPrompt: aiPersona?.systemPrompt || '',
           childhoodExperiences: aiPersona?.childhoodExperiences || {
             personalDevelopment: [],
             sexuality: [],
@@ -398,6 +402,7 @@ function DashboardContent() {
         setPersonality({
           name: data.personality?.name || '',
           description: data.personality?.description || '',
+          systemPrompt: data.personality?.systemPrompt || '',
           childhoodExperiences: data.personality?.childhoodExperiences || {
             personalDevelopment: [],
             sexuality: [],
@@ -433,6 +438,7 @@ function DashboardContent() {
         setPersonality({
           name: data?.name || '',
           description: data?.description || '',
+          systemPrompt: data?.systemPrompt || '',
           childhoodExperiences: data?.childhoodExperiences || {
             personalDevelopment: [],
             sexuality: [],
@@ -815,6 +821,7 @@ function DashboardContent() {
         setPersonality({
           name: '',
           description: '',
+          systemPrompt: '',
           childhoodExperiences: {
             personalDevelopment: [],
             sexuality: [],
@@ -983,6 +990,7 @@ function DashboardContent() {
                   setPersonality({
                     name: '',
                     description: '',
+                    systemPrompt: '',
                     childhoodExperiences: {
                       personalDevelopment: [],
                       sexuality: [],
@@ -1641,6 +1649,7 @@ function DashboardContent() {
                       setPersonality({
                         name: currentName,
                         description: currentDescription,
+                        systemPrompt: '',
                         childhoodExperiences: {
                           personalDevelopment: [],
                           sexuality: [],
@@ -1808,6 +1817,29 @@ function DashboardContent() {
               <span className="text-gray-400">{t('dashboard.noPersonasYet')}</span>
             )}
           </div>
+
+          {/* System Prompt Section as Card */}
+          <div className="bg-[#15192a]/80 backdrop-blur-lg rounded-xl shadow-2xl p-6 text-white">
+            <h2 className="text-2xl md:text-4xl mb-4 bg-gradient-to-r from-[#f3aacb] via-[#a3bffa] to-[#e6ebfc] bg-clip-text text-transparent drop-shadow-lg tracking-tight" style={{
+              fontFamily: '"Inter", sans-serif',
+              fontWeight: '800',
+              letterSpacing: '-0.04em',
+              lineHeight: '1.2em',
+              color: '#ffffff'
+            }}>
+              {currentLocale === 'de' ? 'System-Prompt' : 'System Prompt'}
+            </h2>
+            <p className="text-sm mb-4 opacity-80">
+              {currentLocale === 'de' ? 'Benutzerdefinierte Anweisungen zur Steuerung des Verhaltens und der Antworten der KI in Gesprächen.' : 'Custom instructions to guide the AI\'s behavior and responses in conversations.'}
+            </p>
+            <textarea
+              placeholder={currentLocale === 'de' ? 'Geben Sie einen benutzerdefinierten System-Prompt ein, um das Verhalten und die Antworten der KI zu steuern...' : 'Enter a custom system prompt to guide the AI\'s behavior and responses...'}
+              className="w-full p-3 border rounded text-blue-900 bg-blue-50 min-h-[120px] resize-y"
+              value={personality.systemPrompt || ''}
+              onChange={e => setPersonality(prev => ({ ...prev, systemPrompt: e.target.value }))}
+            />
+          </div>
+
           <div className="bg-[#15192a]/80 backdrop-blur-lg rounded-xl shadow-2xl p-6 text-white">
             <div className="flex items-center gap-4 mb-4">
               <h2 className="text-2xl md:text-4xl bg-gradient-to-r from-[#f3aacb] via-[#a3bffa] to-[#e6ebfc] bg-clip-text text-transparent drop-shadow-lg tracking-tight m-0" style={{
@@ -2166,6 +2198,8 @@ function DashboardContent() {
         </DialogContent>
       </Dialog>
 
+      {/* Footer */}
+      <Footer />
 
     </div>
   );

@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
 
   // Get the site URL with proper fallback
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 
-    (process.env.NODE_ENV === 'production' ? 'https://rudolpho-chat.de' : 'http://localhost:3000');
+    (process.env.NEXT_PUBLIC_APP_URL || 'https://rudolpho-chat.de');
 
   // Initialize Supabase client
   const supabase = createClient();
