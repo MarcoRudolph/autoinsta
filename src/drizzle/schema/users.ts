@@ -6,6 +6,7 @@ export const users = pgTable('users', {
   email: text('email').notNull().unique(),
   passwordHash: text('passwordHash').notNull(),
   instaAccessToken: text('instaAccessToken'),
+  locale: text('locale').default('en'), // User's preferred language ('en' or 'de')
   
   // Subscription fields for Stripe integration (using snake_case to match DB)
   stripeCustomerId: text('stripe_customer_id'), // Stripe customer reference

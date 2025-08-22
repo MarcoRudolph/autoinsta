@@ -15,12 +15,18 @@ export async function POST(req: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
     
+    // Ensure the persona data has an active status
+    const personaData = {
+      ...data,
+      active: data.active !== undefined ? data.active : false
+    };
+    
     // Insert new persona using Supabase
     const { data: result, error } = await supabase
       .from('personas')
       .insert({
         userId: data.userId, // ensure userId is provided
-        data,
+        data: personaData,
       })
       .select()
       .single();

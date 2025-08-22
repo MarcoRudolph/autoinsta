@@ -15,6 +15,10 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "rudolpho-chat",
   description: "Let the bot do the chat for you",
+  icons: {
+    icon: '/images/appicon.png',
+    apple: '/images/appicon.png',
+  },
 };
 
 export default function RootLayout({

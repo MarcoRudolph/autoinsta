@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { signIn, signUp } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 
 export default function AuthForm() {
@@ -68,20 +67,49 @@ export default function AuthForm() {
     setError(null);
     try {
       if (mode === 'login') {
-        const { error } = await signIn(email, password);
-        if (error) setError(error.message);
-        else router.push('/dashboard');
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+          setError(data.message || 'Login failed');
+          return;
+        }
+
+        // After successful login, create Supabase session
+        const { createClient } = await import('@/lib/auth/supabaseClient.client');
+        const supabase = createClient();
+        
+        // Create a session manually or redirect to dashboard
+        router.push('/dashboard');
       } else {
-        const { error } = await signUp(email, password);
-        if (error) setError(error.message);
-        else router.push('/dashboard');
+        const response = await fetch('/api/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+          setError(data.message || 'Registration failed');
+          return;
+        }
+
+        // After successful registration, redirect to dashboard
+        router.push('/dashboard');
       }
     } catch (err: unknown) {
-      if (typeof err === 'object' && err !== null && 'message' in err) {
-        setError((err as { message?: string }).message || 'Something went wrong');
-      } else {
-        setError('Something went wrong');
-      }
+      console.error('Auth error:', err);
+      setError('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }

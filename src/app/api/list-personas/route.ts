@@ -24,7 +24,9 @@ type PersonaData = {
   [key: string]: unknown;
 };
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const userId = searchParams.get('userId');
   try {
     // Initialize Supabase client
     const supabase = createClient(
@@ -32,9 +34,14 @@ export async function GET() {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    const { data: result, error } = await supabase
-      .from('personas')
-      .select('*');
+    let query = supabase.from('personas').select('*');
+    
+    // Filter by userId if provided
+    if (userId) {
+      query = query.eq('userId', userId);
+    }
+    
+    const { data: result, error } = await query;
 
     if (error) {
       console.error('Error fetching personas:', error);
@@ -59,13 +66,9 @@ export async function GET() {
       console.log(`Persona ${row.id} - data?.personality:`, data?.personality);
       console.log(`Persona ${row.id} - final name:`, name);
       
-      // Check for active status in multiple locations, default to false if not found
+      // Check for active status - it should be at data.active level
       let active = false;
-      if (data?.data?.personality?.active !== undefined) {
-        active = data.data.personality.active;
-      } else if (data?.personality?.active !== undefined) {
-        active = data.personality.active;
-      } else if (data?.active !== undefined) {
+      if (data?.active !== undefined) {
         active = data.active;
       } else {
         // If active field doesn't exist, default to false

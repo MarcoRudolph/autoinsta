@@ -66,9 +66,9 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/terms" className="hover:text-[#f3aacb] transition-colors">
-                  Terms of use
-                </Link>
+                        <Link href="/terms-new" className="hover:text-[#f3aacb] transition-colors">
+          Terms of use
+        </Link>
               </li>
               <li>
                 <Link href="/cookie-policy" className="hover:text-[#f3aacb] transition-colors">
@@ -76,8 +76,13 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/privacy" className="hover:text-[#f3aacb] transition-colors">
+                <Link href="/privacy-new" className="hover:text-[#f3aacb] transition-colors">
                   Datenschutz
+                </Link>
+              </li>
+              <li>
+                <Link href="/data-deletion-new" className="hover:text-[#f3aacb] transition-colors">
+                  Datenlöschung
                 </Link>
               </li>
             </ul>
@@ -93,11 +98,17 @@ export default function Footer() {
             <Link href="/impressum" className="text-xs text-gray-500 hover:text-[#f3aacb] transition-colors">
               Impressum
             </Link>
-            <Link href="/terms" className="text-xs text-gray-500 hover:text-[#f3aacb] transition-colors">
+            <Link href="/privacy-new" className="text-xs text-gray-500 hover:text-[#f3aacb] transition-colors">
+              Datenschutz
+            </Link>
+            <Link href="/terms-new" className="text-xs text-gray-500 hover:text-[#f3aacb] transition-colors">
               Terms of use
             </Link>
             <Link href="/cookie-policy" className="text-xs text-gray-500 hover:text-[#f3aacb] transition-colors">
               Cookie-Richtlinie
+            </Link>
+            <Link href="/data-deletion-new" className="text-xs text-gray-500 hover:text-[#f3aacb] transition-colors">
+              Datenlöschung
             </Link>
           </div>
         </div>

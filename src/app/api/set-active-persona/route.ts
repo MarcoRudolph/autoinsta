@@ -42,20 +42,14 @@ export async function POST(req: NextRequest) {
       const data = p.data as PersonaData;
       const isActive = p.id === personaId;
       
-      // Ensure personality object exists
-      const personality = data.personality || {};
-      
-      // Set active in both places to ensure compatibility
+      // Update only the active status at the top level for consistency
       const updatedData = {
         ...data,
-        active: isActive,
-        personality: {
-          ...personality,
-          active: isActive
-        }
+        active: isActive
       };
       
-      console.log(`Updating persona ${p.id} with active=${isActive}, data:`, updatedData);
+      console.log(`Updating persona ${p.id} with active=${isActive}, current data:`, data);
+      console.log(`Updated data will be:`, updatedData);
       
       // Update persona using Supabase
       const { error: updateError } = await supabase
@@ -65,6 +59,8 @@ export async function POST(req: NextRequest) {
 
       if (updateError) {
         console.error(`Error updating persona ${p.id}:`, updateError);
+      } else {
+        console.log(`Successfully updated persona ${p.id} with active=${isActive}`);
       }
     }
     

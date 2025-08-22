@@ -3,8 +3,11 @@
 import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import ProductLinkModal from '@/components/ui/ProductLinkModal';
+import AIPersonaBuilderModal from '@/components/ui/AIPersonaBuilderModal';
 import AddValueModal from '@/components/ui/AddValueModal';
 import EditValueModal from '@/components/ui/EditValueModal';
+
 import { useI18n } from '@/hooks/useI18n';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Footer from '@/components/Footer';
@@ -46,7 +49,12 @@ type Personality = {
 // New type for the complete persona data structure
 type PersonaData = {
   personality: Personality;
-  productLinks: string[];
+  productLinks: Array<{
+    id: string;
+    url: string;
+    actionType: string;
+    sendingBehavior: string;
+  }>;
 };
 
 function DashboardContent() {
@@ -91,23 +99,39 @@ function DashboardContent() {
     delayMax: 10
   });
   
-  // Product links state - now part of persona data
-  const [productLinks, setProductLinks] = useState<string[]>([]);
+  // Product links state with enhanced structure
+  const [productLinks, setProductLinks] = useState<Array<{
+    id: string;
+    url: string;
+    actionType: string;
+    sendingBehavior: string;
+  }>>([]);
   
   // Locale state for internationalization
   const [currentLocale, setCurrentLocale] = useState('en');
+  const [userId, setUserId] = useState<string>('');
   
   const { t, tCommon } = useI18n(currentLocale);
   
   const [dmSettings, setDmSettings] = useState({
     active: false,
     duration: { from: '09:00', until: '22:00' },
-    productLinks: [] as string[],
+    productLinks: [] as Array<{
+      id: string;
+      url: string;
+      actionType: string;
+      sendingBehavior: string;
+    }>,
   });
   const [commentSettings, setCommentSettings] = useState({
     active: false,
     duration: { from: '09:00', until: '22:00' },
-    productLinks: [] as string[],
+    productLinks: [] as Array<{
+      id: string;
+      url: string;
+      actionType: string;
+      sendingBehavior: string;
+    }>,
   });
   const [instagramConnected, setInstagramConnected] = useState(false);
   const [personas, setPersonas] = useState<{id: string, name: string, active?: boolean}[]>([]);
@@ -131,26 +155,41 @@ function DashboardContent() {
   const [userEmail, setUserEmail] = useState<string>('');
   const userDropdownRef = useRef<HTMLDivElement>(null);
   
-  // Modal states
-  const [addModalOpen, setAddModalOpen] = useState(false);
-  const [currentModalConfig, setCurrentModalConfig] = useState<{
+
+
+
+
+  // Delete confirmation dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [personaToDelete, setPersonaToDelete] = useState<{id: string, name: string} | null>(null);
+
+  // Product link modal state
+  const [productLinkModalOpen, setProductLinkModalOpen] = useState(false);
+  const [aiPersonaBuilderModalOpen, setAiPersonaBuilderModalOpen] = useState(false);
+  const [editingProductLink, setEditingProductLink] = useState<{
+    id: string;
+    url: string;
+    actionType: string;
+    sendingBehavior: string;
+  } | null>(null);
+
+  // AddValueModal state
+  const [addValueModalOpen, setAddValueModalOpen] = useState(false);
+  const [addValueModalConfig, setAddValueModalConfig] = useState<{
     title: string;
     placeholder: string;
     onSave: (value: string) => void;
   } | null>(null);
 
-  // EditValueModal states for product links
+  // EditValueModal state
   const [editValueModalOpen, setEditValueModalOpen] = useState(false);
-  const [editValueModalConfig, setEditValueModalConfig] = useState<{
+  const [editingValue, setEditingValue] = useState<{
+    section: string;
+    index: number;
+    oldValue: string;
     title: string;
-    currentValue: string;
     placeholder: string;
-    onSave: (oldValue: string, newValue: string) => void;
   } | null>(null);
-
-  // Delete confirmation dialog state
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [personaToDelete, setPersonaToDelete] = useState<{id: string, name: string} | null>(null);
 
   // Helper function to check if a persona is empty (has no meaningful content)
   const isPersonaEmpty = (persona: typeof personality): boolean => {
@@ -172,16 +211,46 @@ function DashboardContent() {
     );
   };
 
-  // Helper function to open add modal
-  const openAddModal = (title: string, placeholder: string, onSave: (value: string) => void) => {
-    setCurrentModalConfig({ title, placeholder, onSave });
-    setAddModalOpen(true);
-  };
 
-  // Helper function to open edit value modal for product links
-  const openEditValueModal = (title: string, placeholder: string, onSave: (oldValue: string, newValue: string) => void) => {
-    setEditValueModalConfig({ title, currentValue: '', placeholder, onSave });
-    setEditValueModalOpen(true);
+
+
+
+  // Helper function to convert old string-based product links to new structure
+  const convertProductLinks = (links: (string | { id?: string; url: string; actionType?: string; sendingBehavior?: string })[]): Array<{
+    id: string;
+    url: string;
+    actionType: string;
+    sendingBehavior: string;
+  }> => {
+    if (!Array.isArray(links)) return [];
+    
+    return links.map((link, index) => {
+      if (typeof link === 'string') {
+        // Convert old string format to new structure
+        return {
+          id: `legacy-${index}-${Date.now()}`,
+          url: link,
+          actionType: 'buy',
+          sendingBehavior: 'proactive'
+        };
+      } else if (link && typeof link === 'object' && link.url) {
+        // Already in new format
+        return {
+          id: link.id || `link-${index}-${Date.now()}`,
+          url: link.url,
+          actionType: link.actionType || 'buy',
+          sendingBehavior: link.sendingBehavior || 'proactive'
+        };
+      } else {
+        // Invalid link, skip
+        return null;
+      }
+    }).filter(Boolean) as Array<{
+      id: string;
+      url: string;
+      actionType: string;
+      sendingBehavior: string;
+    }>;
   };
 
 
@@ -207,8 +276,6 @@ function DashboardContent() {
   }, []);
 
   const handleActivatePersona = async (id: string) => {
-    console.log('handleActivatePersona called with id:', id);
-    
     try {
       // Get userId from session
       const { createClient } = await import('@/lib/auth/supabaseClient.client');
@@ -220,9 +287,7 @@ function DashboardContent() {
         return;
       }
       const userId = data.session.user.id;
-      console.log('User ID:', userId);
       
-      console.log('Sending request to set active persona...');
       const res = await fetch('/api/set-active-persona', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -233,12 +298,7 @@ function DashboardContent() {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
       
-      const result = await res.json();
-      console.log('Set active persona result:', result);
-      
-      console.log('Fetching updated personas...');
       await fetchPersonas();
-      console.log('Personas updated');
       
     } catch (err) {
       console.error('Error setting active persona:', err);
@@ -250,7 +310,21 @@ function DashboardContent() {
   const fetchPersonas = useCallback(async () => {
     try {
       console.log('Fetching personas...');
-      const res = await fetch('/api/list-personas');
+      // Add cache-busting parameter to ensure fresh data
+      const timestamp = Date.now();
+      
+      // Get userId for filtering
+      let userId = '';
+      try {
+        const { createClient } = await import('@/lib/auth/supabaseClient.client');
+        const supabase = createClient();
+        const { data } = await supabase.auth.getSession();
+        userId = data.session?.user?.id || '';
+      } catch (error) {
+        console.error('Error getting userId:', error);
+      }
+      
+      const res = await fetch(`/api/list-personas?t=${timestamp}&userId=${userId}`);
       if (res.ok) {
         const data = await res.json();
         console.log('Raw personas data:', data);
@@ -261,10 +335,15 @@ function DashboardContent() {
         const validPersonas = (data.personas || []).filter((persona: {id: string, name: string, active?: boolean}) => 
           persona && persona.id && persona.name && persona.id !== null && persona.name !== null
         );
+        
+        // For now, use all valid personas without individual verification
+        // The verification was causing issues with newly created personas
+        const verifiedPersonas = validPersonas;
         console.log('Valid personas:', validPersonas);
-        console.log('Valid personas names:', validPersonas.map((p: {id: string, name: string, active?: boolean}) => ({ id: p.id, name: p.name })));
-        console.log('Valid personas full details:', JSON.stringify(validPersonas, null, 2));
-        setPersonas(validPersonas);
+        console.log('Verified personas:', verifiedPersonas);
+        console.log('Valid personas with active status:', verifiedPersonas.map((p: {id: string, name: string, active?: boolean}) => ({ id: p.id, name: p.name, active: p.active })));
+        console.log('Valid personas full details:', JSON.stringify(verifiedPersonas, null, 2));
+        setPersonas(verifiedPersonas);
         
         // Only clear selected persona if we have no personas
         if (validPersonas.length === 0) {
@@ -287,8 +366,49 @@ function DashboardContent() {
 
   // Fetch personas on mount
   useEffect(() => {
-    fetchPersonas();
+    // Clear any potential cached data and force fresh fetch
+    const clearCacheAndFetch = async () => {
+      // Clear any cached personas data
+      if (typeof window !== 'undefined') {
+        // Clear any potential cached API responses
+        if ('caches' in window) {
+          try {
+            const cacheNames = await caches.keys();
+            await Promise.all(
+              cacheNames.map(cacheName => caches.delete(cacheName))
+            );
+          } catch (error) {
+            console.log('Cache clearing not available:', error);
+          }
+        }
+      }
+      await fetchPersonas();
+    };
+    
+    clearCacheAndFetch();
   }, [fetchPersonas]);
+
+  // Refresh personas when returning to dashboard (e.g., after data deletion)
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchPersonas();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [fetchPersonas]);
+
+  // Check for refresh parameter and refresh personas
+  useEffect(() => {
+    const refreshParam = searchParams.get('refresh');
+    if (refreshParam === 'true') {
+      fetchPersonas();
+      // Remove the refresh parameter from URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete('refresh');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [searchParams, fetchPersonas]);
 
   // Check subscription status on component mount
   useEffect(() => {
@@ -302,7 +422,7 @@ function DashboardContent() {
     return lastAiTemplateDate === today && aiTemplateCount < dailyLimit;
   }, [lastAiTemplateDate, aiTemplateCount, isProUser]);
 
-  const handleGetAITemplate = useCallback(async () => {
+  const handleAIPersonaGenerate = useCallback(async (prompt: string) => {
     // Check daily limit first
     if (!canGenerateAITemplate()) {
       alert(t('dashboard.aiTemplateLimit'));
@@ -312,9 +432,21 @@ function DashboardContent() {
     setLoadingAI(true);
     console.log('Sending request to /api/generate-persona...');
     try {
-      const res = await fetch('/api/generate-persona', { method: 'POST' });
+      const res = await fetch('/api/generate-persona', { 
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt })
+      });
       console.log('Received response from /api/generate-persona:', res);
-      if (!res.ok) throw new Error('Failed to generate persona');
+      if (!res.ok) {
+        const errorData = await res.json();
+        if (errorData.safetyIssue) {
+          throw new Error(errorData.message || `Content safety check failed: ${errorData.safetyIssue}`);
+        }
+        throw new Error('Failed to generate persona');
+      }
       const data = await res.json();
       console.log('Parsed JSON from /api/generate-persona:', data);
       if (data && data.persona) {
@@ -376,11 +508,18 @@ function DashboardContent() {
         setPersonality(mappedPersonality);
         console.log('Persona state updated with AI template.');
         
+        // Clear currentPersonaId to ensure this is treated as a new persona
+        setCurrentPersonaId(null);
+        setSelectedPersonaId('');
+        
         // Update daily limit counter
         const today = new Date().toDateString();
         const newCount = aiTemplateCount + 1;
         setAiTemplateCount(newCount);
         localStorage.setItem('aiTemplateLimit', JSON.stringify({ count: newCount, date: today }));
+        
+        // Close the modal after successful generation
+        setAiPersonaBuilderModalOpen(false);
       } else {
         console.log('No persona found in response:', data);
       }
@@ -391,6 +530,115 @@ function DashboardContent() {
       setLoadingAI(false);
     }
   }, [aiTemplateCount, canGenerateAITemplate, t]);
+
+  // Function to check if all chatbot fields are empty
+  const areAllFieldsEmpty = useCallback(() => {
+    // Check basic info
+    if (personality.name?.trim() || personality.description?.trim() || personality.systemPrompt?.trim()) {
+      return false;
+    }
+
+    // Check childhood experiences
+    for (const section of Object.values(personality.childhoodExperiences || {})) {
+      if (Array.isArray(section) && section.length > 0) {
+        return false;
+      }
+    }
+
+    // Check other arrays
+    if (personality.emotionalTriggers?.length > 0 ||
+        personality.characterTraits?.length > 0 ||
+        personality.positiveTraits?.socialCommunicative?.length > 0 ||
+        personality.positiveTraits?.professionalCognitive?.length > 0 ||
+        personality.positiveTraits?.personalIntrinsic?.length > 0 ||
+        personality.negativeTraits?.length > 0 ||
+        personality.areasOfInterest?.length > 0) {
+      return false;
+    }
+
+    // Check communication style
+    if (personality.communicationStyle?.tone?.trim() ||
+        personality.communicationStyle?.wordChoice?.trim() ||
+        personality.communicationStyle?.responsePatterns?.trim()) {
+      return false;
+    }
+
+    // Check humor settings
+    if (personality.communicationStyle?.humor?.humorEnabled ||
+        personality.communicationStyle?.humor?.humorTypes?.length > 0 ||
+        personality.communicationStyle?.humor?.humorIntensity?.trim() ||
+        personality.communicationStyle?.humor?.humorExclusionTopics?.length > 0) {
+      return false;
+    }
+
+    // Check product links
+    if (productLinks.length > 0) {
+      return false;
+    }
+
+    return true;
+  }, [personality, productLinks]);
+
+  const handleSaveAsTemplate = useCallback(async () => {
+    try {
+      if (!personality.name.trim()) {
+        alert('Please enter a persona name before saving as template.');
+        return;
+      }
+
+      // Create the template data structure
+      const templateData = {
+        personality: {
+          name: personality.name,
+          description: personality.description,
+          systemPrompt: personality.systemPrompt,
+          childhoodExperiences: personality.childhoodExperiences,
+          emotionalTriggers: personality.emotionalTriggers,
+          characterTraits: personality.characterTraits,
+          positiveTraits: personality.positiveTraits,
+          negativeTraits: personality.negativeTraits,
+          areasOfInterest: personality.areasOfInterest,
+          communicationStyle: personality.communicationStyle,
+          delayMin: personality.delayMin,
+          delayMax: personality.delayMax
+        }
+      };
+
+      // Create a safe filename from the persona name
+      const safeName = personality.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+      
+      const filename = `${safeName}.json`;
+
+      // Call API to save the template
+      const response = await fetch('/api/save-template', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          filename,
+          data: templateData
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save template');
+      }
+
+      // No need to assign result if not used; just ensure the response is valid
+      await response.json();
+      alert(`Template saved successfully as ${filename} in the public folder!`);
+      
+    } catch (error) {
+      // Log error for debugging purposes
+      console.error('Error saving template:', error);
+      alert('Failed to save template. Please try again.');
+    }
+  }, [personality]);
 
   const handleFillWithTemplate = useCallback(async () => {
     try {
@@ -511,9 +759,9 @@ function DashboardContent() {
     };
   }, [userDropdownOpen]);
 
-  // Get user email on component mount
+  // Get user email and ID on component mount
   useEffect(() => {
-    const getUserEmail = async () => {
+    const getUserData = async () => {
       try {
         const { createClient } = await import('@/lib/auth/supabaseClient.client');
         const supabase = createClient();
@@ -522,11 +770,25 @@ function DashboardContent() {
         if (user?.email) {
           setUserEmail(user.email);
         }
+        if (user?.id) {
+          setUserId(user.id);
+          
+          // Load user's saved locale from database
+          try {
+            const response = await fetch(`/api/get-user-locale?userId=${user.id}`);
+            if (response.ok) {
+              const { locale } = await response.json();
+              setCurrentLocale(locale);
+            }
+          } catch (error) {
+            console.error('Error loading user locale:', error);
+          }
+        }
       } catch (error) {
-        console.error('Error getting user email:', error);
+        console.error('Error getting user data:', error);
       }
     };
-    getUserEmail();
+    getUserData();
   }, []);
 
   // Check and initialize AI template daily limit
@@ -612,6 +874,9 @@ function DashboardContent() {
       console.log('Personality name being saved:', personality.name);
       console.log('Full personality object being saved:', JSON.stringify(personality, null, 2));
       
+      let responseJson: { persona?: { id: string } } | null = null;
+      let isNewPersona = false;
+      
       if (currentPersonaId) {
         // Edit existing persona
         console.log('Editing persona:', currentPersonaId, personaData);
@@ -620,7 +885,7 @@ function DashboardContent() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ personaId: currentPersonaId, userId, data: personaData }),
         });
-        const responseJson = await res.json();
+        responseJson = await res.json();
         console.log('Edit persona response:', responseJson);
         if (!res.ok) throw new Error('Failed to edit persona');
         setSaveMessage(String(t('dashboard.personaUpdated') || 'AI-Chatbot updated!'));
@@ -637,20 +902,47 @@ function DashboardContent() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId, data: personaData }),
         });
-        const responseJson = await res.json();
+        responseJson = await res.json();
         console.log('Save persona response:', responseJson);
         if (!res.ok) throw new Error('Failed to save persona');
         setSaveMessage(String(t('dashboard.personaSaved') || 'AI-Chatbot saved!'));
+        isNewPersona = true;
       }
       
       // Store current selection before fetching personas
       const currentSelection = selectedPersonaId;
+      console.log('About to fetch personas after save...');
       await fetchPersonas();
+      console.log('Finished fetching personas after save');
       
-      // Restore the selection after fetching
-      if (currentSelection) {
+      // For new personas, ensure we keep the current persona selected
+      // For existing personas, restore the original selection
+      if (isNewPersona && responseJson?.persona?.id) {
+        // This was a new persona, keep it selected
+        const newPersonaId = String(responseJson.persona.id);
+        console.log('Setting new persona as selected:', newPersonaId);
+        setSelectedPersonaId(newPersonaId);
+        setCurrentPersonaId(newPersonaId);
+      } else if (currentSelection) {
+        // This was an edit, restore the original selection
+        console.log('Restoring original selection:', currentSelection);
         setSelectedPersonaId(currentSelection);
+        setCurrentPersonaId(currentSelection);
       }
+      
+      // Force a re-render of the combobox by updating the personas list
+      console.log('Current personas after save:', personas);
+      console.log('Selected persona ID after save:', selectedPersonaId);
+      
+      // Update lastLoadedPersona to prevent unsaved changes dialog from appearing
+      setLastLoadedPersona({ ...personality });
+      
+      // Ensure the combobox shows the correct selection
+      setTimeout(() => {
+        console.log('Final check - personas:', personas);
+        console.log('Final check - selectedPersonaId:', selectedPersonaId);
+        console.log('Final check - currentPersonaId:', currentPersonaId);
+      }, 100);
     } catch (err) {
       console.error('Error saving persona:', err);
       alert('dashboard.saveError');
@@ -726,7 +1018,7 @@ function DashboardContent() {
           if (data.persona.personality) {
             // New structure with personality and productLinks
             setPersonality(data.persona.personality);
-            setProductLinks(data.persona.productLinks || []);
+            setProductLinks(convertProductLinks(data.persona.productLinks || []));
             setLastLoadedPersona(data.persona.personality);
           } else {
             // Old structure - treat the entire persona as personality data
@@ -740,7 +1032,16 @@ function DashboardContent() {
         } else {
           console.warn('No valid persona data received:', data);
           alert(t('dashboard.noValidPersonaData'));
+          // Remove the orphaned persona from the list
+          setPersonas(prevPersonas => prevPersonas.filter(p => p.id !== id));
         }
+      } else if (res.status === 404) {
+        console.error('Persona not found in database:', id);
+        alert('This persona no longer exists in the database. It will be removed from the list.');
+        // Remove the orphaned persona from the list
+        setPersonas(prevPersonas => prevPersonas.filter(p => p.id !== id));
+        setSelectedPersonaId('');
+        setCurrentPersonaId(null);
       } else {
         console.error('Failed to fetch persona:', res.status, res.statusText);
         alert(t('dashboard.errorLoadingPersona'));
@@ -870,6 +1171,37 @@ function DashboardContent() {
     }
   };
 
+  // Product link modal handlers
+  const handleAddProductLink = (productLink: { url: string; actionType: string; sendingBehavior: string }) => {
+    const newLink = {
+      id: Date.now().toString(),
+      ...productLink
+    };
+    setProductLinks([...productLinks, newLink]);
+  };
+
+  const handleEditProductLink = (productLink: { id: string; url: string; actionType: string; sendingBehavior: string }) => {
+    const newLinks = productLinks.map(link => 
+      link.id === productLink.id ? productLink : link
+    );
+    setProductLinks(newLinks);
+  };
+
+  const handleOpenEditModal = (link: { id: string; url: string; actionType: string; sendingBehavior: string }) => {
+    setEditingProductLink(link);
+    setProductLinkModalOpen(true);
+  };
+
+  const handleOpenAddModal = () => {
+    setEditingProductLink(null);
+    setProductLinkModalOpen(true);
+  };
+
+  const handleCloseProductLinkModal = () => {
+    setProductLinkModalOpen(false);
+    setEditingProductLink(null);
+  };
+
   // User dropdown functions
   const handleUserDropdownToggle = () => {
     setUserDropdownOpen(!userDropdownOpen);
@@ -900,6 +1232,68 @@ function DashboardContent() {
     setUserDropdownOpen(false);
   };
 
+  // Function to open AddValueModal
+  const openAddModal = (title: string, placeholder: string, onSave: (value: string) => void) => {
+    setAddValueModalConfig({ title, placeholder, onSave });
+    setAddValueModalOpen(true);
+  };
+
+  // Function to handle editing values
+  const handleEditValue = (oldValue: string, newValue: string) => {
+    if (editingValue) {
+      if (editingValue.section === 'characterTraits') {
+        setPersonality(prev => ({
+          ...prev,
+          characterTraits: prev.characterTraits.map((item, idx) => 
+            idx === editingValue.index ? newValue : item
+          )
+        }));
+      } else if (editingValue.section === 'personalIntrinsic') {
+        setPersonality(prev => ({
+          ...prev,
+          positiveTraits: {
+            ...prev.positiveTraits,
+            personalIntrinsic: prev.positiveTraits.personalIntrinsic.map((item, idx) => 
+              idx === editingValue.index ? newValue : item
+            )
+          }
+        }));
+      } else if (editingValue.section === 'negativeTraits') {
+        setPersonality(prev => ({
+          ...prev,
+          negativeTraits: prev.negativeTraits.map((item, idx) => 
+            idx === editingValue.index ? newValue : item
+          )
+        }));
+      } else if (editingValue.section === 'areasOfInterest') {
+        setPersonality(prev => ({
+          ...prev,
+          areasOfInterest: prev.areasOfInterest.map((item, idx) => 
+            idx === editingValue.index ? newValue : item
+          )
+        }));
+      } else if (editingValue.section === 'emotionalTriggers') {
+        setPersonality(prev => ({
+          ...prev,
+          emotionalTriggers: prev.emotionalTriggers.map((item, idx) => 
+            idx === editingValue.index ? newValue : item
+          )
+        }));
+      } else {
+        // Handle childhood experiences
+        setPersonality(prev => ({
+          ...prev,
+          childhoodExperiences: {
+            ...prev.childhoodExperiences,
+            [editingValue.section]: (prev.childhoodExperiences[editingValue.section as keyof typeof prev.childhoodExperiences] || []).map((item, idx) => 
+              idx === editingValue.index ? newValue : item
+            )
+          }
+        }));
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen p-4 md:p-6" style={{ background: 'linear-gradient(135deg, #1b1f2b, #2b2e47, #313c5c)' }}>
       <div className="flex flex-col items-center text-white rounded-2xl shadow-lg py-6 px-10 mb-8 relative" style={{ background: 'linear-gradient(135deg, #1b1f2b, #2a2f4d, #3f4d70, #654a74)' }}>
@@ -927,7 +1321,7 @@ function DashboardContent() {
                 {/* Language Switcher */}
                 <div className="px-4 py-2 border-b border-gray-100">
                   <div className="text-xs text-gray-500 mb-2">Language / Sprache</div>
-                  <LanguageSwitcher onLocaleChange={setCurrentLocale} />
+                  <LanguageSwitcher onLocaleChange={setCurrentLocale} userId={userId} />
                 </div>
                 
                 <button
@@ -983,8 +1377,8 @@ function DashboardContent() {
             }}>
               {t('dashboard.craftPersona')}
             </h2>
-            {/* Show New Persona button only when an existing persona is displayed */}
-            {currentPersonaId && (
+            {/* Show New Persona button only when an existing persona is displayed and not all fields are empty */}
+            {currentPersonaId && !areAllFieldsEmpty() && (
               <button
                 onClick={() => {
                   setPersonality({
@@ -1078,6 +1472,8 @@ function DashboardContent() {
                   }));
                 };
 
+
+
                 return (
                   <div key={section} className="mb-6">
                     <div className="flex items-center gap-2 mb-2">
@@ -1086,11 +1482,14 @@ function DashboardContent() {
                       </h3>
                       <button
                         onClick={() => {
-                          const sectionTitle = t(`dashboard.personality.${section}`);
                           openAddModal(
-                            sectionTitle,
+                            t(`dashboard.personality.${section}`),
                             t('dashboard.personality.addNew'),
-                            addItem
+                            (newItem: string) => {
+                              if (newItem && newItem.trim()) {
+                                addItem(newItem.trim());
+                              }
+                            }
                           );
                         }}
                         className="text-blue-500 hover:text-blue-700 text-lg font-bold w-6 h-6 flex items-center justify-center rounded-full hover:bg-blue-100 transition-colors"
@@ -1103,12 +1502,30 @@ function DashboardContent() {
                       {(personality.childhoodExperiences[section as keyof typeof personality.childhoodExperiences] || []).map((item, idx) => (
                         <li key={idx} className="bg-blue-100 text-blue-900 px-4 py-2 rounded shadow-sm flex items-center justify-between">
                           <span>{item}</span>
-                          <button
-                            onClick={() => removeItem(idx)}
-                            className="text-red-500 hover:text-red-700 text-sm ml-2"
-                          >
-                            ×
-                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => removeItem(idx)}
+                              className="text-red-500 hover:text-red-700 text-2xl ml-2"
+                            >
+                              ×
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingValue({
+                                  section,
+                                  index: idx,
+                                  oldValue: item,
+                                  title: t(`dashboard.personality.${section}`),
+                                  placeholder: t('dashboard.personality.editValue')
+                                });
+                                setEditValueModalOpen(true);
+                              }}
+                              className="text-blue-500 hover:text-blue-700 text-sm px-2 py-1 rounded hover:bg-blue-500 hover:text-white transition-colors"
+                              title="Edit"
+                            >
+                              ✏️
+                            </button>
+                          </div>
                         </li>
                       ))}
                     </ul>
@@ -1147,17 +1564,36 @@ function DashboardContent() {
                       className="bg-gray-100 text-blue-900 px-3 py-1 rounded-full flex items-center"
                     >
                       {trait}
-                      <button
-                        className="ml-2 text-red-500 text-sm"
-                        onClick={() => {
-                          setPersonality(prev => ({
-                            ...prev,
-                            characterTraits: prev.characterTraits.filter((_, idx) => idx !== index)
-                          }));
-                        }}
-                      >
-                        ×
-                      </button>
+                      <div className="flex gap-1 ml-2">
+                        <button
+                          onClick={() => {
+                            setEditingValue({
+                              section: 'characterTraits',
+                              index,
+                              oldValue: trait,
+                              title: 'Character Traits',
+                              placeholder: 'Edit character trait'
+                            });
+                            setEditValueModalOpen(true);
+                          }}
+                          className="text-blue-500 hover:text-blue-700 text-xs px-1 py-0.5 rounded hover:bg-blue-500 hover:text-white transition-colors"
+                          title="Edit"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          className="text-red-500 hover:text-red-700 text-2xl px-1 py-0.5 rounded hover:bg-red-500 hover:text-white transition-colors"
+                          onClick={() => {
+                            setPersonality(prev => ({
+                              ...prev,
+                              characterTraits: prev.characterTraits.filter((_, idx) => idx !== index)
+                            }));
+                          }}
+                          title="Delete"
+                        >
+                          ×
+                        </button>
+                      </div>
                     </span>
                   ))}
                 </div>
@@ -1197,20 +1633,39 @@ function DashboardContent() {
                       {(personality.positiveTraits?.personalIntrinsic || []).map((trait: string, index: number) => (
                         <span key={index} className="bg-green-100 text-green-900 px-3 py-1 rounded-full text-sm flex items-center">
                           {trait}
-                          <button
-                            onClick={() => {
-                              setPersonality(prev => ({
-                                ...prev,
-                                positiveTraits: {
-                                  ...prev.positiveTraits,
-                                  personalIntrinsic: prev.positiveTraits.personalIntrinsic.filter((_, idx) => idx !== index)
-                                }
-                              }));
-                            }}
-                            className="ml-2 text-red-500 hover:text-red-700 text-xs"
-                          >
-                            ×
-                          </button>
+                          <div className="flex gap-1 ml-2">
+                            <button
+                              onClick={() => {
+                                setEditingValue({
+                                  section: 'personalIntrinsic',
+                                  index,
+                                  oldValue: trait,
+                                  title: 'Personal & Intrinsic',
+                                  placeholder: 'Edit trait'
+                                });
+                                setEditValueModalOpen(true);
+                              }}
+                              className="text-blue-500 hover:text-blue-700 text-xs px-1 py-0.5 rounded hover:bg-blue-500 hover:text-white transition-colors"
+                              title="Edit"
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              onClick={() => {
+                                setPersonality(prev => ({
+                                  ...prev,
+                                  positiveTraits: {
+                                    ...prev.positiveTraits,
+                                    personalIntrinsic: prev.positiveTraits.personalIntrinsic.filter((_, idx) => idx !== index)
+                                  }
+                                }));
+                              }}
+                              className="text-red-500 hover:text-red-700 text-2xl px-1 py-0.5 rounded hover:bg-red-500 hover:text-white transition-colors"
+                              title="Delete"
+                            >
+                              ×
+                            </button>
+                          </div>
                         </span>
                       ))}
                     </div>
@@ -1320,13 +1775,18 @@ function DashboardContent() {
                   <h3 className="font-medium">{t('dashboard.personality.negativeTraits')}</h3>
                   <button
                     onClick={() => {
-                      const newTrait = prompt(t('dashboard.personality.addNewTrait'));
-                      if (newTrait && newTrait.trim()) {
-                        setPersonality(prev => ({
-                          ...prev,
-                          negativeTraits: [...prev.negativeTraits, newTrait.trim()]
-                        }));
-                      }
+                      openAddModal(
+                        t('dashboard.personality.negativeTraits'),
+                        t('dashboard.personality.addNewTrait'),
+                        (newTrait: string) => {
+                          if (newTrait && newTrait.trim()) {
+                            setPersonality(prev => ({
+                              ...prev,
+                              negativeTraits: [...prev.negativeTraits, newTrait.trim()]
+                            }));
+                          }
+                        }
+                      );
                     }}
                     className="text-red-500 hover:text-red-700 text-lg font-bold w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-100 transition-colors"
                   >
@@ -1337,17 +1797,36 @@ function DashboardContent() {
                   {(personality.negativeTraits || []).map((trait: string, index: number) => (
                     <span key={index} className="bg-red-100 text-red-900 px-3 py-1 rounded-full text-sm flex items-center">
                       {trait}
-                      <button
-                        onClick={() => {
-                          setPersonality(prev => ({
-                            ...prev,
-                            negativeTraits: prev.negativeTraits.filter((_, idx) => idx !== index)
-                          }));
-                        }}
-                        className="ml-2 text-red-500 hover:text-red-700 text-xs"
-                      >
-                        ×
-                      </button>
+                      <div className="flex gap-1 ml-2">
+                        <button
+                          onClick={() => {
+                            setEditingValue({
+                              section: 'negativeTraits',
+                              index,
+                              oldValue: trait,
+                              title: t('dashboard.personality.negativeTraits'),
+                              placeholder: 'Edit trait'
+                            });
+                            setEditValueModalOpen(true);
+                          }}
+                          className="text-blue-500 hover:text-blue-700 text-xs px-1 py-0.5 rounded hover:bg-blue-500 hover:text-white transition-colors"
+                          title="Edit"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => {
+                            setPersonality(prev => ({
+                              ...prev,
+                              negativeTraits: prev.negativeTraits.filter((_, idx) => idx !== index)
+                            }));
+                          }}
+                          className="text-red-500 hover:text-red-700 text-2xl px-1 py-0.5 rounded hover:bg-red-500 hover:text-white transition-colors"
+                          title="Delete"
+                        >
+                          ×
+                        </button>
+                      </div>
                     </span>
                   ))}
                 </div>
@@ -1359,13 +1838,18 @@ function DashboardContent() {
                   <h3 className="font-medium">{t('dashboard.personality.areasOfInterest')}</h3>
                   <button
                     onClick={() => {
-                      const newInterest = prompt(t('dashboard.personality.addNewInterest'));
-                      if (newInterest && newInterest.trim()) {
-                        setPersonality(prev => ({
-                          ...prev,
-                          areasOfInterest: [...prev.areasOfInterest, newInterest.trim()]
-                        }));
-                      }
+                      openAddModal(
+                        t('dashboard.personality.areasOfInterest'),
+                        t('dashboard.personality.addNewInterest'),
+                        (newInterest: string) => {
+                          if (newInterest && newInterest.trim()) {
+                            setPersonality(prev => ({
+                              ...prev,
+                              areasOfInterest: [...prev.areasOfInterest, newInterest.trim()]
+                            }));
+                          }
+                        }
+                      );
                     }}
                     className="text-yellow-500 hover:text-yellow-700 text-lg font-bold w-6 h-6 flex items-center justify-center rounded-full hover:bg-yellow-100 transition-colors"
                   >
@@ -1376,17 +1860,36 @@ function DashboardContent() {
                   {(personality.areasOfInterest || []).map((interest: string, index: number) => (
                     <span key={index} className="bg-yellow-100 text-yellow-900 px-3 py-1 rounded-full text-sm flex items-center">
                       {interest}
-                      <button
-                        onClick={() => {
-                          setPersonality(prev => ({
-                            ...prev,
-                            areasOfInterest: prev.areasOfInterest.filter((_, idx) => idx !== index)
-                          }));
-                        }}
-                        className="ml-2 text-red-500 hover:text-red-700 text-xs"
-                      >
-                        ×
-                      </button>
+                      <div className="flex gap-1 ml-2">
+                        <button
+                          onClick={() => {
+                            setEditingValue({
+                              section: 'areasOfInterest',
+                              index,
+                              oldValue: interest,
+                              title: t('dashboard.personality.areasOfInterest'),
+                              placeholder: 'Edit interest'
+                            });
+                            setEditValueModalOpen(true);
+                          }}
+                          className="text-blue-500 hover:text-blue-700 text-xs px-1 py-0.5 rounded hover:bg-blue-500 hover:text-white transition-colors"
+                          title="Edit"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => {
+                            setPersonality(prev => ({
+                              ...prev,
+                              areasOfInterest: prev.areasOfInterest.filter((_, idx) => idx !== index)
+                            }));
+                          }}
+                          className="text-red-500 hover:text-red-700 text-2xl px-1 py-0.5 rounded hover:bg-red-500 hover:text-white transition-colors"
+                          title="Delete"
+                        >
+                          ×
+                        </button>
+                      </div>
                     </span>
                   ))}
                 </div>
@@ -1398,13 +1901,18 @@ function DashboardContent() {
                   <h3 className="font-medium">{t('dashboard.personality.emotionalTriggers')}</h3>
                   <button
                     onClick={() => {
-                      const newTrigger = prompt(t('dashboard.personality.addNewTrigger'));
-                      if (newTrigger && newTrigger.trim()) {
-                        setPersonality(prev => ({
-                          ...prev,
-                          emotionalTriggers: [...prev.emotionalTriggers, newTrigger.trim()]
-                        }));
-                      }
+                      openAddModal(
+                        t('dashboard.personality.emotionalTriggers'),
+                        t('dashboard.personality.addNewTrigger'),
+                        (newTrigger: string) => {
+                          if (newTrigger && newTrigger.trim()) {
+                            setPersonality(prev => ({
+                              ...prev,
+                              emotionalTriggers: [...prev.emotionalTriggers, newTrigger.trim()]
+                            }));
+                          }
+                        }
+                      );
                     }}
                     className="text-orange-500 hover:text-orange-700 text-lg font-bold w-6 h-6 flex items-center justify-center rounded-full hover:bg-orange-100 transition-colors"
                   >
@@ -1415,17 +1923,36 @@ function DashboardContent() {
                   {(personality.emotionalTriggers || []).map((trigger: string, index: number) => (
                     <span key={index} className="bg-orange-100 text-orange-900 px-3 py-1 rounded-full text-sm flex items-center">
                       {trigger}
-                      <button
-                        onClick={() => {
-                          setPersonality(prev => ({
-                            ...prev,
-                            emotionalTriggers: prev.emotionalTriggers.filter((_, idx) => idx !== index)
-                          }));
-                        }}
-                        className="ml-2 text-red-500 hover:text-red-700 text-xs"
-                      >
-                        ×
-                      </button>
+                      <div className="flex gap-1 ml-2">
+                        <button
+                          onClick={() => {
+                            setEditingValue({
+                              section: 'emotionalTriggers',
+                              index,
+                              oldValue: trigger,
+                              title: t('dashboard.personality.emotionalTriggers'),
+                              placeholder: 'Edit trigger'
+                            });
+                            setEditValueModalOpen(true);
+                          }}
+                          className="text-blue-500 hover:text-blue-700 text-xs px-1 py-0.5 rounded hover:bg-blue-500 hover:text-white transition-colors"
+                          title="Edit"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => {
+                            setPersonality(prev => ({
+                              ...prev,
+                              emotionalTriggers: prev.emotionalTriggers.filter((_, idx) => idx !== index)
+                            }));
+                          }}
+                          className="text-red-500 hover:text-red-700 text-2xl px-1 py-0.5 rounded hover:bg-red-500 hover:text-white transition-colors"
+                          title="Delete"
+                        >
+                          ×
+                        </button>
+                      </div>
                     </span>
                   ))}
                 </div>
@@ -1494,19 +2021,24 @@ function DashboardContent() {
                           <label className="block text-xs text-gray-500">Humor Types</label>
                           <button
                             onClick={() => {
-                              const newType = prompt(t('dashboard.personality.addNewHumorType'));
-                              if (newType && newType.trim()) {
-                                setPersonality(prev => ({
-                                  ...prev,
-                                  communicationStyle: {
-                                    ...prev.communicationStyle,
-                                    humor: {
-                                      ...prev.communicationStyle.humor,
-                                      humorTypes: [...prev.communicationStyle.humor.humorTypes, newType.trim()]
-                                    }
+                              openAddModal(
+                                'Humor Types',
+                                t('dashboard.personality.addNewHumorType'),
+                                (newType: string) => {
+                                  if (newType && newType.trim()) {
+                                    setPersonality(prev => ({
+                                      ...prev,
+                                      communicationStyle: {
+                                        ...prev.communicationStyle,
+                                        humor: {
+                                          ...prev.communicationStyle.humor,
+                                          humorTypes: [...prev.communicationStyle.humor.humorTypes, newType.trim()]
+                                        }
+                                      }
+                                    }));
                                   }
-                                }));
-                              }
+                                }
+                              );
                             }}
                             className="text-pink-500 hover:text-pink-700 text-xs font-bold w-4 h-4 flex items-center justify-center rounded-full hover:bg-pink-100 transition-colors"
                           >
@@ -1558,19 +2090,24 @@ function DashboardContent() {
                           <label className="block text-xs text-gray-500">Humor Exclusion Topics</label>
                           <button
                             onClick={() => {
-                              const newTopic = prompt(t('dashboard.personality.addNewExclusionTopic'));
-                              if (newTopic && newTopic.trim()) {
-                                setPersonality(prev => ({
-                                  ...prev,
-                                  communicationStyle: {
-                                    ...prev.communicationStyle,
-                                    humor: {
-                                      ...prev.communicationStyle.humor,
-                                      humorExclusionTopics: [...prev.communicationStyle.humor.humorExclusionTopics, newTopic.trim()]
-                                    }
+                              openAddModal(
+                                'Humor Exclusion Topics',
+                                t('dashboard.personality.addNewExclusionTopic'),
+                                (newTopic: string) => {
+                                  if (newTopic && newTopic.trim()) {
+                                    setPersonality(prev => ({
+                                      ...prev,
+                                      communicationStyle: {
+                                        ...prev.communicationStyle,
+                                        humor: {
+                                          ...prev.communicationStyle.humor,
+                                          humorExclusionTopics: [...prev.communicationStyle.humor.humorExclusionTopics, newTopic.trim()]
+                                        }
+                                      }
+                                    }));
                                   }
-                                }));
-                              }
+                                }
+                              );
                             }}
                             className="text-gray-500 hover:text-gray-700 text-xs font-bold w-4 h-4 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
                           >
@@ -1614,23 +2151,35 @@ function DashboardContent() {
                     <button
                       className="border border-blue-500 text-blue-500 font-semibold py-2 px-4 rounded-lg hover:bg-blue-500 hover:text-white transition shadow-none bg-transparent disabled:opacity-60 disabled:cursor-not-allowed"
                       type="button"
-                      onClick={handleGetAITemplate}
+                      onClick={() => setAiPersonaBuilderModalOpen(true)}
                       disabled={loadingAI || !canGenerateAITemplate()}
                     >
-                      {loadingAI ? 'Generating...' : 'Get AI template'}
+                      {loadingAI ? 'Generating...' : 'AI Persona Builder'}
                     </button>
                     <span className="text-xs text-gray-400">
                       {getRemainingAttempts()} von {isProUser ? 10 : 2} Versuchen heute übrig
                       {isProUser && <span className="text-green-400 ml-1">(Pro)</span>}
                     </span>
                   </div>
-                  <button
-                    className="border border-gray-500 text-gray-500 font-semibold py-2 px-4 rounded-lg hover:bg-gray-500 hover:text-white transition shadow-none bg-transparent disabled:opacity-60"
-                    type="button"
-                    onClick={handleFillWithTemplate}
-                  >
-                    Fill with template.json
-                  </button>
+                  {process.env.NODE_ENV !== 'production' && (
+                    <>
+                      <button
+                        className="border border-gray-500 text-gray-500 font-semibold py-2 px-4 rounded-lg hover:bg-gray-500 hover:text-white transition shadow-none bg-transparent disabled:opacity-60"
+                        type="button"
+                        onClick={handleFillWithTemplate}
+                      >
+                        Fill with template.json
+                      </button>
+                      <button
+                        className="border border-green-500 text-green-500 font-semibold py-2 px-4 rounded-lg hover:bg-green-500 hover:text-white transition shadow-none bg-transparent disabled:opacity-60"
+                        type="button"
+                        onClick={handleSaveAsTemplate}
+                        disabled={!personality.name.trim()}
+                      >
+                        Save as Template
+                      </button>
+                    </>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -1752,62 +2301,40 @@ function DashboardContent() {
                   ))}
                 </select>
                 
-                {/* Active Switch - Always Show */}
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-400">Active</span>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={selectedPersonaId ? personas.find(p => p.id === selectedPersonaId || p.id === String(selectedPersonaId) || String(p.id) === selectedPersonaId)?.active || false : false}
-                                          className={`relative inline-flex h-6 w-12 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#f3aacb] border border-gray-300 ${
-                        selectedPersonaId ? (personas.find(p => p.id === selectedPersonaId || p.id === String(selectedPersonaId) || String(p.id) === selectedPersonaId)?.active ? 'bg-green-500' : 'bg-gray-300') : 'bg-gray-300'
-                      }`}
-                  >
-                                          <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200 ${
-                        selectedPersonaId ? (personas.find(p => p.id === selectedPersonaId || p.id === String(selectedPersonaId) || String(p.id) === selectedPersonaId)?.active ? 'translate-x-6' : 'translate-x-1') : 'translate-x-1'
-                      }`} />
-                  </button>
-                </div>
-                
-                {/* Active/Inactive Switch */}
-                {(() => {
-                  console.log('Debug - selectedPersonaId:', selectedPersonaId);
-                  console.log('Debug - personas:', personas);
-                  console.log('Debug - personas length:', personas.length);
+                {/* Active Switch */}
+                {selectedPersonaId && (() => {
+                  const selected = personas.find(p => p.id === selectedPersonaId || p.id === String(selectedPersonaId) || String(p.id) === selectedPersonaId);
                   
-                  if (selectedPersonaId) {
-                    const selected = personas.find(p => p.id === selectedPersonaId || p.id === String(selectedPersonaId) || String(p.id) === selectedPersonaId);
-                    console.log('Debug - selected persona:', selected);
-                    if (selected) {
-                      return (
-                        <div className="flex items-center gap-2">
-                          <span 
-                            className={`text-sm font-medium ${
-                              selected.active ? 'text-green-500' : 'text-gray-400'
-                            }`}
-                            style={{
-                              fontFamily: '"Inter", sans-serif',
-                              fontWeight: '500'
-                            }}
-                          >
-                            {selected.active ? t('dashboard.active') : t('dashboard.inactive')}
-                          </span>
-                          <button
-                            type="button"
-                            role="switch"
-                            aria-checked={selected.active}
-                            onClick={() => handleActivatePersona(selected.id)}
-                            className={`relative inline-flex h-6 w-12 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#f3aacb] border border-gray-300
-                              ${selected.active ? 'bg-green-500' : 'bg-gray-300'}`}
-                          >
-                            <span
-                              className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200
-                                ${selected.active ? 'translate-x-6' : 'translate-x-1'}`}
-                            />
-                          </button>
-                        </div>
-                      );
-                    }
+                  if (selected) {
+                    console.log('Selected persona for switch:', selected);
+                    console.log('Selected persona active status:', selected.active);
+                    
+                    return (
+                      <div className="flex items-center gap-2">
+                        <span 
+                          className="text-sm font-medium text-gray-400"
+                          style={{
+                            fontFamily: '"Inter", sans-serif',
+                            fontWeight: '500'
+                          }}
+                        >
+                          active
+                        </span>
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={selected.active}
+                          onClick={() => handleActivatePersona(selected.id)}
+                          className={`relative inline-flex h-6 w-12 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#f3aacb] border border-gray-300
+                            ${selected.active ? 'bg-green-500' : 'bg-gray-300'}`}
+                        >
+                          <span
+                            className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200
+                              ${selected.active ? 'translate-x-6' : 'translate-x-1'}`}
+                          />
+                        </button>
+                      </div>
+                    );
                   }
                   return null;
                 })()}
@@ -2061,19 +2588,66 @@ function DashboardContent() {
             </p>
             
             <div className="space-y-3">
-              {productLinks.map((link: string, index: number) => (
-                <div key={index} className="flex gap-2">
+              {productLinks.map((link, index) => (
+                <div key={link.id} className="flex gap-2 items-center">
+                  {/* Editable URL input */}
                   <input
                     type="url"
-                    placeholder="https://"
-                    className="flex-1 p-2 border rounded text-black"
-                    value={link}
+                    className="flex-1 p-2 border rounded text-black text-sm"
+                    value={link.url}
                     onChange={(e) => {
                       const newLinks = [...productLinks];
-                      newLinks[index] = e.target.value;
+                      newLinks[index] = { ...newLinks[index], url: e.target.value };
                       setProductLinks(newLinks);
+                      // Auto-save the persona after changing product link
+                      setTimeout(() => handleSavePersona(), 100);
                     }}
+                    placeholder={t('dashboard.productLinks.placeholder')}
                   />
+                  
+                  {/* Action Type Combobox */}
+                  <select
+                    className="p-2 border rounded text-black text-sm min-w-[180px]"
+                    value={link.actionType}
+                    onChange={(e) => {
+                      const newLinks = [...productLinks];
+                      newLinks[index] = { ...newLinks[index], actionType: e.target.value };
+                      setProductLinks(newLinks);
+                      // Auto-save the persona after changing product link
+                      setTimeout(() => handleSavePersona(), 100);
+                    }}
+                  >
+                    <option value="buy">{t('dashboard.productLinks.actionTypes.userShouldBuy')}</option>
+                    <option value="follow">{t('dashboard.productLinks.actionTypes.userShouldFollow')}</option>
+                    <option value="subscribe">{t('dashboard.productLinks.actionTypes.userShouldSubscribe')}</option>
+                  </select>
+                  
+                  {/* Sending Behavior Combobox */}
+                  <select
+                    className="p-2 border rounded text-black text-sm min-w-[200px]"
+                    value={link.sendingBehavior}
+                    onChange={(e) => {
+                      const newLinks = [...productLinks];
+                      newLinks[index] = { ...newLinks[index], sendingBehavior: e.target.value };
+                      setProductLinks(newLinks);
+                      // Auto-save the persona after changing product link
+                      setTimeout(() => handleSavePersona(), 100);
+                    }}
+                  >
+                    <option value="proactive">{t('dashboard.productLinks.sendingBehavior.proactive')}</option>
+                    <option value="situational">{t('dashboard.productLinks.sendingBehavior.situational')}</option>
+                  </select>
+                  
+                  {/* Edit Button */}
+                  <button
+                    className="text-blue-500 hover:text-blue-700 px-3 py-2 border border-blue-500 rounded hover:bg-blue-500 hover:text-white transition-colors"
+                    onClick={() => handleOpenEditModal(link)}
+                    title="Edit product link"
+                  >
+                    ✏️
+                  </button>
+                  
+                  {/* Delete Button */}
                   <button
                     className="text-red-500 hover:text-red-700 px-3 py-2 border border-red-500 rounded hover:bg-red-500 hover:text-white transition-colors"
                     onClick={() => {
@@ -2087,17 +2661,7 @@ function DashboardContent() {
               ))}
               <button
                 className="text-blue-500 hover:text-blue-700 border border-blue-500 px-4 py-2 rounded hover:bg-blue-500 hover:text-white transition-colors"
-                onClick={() => {
-                  openEditValueModal(
-                    t('dashboard.productLinks.modalTitle'),
-                    t('dashboard.productLinks.placeholder'),
-                    (oldValue: string, newValue: string) => {
-                      if (newValue.trim()) {
-                        setProductLinks([...productLinks, newValue.trim()]);
-                      }
-                    }
-                  );
-                }}
+                onClick={handleOpenAddModal}
               >
                 + {t('dashboard.productLinks.addButton')}
               </button>
@@ -2142,32 +2706,9 @@ function DashboardContent() {
         </DialogContent>
       </Dialog>
 
-      {/* Add Value Modal */}
-      {currentModalConfig && (
-        <AddValueModal
-          isOpen={addModalOpen}
-          onClose={() => setAddModalOpen(false)}
-          onSave={currentModalConfig.onSave}
-          title={currentModalConfig.title}
-          placeholder={currentModalConfig.placeholder}
-        />
-      )}
 
-      {/* Edit Value Modal for Product Links */}
-      {editValueModalConfig && (
-        <EditValueModal
-          isOpen={editValueModalOpen}
-          onClose={() => setEditValueModalOpen(false)}
-          onSave={editValueModalConfig.onSave}
-          title={editValueModalConfig.title}
-          currentValue={editValueModalConfig.currentValue}
-          placeholder={editValueModalConfig.placeholder}
-          subtitle={t('dashboard.productLinks.modalSubtitle')}
-          buttonText={tCommon('save')}
-          cancelText={tCommon('cancel')}
-          editText={t('dashboard.productLinks.modalTitle')}
-        />
-      )}
+
+
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -2197,6 +2738,48 @@ function DashboardContent() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* AI Persona Builder Modal */}
+      <AIPersonaBuilderModal
+        isOpen={aiPersonaBuilderModalOpen}
+        onClose={() => setAiPersonaBuilderModalOpen(false)}
+        onGenerate={handleAIPersonaGenerate}
+        loading={loadingAI}
+      />
+
+      {/* Product Link Modal */}
+      <ProductLinkModal
+        isOpen={productLinkModalOpen}
+        onClose={handleCloseProductLinkModal}
+        onSave={handleAddProductLink}
+        onUpdate={handleEditProductLink}
+        initialValue={editingProductLink || undefined}
+        isEditing={!!editingProductLink}
+        currentLocale={currentLocale}
+      />
+
+      {/* AddValueModal */}
+      {addValueModalConfig && (
+        <AddValueModal
+          isOpen={addValueModalOpen}
+          onClose={() => setAddValueModalOpen(false)}
+          onSave={addValueModalConfig.onSave}
+          title={addValueModalConfig.title}
+          placeholder={addValueModalConfig.placeholder}
+        />
+      )}
+
+      {/* EditValueModal */}
+      {editingValue && (
+        <EditValueModal
+          isOpen={editValueModalOpen}
+          onClose={() => setEditValueModalOpen(false)}
+          onSave={handleEditValue}
+          title={editingValue.title}
+          currentValue={editingValue.oldValue}
+          placeholder={editingValue.placeholder}
+        />
+      )}
 
       {/* Footer */}
       <Footer />

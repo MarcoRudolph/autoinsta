@@ -5,9 +5,10 @@ import { locales } from '../config/i18n';
 
 interface LanguageSwitcherProps {
   onLocaleChange?: (locale: string) => void;
+  userId?: string; // Add userId prop for database updates
 }
 
-export default function LanguageSwitcher({ onLocaleChange }: LanguageSwitcherProps) {
+export default function LanguageSwitcher({ onLocaleChange, userId }: LanguageSwitcherProps) {
   const [currentLocale, setCurrentLocale] = useState('en');
 
   useEffect(() => {
@@ -17,10 +18,29 @@ export default function LanguageSwitcher({ onLocaleChange }: LanguageSwitcherPro
     onLocaleChange?.(savedLocale);
   }, [onLocaleChange]);
 
-  const switchLocale = (newLocale: string) => {
+  const switchLocale = async (newLocale: string) => {
     setCurrentLocale(newLocale);
     localStorage.setItem('locale', newLocale);
     onLocaleChange?.(newLocale);
+
+    // Update locale in database if userId is provided
+    if (userId) {
+      try {
+        const response = await fetch('/api/update-user-locale', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ locale: newLocale, userId }),
+        });
+
+        if (!response.ok) {
+          console.error('Failed to update user locale in database');
+        }
+      } catch (error) {
+        console.error('Error updating user locale:', error);
+      }
+    }
   };
 
   return (

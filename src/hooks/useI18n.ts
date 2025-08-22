@@ -68,7 +68,16 @@ const messages = {
         addButton: "Add Link",
         placeholder: "Enter product URL",
         modalTitle: "Adding product link...",
-        modalSubtitle: "This can be any site the chatbot should recommend"
+        modalSubtitle: "This can be any site the chatbot should recommend",
+        actionTypes: {
+          userShouldBuy: "User should buy",
+          userShouldFollow: "User should follow",
+          userShouldSubscribe: "User should subscribe"
+        },
+        sendingBehavior: {
+          proactive: "Send proactively",
+          situational: "Send in appropriate situation"
+        }
       },
       personality: {
         name: "Name",
@@ -112,6 +121,97 @@ const messages = {
           humorType: "Enter humor type",
           exclusionTopic: "Enter exclusion topic"
         }
+      },
+      terms: {
+        title: "Terms of Use",
+        lastUpdated: "Last updated",
+        introduction: {
+          title: "1. Introduction",
+          content: "Welcome to rudolpho-chat! These Terms of Use govern the use of our AI-powered automation service for Instagram interactions. By using our service, you agree to these terms."
+        },
+        serviceDescription: {
+          title: "2. Description of Our Service",
+          functionality: {
+            title: "2.1 How It Works",
+            content: "rudolpho-chat is an AI-powered platform that allows you to create automated responses to Instagram direct messages and comments. Our service works as follows:"
+          },
+          metaInteraction: {
+            title: "2.2 Interaction with Meta Platforms",
+            content: "Our service interacts with Instagram (a Meta platform) through official APIs:"
+          }
+        },
+        metaRelationship: {
+          title: "3. Relationship to Meta Platforms, Inc.",
+          independence: {
+            title: "3.1 Independence from Meta",
+            content: "Important Notice: rudolpho-chat is a completely independent service and is neither offered, sponsored, nor operated by Meta Platforms, Inc. We are an independent company with our own business models and technologies."
+          },
+          disclaimer: {
+            title: "3.2 Disclaimer Regarding Meta",
+            content: "Meta Platforms, Inc. is not responsible for:",
+            conclusion: "We act as an independent service provider and are solely responsible for all aspects of our service."
+          }
+        },
+        usageTerms: {
+          title: "4. Terms of Use",
+          allowed: {
+            title: "4.1 Permitted Use",
+            content: "You may only use our service for lawful purposes:"
+          },
+          prohibited: {
+            title: "4.2 Prohibited Use",
+            content: "The following uses are not permitted:"
+          }
+        },
+        accounts: {
+          title: "5. Accounts and Subscriptions",
+          free: {
+            title: "5.1 Free Use",
+            content: "We offer a free plan with limited features:"
+          },
+          pro: {
+            title: "5.2 Pro Subscription",
+            content: "Our Pro plan offers extended features:",
+            price: "Price: €10 per month, cancelable at any time"
+          }
+        },
+        privacy: {
+          title: "6. Privacy and Security",
+          content: "The protection of your data is our top priority. All details about data processing can be found in our",
+          privacyLink: "Privacy Policy",
+          security: "We implement comprehensive security measures to protect your data and ensure compliance with all applicable data protection regulations."
+        },
+        liability: {
+          title: "7. Liability and Warranty",
+          content: "Our service is provided 'as is'. We make no warranty for uninterrupted availability or error-free functionality.",
+          limitation: "Our liability is limited to the amount you paid for our service in the last 12 months."
+        },
+        changes: {
+          title: "8. Changes to Terms of Use",
+          content: "We reserve the right to change these Terms of Use as needed. Significant changes will be notified to you by email. Continued use of our service after changes constitutes acceptance of the new terms."
+        },
+        termination: {
+          title: "9. Termination",
+          content: "You can cancel your account at any time. Upon cancellation, all your data will be deleted within 30 days, unless legal retention periods apply.",
+          rights: "We reserve the right to block or delete accounts that violate these Terms of Use.",
+          dataDeletion: {
+            title: "Data Deletion",
+            content: "You can also delete your data before cancellation. A detailed guide can be found on our",
+            link: "Data Deletion Page"
+          }
+        },
+        contact: {
+          title: "10. Contact",
+          content: "For questions about these Terms of Use, you can reach us at:",
+          email: "Email",
+          address: "Address",
+          phone: "Phone"
+        },
+        legal: {
+          title: "11. Legal Basis",
+          content: "These Terms of Use are subject to German law. Jurisdiction is, to the extent legally permissible, the seat of our company."
+        },
+        note: "Note: These Terms of Use may be updated as needed. Significant changes will be notified to you by email."
       }
     }
   },
@@ -182,7 +282,16 @@ const messages = {
         addButton: "Link hinzufügen",
         placeholder: "Produkt-URL eingeben",
         modalTitle: "Produktlink hinzufügen...",
-        modalSubtitle: "Dies kann jede Website sein, die der Chatbot empfehlen soll"
+        modalSubtitle: "Dies kann jede Website sein, die der Chatbot empfehlen soll",
+        actionTypes: {
+          userShouldBuy: "Benutzer soll kaufen",
+          userShouldFollow: "Benutzer soll folgen",
+          userShouldSubscribe: "Benutzer soll abonnieren"
+        },
+        sendingBehavior: {
+          proactive: "Proaktiv schicken",
+          situational: "In passender Situation schicken"
+        }
       },
       personality: {
         name: "Name",
@@ -225,6 +334,97 @@ const messages = {
           trigger: "Auslöser eingeben",
           humorType: "Humorart eingeben",
           exclusionTopic: "Ausschlussthema eingeben"
+        },
+        terms: {
+          title: "Nutzungsbedingungen",
+          lastUpdated: "Letzte Aktualisierung",
+          introduction: {
+            title: "1. Einleitung",
+            content: "Willkommen bei rudolpho-chat! Diese Nutzungsbedingungen regeln die Nutzung unseres KI-gestützten Automatisierungsdienstes für Instagram-Interaktionen. Durch die Nutzung unseres Services stimmen Sie diesen Bedingungen zu."
+          },
+          serviceDescription: {
+            title: "2. Beschreibung unseres Dienstes",
+            functionality: {
+              title: "2.1 Funktionsweise",
+              content: "rudolpho-chat ist eine KI-gestützte Plattform, die es Ihnen ermöglicht, automatisierte Antworten auf Instagram-Direktnachrichten und Kommentare zu erstellen. Unser Service funktioniert folgendermaßen:"
+            },
+            metaInteraction: {
+              title: "2.2 Interaktion mit Meta-Plattformen",
+              content: "Unser Service interagiert mit Instagram (einer Meta-Plattform) über offizielle APIs:"
+            }
+          },
+          metaRelationship: {
+            title: "3. Beziehung zu Meta Platforms, Inc.",
+            independence: {
+              title: "3.1 Unabhängigkeit von Meta",
+              content: "Wichtiger Hinweis: rudolpho-chat ist ein vollständig unabhängiger Dienst und wird weder von Meta Platforms, Inc. angeboten, gesponsert noch betrieben. Wir sind ein eigenständiges Unternehmen mit eigenen Geschäftsmodellen und Technologien."
+            },
+            disclaimer: {
+              title: "3.2 Haftungsausschluss bezüglich Meta",
+              content: "Meta Platforms, Inc. ist nicht verantwortlich für:",
+              conclusion: "Wir handeln als unabhängiger Dienstleister und sind allein verantwortlich für alle Aspekte unseres Services."
+            }
+          },
+          usageTerms: {
+            title: "4. Nutzungsbedingungen",
+            allowed: {
+              title: "4.1 Erlaubte Nutzung",
+              content: "Sie dürfen unseren Service nur für rechtmäßige Zwecke nutzen:"
+            },
+            prohibited: {
+              title: "4.2 Verbotene Nutzung",
+              content: "Folgende Nutzungen sind nicht erlaubt:"
+            }
+          },
+          accounts: {
+            title: "5. Konten und Abonnements",
+            free: {
+              title: "5.1 Kostenlose Nutzung",
+              content: "Wir bieten einen kostenlosen Plan mit begrenzten Funktionen an:"
+            },
+            pro: {
+              title: "5.2 Pro-Abonnement",
+              content: "Unser Pro-Plan bietet erweiterte Funktionen:",
+              price: "Preis: 10€ pro Monat, kündbar jederzeit"
+            }
+          },
+          privacy: {
+            title: "6. Datenschutz und Sicherheit",
+            content: "Der Schutz Ihrer Daten hat für uns höchste Priorität. Alle Details zur Datenverarbeitung finden Sie in unserer",
+            privacyLink: "Datenschutzerklärung",
+            security: "Wir implementieren umfassende Sicherheitsmaßnahmen zum Schutz Ihrer Daten und gewährleisten die Einhaltung aller geltenden Datenschutzbestimmungen."
+          },
+          liability: {
+            title: "7. Haftung und Gewährleistung",
+            content: "Unser Service wird 'wie besehen' bereitgestellt. Wir übernehmen keine Gewährleistung für ununterbrochene Verfügbarkeit oder fehlerfreie Funktionalität.",
+            limitation: "Unsere Haftung ist auf den Betrag begrenzt, den Sie in den letzten 12 Monaten für unseren Service gezahlt haben."
+          },
+          changes: {
+            title: "8. Änderungen der Nutzungsbedingungen",
+            content: "Wir behalten uns das Recht vor, diese Nutzungsbedingungen bei Bedarf zu ändern. Wesentliche Änderungen werden Ihnen per E-Mail mitgeteilt. Die fortgesetzte Nutzung unseres Services nach Änderungen gilt als Zustimmung zu den neuen Bedingungen."
+          },
+          termination: {
+            title: "9. Kündigung",
+            content: "Sie können Ihr Konto jederzeit kündigen. Bei Kündigung werden alle Ihre Daten innerhalb von 30 Tagen gelöscht, sofern keine gesetzlichen Aufbewahrungsfristen entgegenstehen.",
+            rights: "Wir behalten uns das Recht vor, Konten zu sperren oder zu löschen, die gegen diese Nutzungsbedingungen verstoßen.",
+            dataDeletion: {
+              title: "Datenlöschung",
+              content: "Sie können Ihre Daten auch vor der Kündigung selbst löschen. Eine detaillierte Anleitung finden Sie auf unserer",
+              link: "Datenlöschungs-Seite"
+            }
+          },
+          contact: {
+            title: "10. Kontakt",
+            content: "Bei Fragen zu diesen Nutzungsbedingungen erreichen Sie uns unter:",
+            email: "E-Mail",
+            address: "Adresse",
+            phone: "Telefon"
+          },
+          legal: {
+            title: "11. Rechtliche Grundlagen",
+            content: "Diese Nutzungsbedingungen unterliegen deutschem Recht. Gerichtsstand ist, soweit gesetzlich zulässig, der Sitz unseres Unternehmens."
+          },
+          note: "Hinweis: Diese Nutzungsbedingungen können bei Bedarf aktualisiert werden. Wesentliche Änderungen werden Ihnen per E-Mail mitgeteilt."
         }
       }
     }

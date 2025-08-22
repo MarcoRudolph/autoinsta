@@ -51,7 +51,16 @@
       "addButton": "Add Link",
       "placeholder": "Enter product URL",
       "modalTitle": "Adding product link...",
-      "modalSubtitle": "This can be any site the chatbot should recommend"
+      "modalSubtitle": "This can be any site the chatbot should recommend",
+      "actionTypes": {
+        "userShouldBuy": "User should buy",
+        "userShouldFollow": "User should follow",
+        "userShouldSubscribe": "User should subscribe"
+      },
+      "sendingBehavior": {
+        "proactive": "Send proactively",
+        "situational": "Send in appropriate situation"
+      }
     },
     "personality": {
       "name": "Name",
@@ -153,5 +162,138 @@
       "placeholder": "Enter new value",
       "update": "Update"
     }
+  },
+  "terms": {
+    "title": "Terms of Use",
+    "lastUpdated": "Last updated",
+    "introduction": {
+      "title": "1. Introduction",
+      "content": "Welcome to rudolpho-chat! These Terms of Use govern the use of our AI-powered automation service for Instagram interactions. By using our service, you agree to these terms."
+    },
+    "serviceDescription": {
+      "title": "2. Description of Our Service",
+      "functionality": {
+        "title": "2.1 How It Works",
+        "content": "rudolpho-chat is an AI-powered platform that allows you to create automated responses to Instagram direct messages and comments. Our service works as follows:",
+        "features": [
+          "Persona Creation: You create a digital personality with specific characteristics, communication style, and response patterns",
+          "AI Integration: Our artificial intelligence automatically generates appropriate responses based on your defined persona",
+          "Instagram Automation: The service can automatically respond to incoming messages and comments",
+          "Customizable Settings: You maintain full control over all automated responses"
+        ]
+      },
+      "metaInteraction": {
+        "title": "2.2 Interaction with Meta Platforms",
+        "content": "Our service interacts with Instagram (a Meta platform) through official APIs:",
+        "features": [
+          "Data Retrieval: We only retrieve data necessary for providing our service (e.g., incoming messages, comments)",
+          "Data Transmission: Responses are sent to recipients via the Instagram API",
+          "Data Security: All data transmissions are encrypted and conducted over secure connections",
+          "Consent Requirement: We only access your Instagram data when you have explicitly approved it"
+        ]
+      }
+    },
+    "metaRelationship": {
+      "title": "3. Relationship to Meta Platforms, Inc.",
+      "independence": {
+        "title": "3.1 Independence from Meta",
+        "content": "Important Notice: rudolpho-chat is a completely independent service and is neither offered, sponsored, nor operated by Meta Platforms, Inc. We are an independent company with our own business models and technologies."
+      },
+      "disclaimer": {
+        "title": "3.2 Disclaimer Regarding Meta",
+        "content": "Meta Platforms, Inc. is not responsible for:",
+        "items": [
+          "The operation, functionality, or availability of our service",
+          "The content of responses generated through our service",
+          "Technical issues or failures of our system",
+          "Our business practices or obligations to users",
+          "Privacy or security aspects of our service"
+        ],
+        "conclusion": "We act as an independent service provider and are solely responsible for all aspects of our service."
+      }
+    },
+    "usageTerms": {
+      "title": "4. Terms of Use",
+      "allowed": {
+        "title": "4.1 Permitted Use",
+        "content": "You may only use our service for lawful purposes:",
+        "items": [
+          "Automating your own Instagram interactions",
+          "Creating personas for your personal or business purposes",
+          "Use in compliance with Instagram's Terms of Use"
+        ]
+      },
+      "prohibited": {
+        "title": "4.2 Prohibited Use",
+        "content": "The following uses are not permitted:",
+        "items": [
+          "Violation of Instagram's Terms of Use or Community Guidelines",
+          "Spam, harassment, or abusive behavior",
+          "Use for illegal or harmful purposes",
+          "Attempting to compromise the security of our system",
+          "Sharing your account with third parties"
+        ]
+      }
+    },
+    "accounts": {
+      "title": "5. Accounts and Subscriptions",
+      "free": {
+        "title": "5.1 Free Use",
+        "content": "We offer a free plan with limited features:",
+        "items": [
+          "20 automated messages per month",
+          "Basic persona creation",
+          "Standard response templates"
+        ]
+      },
+      "pro": {
+        "title": "5.2 Pro Subscription",
+        "content": "Our Pro plan offers extended features:",
+        "items": [
+          "Unlimited automated messages",
+          "Enhanced AI responses",
+          "Priority support",
+          "Custom persona creation"
+        ],
+        "price": "Price: €10 per month, cancelable at any time"
+      }
+    },
+    "privacy": {
+      "title": "6. Privacy and Security",
+      "content": "The protection of your data is our top priority. All details about data processing can be found in our",
+      "privacyLink": "Privacy Policy",
+      "security": "We implement comprehensive security measures to protect your data and ensure compliance with all applicable data protection regulations."
+    },
+    "liability": {
+      "title": "7. Liability and Warranty",
+      "content": "Our service is provided 'as is'. We make no warranty for uninterrupted availability or error-free functionality.",
+      "limitation": "Our liability is limited to the amount you paid for our service in the last 12 months."
+    },
+    "changes": {
+      "title": "8. Changes to Terms of Use",
+      "content": "We reserve the right to change these Terms of Use as needed. Significant changes will be notified to you by email. Continued use of our service after changes constitutes acceptance of the new terms."
+    },
+    "termination": {
+      "title": "9. Termination",
+      "content": "You can cancel your account at any time. Upon cancellation, all your data will be deleted within 30 days, unless legal retention periods apply.",
+      "rights": "We reserve the right to block or delete accounts that violate these Terms of Use.",
+      "dataDeletion": {
+        "title": "Data Deletion",
+        "content": "You can also delete your data before cancellation. A detailed guide can be found on our",
+        "link": "Data Deletion Page"
+      }
+    },
+    "contact": {
+      "title": "10. Contact",
+      "content": "For questions about these Terms of Use, you can reach us at:",
+      "email": "Email",
+      "address": "Address",
+      "phone": "Phone"
+    },
+    "legal": {
+      "title": "11. Legal Basis",
+      "content": "These Terms of Use are subject to German law. Jurisdiction is, to the extent legally permissible, the seat of our company."
+    },
+    "note": "Note: These Terms of Use may be updated as needed. Significant changes will be notified to you by email."
   }
 }

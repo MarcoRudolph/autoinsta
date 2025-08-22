@@ -5,6 +5,22 @@ export const metadata = {
 export default function PrivacyPolicy() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 text-[#334269] space-y-6">
+      {/* Back Button and Language Switcher */}
+      <div className="flex justify-between items-center mb-4">
+        <a 
+          href="/" 
+          className="text-blue-600 hover:text-blue-800 underline text-sm flex items-center"
+        >
+          ← Zurück zur Startseite
+        </a>
+        <a 
+          href="/privacy-en" 
+          className="text-blue-600 hover:text-blue-800 underline text-sm"
+        >
+          English
+        </a>
+      </div>
+      
       <h1 className="text-4xl font-bold text-center mb-8">Datenschutzerklärung</h1>
       
       <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400">
@@ -44,7 +60,6 @@ export default function PrivacyPolicy() {
         <ul className="list-disc pl-6 space-y-2">
           <li><strong>Kontodaten:</strong> E-Mail-Adresse, Name (bei Registrierung)</li>
           <li><strong>Nutzungsdaten:</strong> Interaktionen mit dem Service, erstellte Personas</li>
-          <li><strong>Technische Daten:</strong> IP-Adresse, Browser-Informationen, Gerätedaten</li>
           <li><strong>Instagram-Daten:</strong> Nachrichten und Kommentare (nur mit Ihrer Zustimmung)</li>
         </ul>
       </section>
@@ -107,6 +122,16 @@ export default function PrivacyPolicy() {
           <li><strong>Datenübertragbarkeit:</strong> Export Ihrer Daten</li>
           <li><strong>Widerspruchsrecht:</strong> Gegen bestimmte Verarbeitungen</li>
         </ul>
+        
+        <div className="mt-4 p-4 bg-blue-50 border-l-4 border-blue-400 rounded">
+          <p className="text-blue-800">
+            <strong>Datenlöschung:</strong> Sie können Ihre Daten jederzeit selbst löschen. 
+            Eine detaillierte Anleitung finden Sie auf unserer{" "}
+            <a href="/data-deletion" className="text-blue-600 hover:underline font-semibold">
+              Datenlöschungs-Seite
+            </a>.
+          </p>
+        </div>
       </section>
 
       <section className="space-y-4">

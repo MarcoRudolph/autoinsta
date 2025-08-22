@@ -51,7 +51,16 @@
       "addButton": "Link hinzufügen",
       "placeholder": "Produkt-URL eingeben",
       "modalTitle": "Produktlink hinzufügen...",
-      "modalSubtitle": "Dies kann jede Website sein, die der Chatbot empfehlen soll"
+      "modalSubtitle": "Dies kann jede Website sein, die der Chatbot empfehlen soll",
+      "actionTypes": {
+        "userShouldBuy": "Benutzer soll kaufen",
+        "userShouldFollow": "Benutzer soll folgen",
+        "userShouldSubscribe": "Benutzer soll abonnieren"
+      },
+      "sendingBehavior": {
+        "proactive": "Proaktiv schicken",
+        "situational": "In passender Situation schicken"
+      }
     },
     "personality": {
       "name": "Name",
@@ -153,5 +162,138 @@
       "placeholder": "Neuen Wert eingeben",
       "update": "Aktualisieren"
     }
+  },
+  "terms": {
+    "title": "Nutzungsbedingungen",
+    "lastUpdated": "Letzte Aktualisierung",
+    "introduction": {
+      "title": "1. Einleitung",
+      "content": "Willkommen bei rudolpho-chat! Diese Nutzungsbedingungen regeln die Nutzung unseres KI-gestützten Automatisierungsdienstes für Instagram-Interaktionen. Durch die Nutzung unseres Services stimmen Sie diesen Bedingungen zu."
+    },
+    "serviceDescription": {
+      "title": "2. Beschreibung unseres Dienstes",
+      "functionality": {
+        "title": "2.1 Funktionsweise",
+        "content": "rudolpho-chat ist eine KI-gestützte Plattform, die es Ihnen ermöglicht, automatisierte Antworten auf Instagram-Direktnachrichten und Kommentare zu erstellen. Unser Service funktioniert folgendermaßen:",
+        "features": [
+          "Persona-Erstellung: Sie erstellen eine digitale Persönlichkeit mit spezifischen Eigenschaften, Kommunikationsstil und Antwortmustern",
+          "KI-Integration: Unsere künstliche Intelligenz generiert automatisch passende Antworten basierend auf Ihrer definierten Persona",
+          "Instagram-Automatisierung: Der Service kann automatisch auf eingehende Nachrichten und Kommentare antworten",
+          "Anpassbare Einstellungen: Sie behalten die volle Kontrolle über alle automatisierten Antworten"
+        ]
+      },
+      "metaInteraction": {
+        "title": "2.2 Interaktion mit Meta-Plattformen",
+        "content": "Unser Service interagiert mit Instagram (einer Meta-Plattform) über offizielle APIs:",
+        "features": [
+          "Datenabfrage: Wir rufen nur die Daten ab, die für die Bereitstellung unseres Services erforderlich sind (z.B. eingehende Nachrichten, Kommentare)",
+          "Datenübertragung: Antworten werden über die Instagram-API an die entsprechenden Empfänger gesendet",
+          "Datensicherheit: Alle Datenübertragungen erfolgen verschlüsselt und über sichere Verbindungen",
+          "Zustimmungspflicht: Wir greifen nur auf Ihre Instagram-Daten zu, wenn Sie dies ausdrücklich genehmigt haben"
+        ]
+      }
+    },
+    "metaRelationship": {
+      "title": "3. Beziehung zu Meta Platforms, Inc.",
+      "independence": {
+        "title": "3.1 Unabhängigkeit von Meta",
+        "content": "Wichtiger Hinweis: rudolpho-chat ist ein vollständig unabhängiger Dienst und wird weder von Meta Platforms, Inc. angeboten, gesponsert noch betrieben. Wir sind ein eigenständiges Unternehmen mit eigenen Geschäftsmodellen und Technologien."
+      },
+      "disclaimer": {
+        "title": "3.2 Haftungsausschluss bezüglich Meta",
+        "content": "Meta Platforms, Inc. ist nicht verantwortlich für:",
+        "items": [
+          "Den Betrieb, die Funktionalität oder Verfügbarkeit unseres Services",
+          "Den Inhalt der über unseren Service generierten Antworten",
+          "Technische Probleme oder Ausfälle unseres Systems",
+          "Unsere Geschäftspraktiken oder Verpflichtungen gegenüber Nutzern",
+          "Datenschutz- oder Sicherheitsaspekte unseres Services"
+        ],
+        "conclusion": "Wir handeln als unabhängiger Dienstleister und sind allein verantwortlich für alle Aspekte unseres Services."
+      }
+    },
+    "usageTerms": {
+      "title": "4. Nutzungsbedingungen",
+      "allowed": {
+        "title": "4.1 Erlaubte Nutzung",
+        "content": "Sie dürfen unseren Service nur für rechtmäßige Zwecke nutzen:",
+        "items": [
+          "Automatisierung Ihrer eigenen Instagram-Interaktionen",
+          "Erstellung von Personas für Ihre persönlichen oder geschäftlichen Zwecke",
+          "Verwendung in Übereinstimmung mit Instagrams Nutzungsbedingungen"
+        ]
+      },
+      "prohibited": {
+        "title": "4.2 Verbotene Nutzung",
+        "content": "Folgende Nutzungen sind nicht erlaubt:",
+        "items": [
+          "Verletzung von Instagrams Nutzungsbedingungen oder Community-Richtlinien",
+          "Spam, Belästigung oder missbräuchliches Verhalten",
+          "Verwendung für illegale oder schädliche Zwecke",
+          "Versuch, die Sicherheit unseres Systems zu kompromittieren",
+          "Weitergabe Ihres Kontos an Dritte"
+        ]
+      }
+    },
+    "accounts": {
+      "title": "5. Konten und Abonnements",
+      "free": {
+        "title": "5.1 Kostenlose Nutzung",
+        "content": "Wir bieten einen kostenlosen Plan mit begrenzten Funktionen an:",
+        "items": [
+          "20 automatisierte Nachrichten pro Monat",
+          "Grundlegende Persona-Erstellung",
+          "Standard-Antwortvorlagen"
+        ]
+      },
+      "pro": {
+        "title": "5.2 Pro-Abonnement",
+        "content": "Unser Pro-Plan bietet erweiterte Funktionen:",
+        "items": [
+          "Unbegrenzte automatisierte Nachrichten",
+          "Erweiterte KI-Antworten",
+          "Prioritäts-Support",
+          "Benutzerdefinierte Persona-Erstellung"
+        ],
+        "price": "Preis: 10€ pro Monat, kündbar jederzeit"
+      }
+    },
+    "privacy": {
+      "title": "6. Datenschutz und Sicherheit",
+      "content": "Der Schutz Ihrer Daten hat für uns höchste Priorität. Alle Details zur Datenverarbeitung finden Sie in unserer",
+      "privacyLink": "Datenschutzerklärung",
+      "security": "Wir implementieren umfassende Sicherheitsmaßnahmen zum Schutz Ihrer Daten und gewährleisten die Einhaltung aller geltenden Datenschutzbestimmungen."
+    },
+    "liability": {
+      "title": "7. Haftung und Gewährleistung",
+      "content": "Unser Service wird 'wie besehen' bereitgestellt. Wir übernehmen keine Gewährleistung für ununterbrochene Verfügbarkeit oder fehlerfreie Funktionalität.",
+      "limitation": "Unsere Haftung ist auf den Betrag begrenzt, den Sie in den letzten 12 Monaten für unseren Service gezahlt haben."
+    },
+    "changes": {
+      "title": "8. Änderungen der Nutzungsbedingungen",
+      "content": "Wir behalten uns das Recht vor, diese Nutzungsbedingungen bei Bedarf zu ändern. Wesentliche Änderungen werden Ihnen per E-Mail mitgeteilt. Die fortgesetzte Nutzung unseres Services nach Änderungen gilt als Zustimmung zu den neuen Bedingungen."
+    },
+    "termination": {
+      "title": "9. Kündigung",
+      "content": "Sie können Ihr Konto jederzeit kündigen. Bei Kündigung werden alle Ihre Daten innerhalb von 30 Tagen gelöscht, sofern keine gesetzlichen Aufbewahrungsfristen entgegenstehen.",
+      "rights": "Wir behalten uns das Recht vor, Konten zu sperren oder zu löschen, die gegen diese Nutzungsbedingungen verstoßen.",
+      "dataDeletion": {
+        "title": "Datenlöschung",
+        "content": "Sie können Ihre Daten auch vor der Kündigung selbst löschen. Eine detaillierte Anleitung finden Sie auf unserer",
+        "link": "Datenlöschungs-Seite"
+      }
+    },
+    "contact": {
+      "title": "10. Kontakt",
+      "content": "Bei Fragen zu diesen Nutzungsbedingungen erreichen Sie uns unter:",
+      "email": "E-Mail",
+      "address": "Adresse",
+      "phone": "Telefon"
+    },
+    "legal": {
+      "title": "11. Rechtliche Grundlagen",
+      "content": "Diese Nutzungsbedingungen unterliegen deutschem Recht. Gerichtsstand ist, soweit gesetzlich zulässig, der Sitz unseres Unternehmens."
+    },
+    "note": "Hinweis: Diese Nutzungsbedingungen können bei Bedarf aktualisiert werden. Wesentliche Änderungen werden Ihnen per E-Mail mitgeteilt."
   }
 }

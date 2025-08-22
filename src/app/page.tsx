@@ -205,6 +205,114 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Social Proof - Content Safety & Transparency Section */}
+      <section
+        className="relative py-16 md:py-28 bg-gradient-to-b from-[#334269] via-[#232946] to-[#15192a]"
+      >
+        <div className="max-w-6xl mx-auto px-4">
+          {/* Section Header */}
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-extrabold mb-6 bg-gradient-to-r from-[#f3aacb] via-[#a3bffa] to-[#e6ebfc] bg-clip-text text-transparent drop-shadow-lg tracking-tight">
+              Trust & Transparency
+            </h2>
+            <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto leading-relaxed">
+              We believe in responsible AI that builds genuine connections while maintaining the highest standards of safety and transparency.
+            </p>
+          </div>
+
+          {/* Feature Cards */}
+          <div className="grid md:grid-cols-2 gap-8 mb-16">
+            {/* Content Safety Card */}
+            <div className="bg-[#15192a]/80 backdrop-blur-lg rounded-2xl p-8 border border-white/10 shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105">
+              <div className="flex items-center mb-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center mr-6 shadow-lg">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold text-white">Content Safety First</h3>
+              </div>
+              <p className="text-white/80 text-lg leading-relaxed mb-6">
+                Every AI-generated persona undergoes rigorous content safety checks. Our advanced filtering system ensures your AI chatbot maintains appropriate, professional, and respectful communication at all times.
+              </p>
+              <div className="space-y-3">
+                <div className="flex items-center text-white/70">
+                  <span className="w-2 h-2 bg-green-400 rounded-full mr-3"></span>
+                  Real-time content moderation
+                </div>
+                <div className="flex items-center text-white/70">
+                  <span className="w-2 h-2 bg-green-400 rounded-full mr-3"></span>
+                  Zero tolerance for harmful content
+                </div>
+                <div className="flex items-center text-white/70">
+                  <span className="w-2 h-2 bg-green-400 rounded-full mr-3"></span>
+                  Professional communication standards
+                </div>
+              </div>
+            </div>
+
+            {/* AI Transparency Card */}
+            <div className="bg-[#15192a]/80 backdrop-blur-lg rounded-2xl p-8 border border-white/10 shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105">
+              <div className="flex items-center mb-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center mr-6 shadow-lg">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold text-white">AI Transparency</h3>
+              </div>
+              <p className="text-white/80 text-lg leading-relaxed mb-6">
+                Your AI chatbot proudly identifies itself as AI in conversations. This builds trust with your audience while maintaining authentic engagement. No deception, just genuine AI-powered communication.
+              </p>
+              <div className="space-y-3">
+                <div className="flex items-center text-white/70">
+                  <span className="w-2 h-2 bg-blue-400 rounded-full mr-3"></span>
+                  Clear AI identification in chats
+                </div>
+                <div className="flex items-center text-white/70">
+                  <span className="w-2 h-2 bg-blue-400 rounded-full mr-3"></span>
+                  Honest communication approach
+                </div>
+                <div className="flex items-center text-white/70">
+                  <span className="w-2 h-2 bg-blue-400 rounded-full mr-3"></span>
+                  Builds genuine audience trust
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Social Proof Banner */}
+          <div className="bg-gradient-to-r from-[#f3aacb]/20 to-[#a3bffa]/20 backdrop-blur-lg rounded-2xl p-8 border border-white/20 text-center">
+            <div className="flex items-center justify-center mb-4">
+              <div className="flex -space-x-2 mr-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-[#f3aacb] to-[#e6a3c4] rounded-full border-2 border-white shadow-lg"></div>
+                <div className="w-12 h-12 bg-gradient-to-br from-[#a3bffa] to-[#8b5cf6] rounded-full border-2 border-white shadow-lg"></div>
+                <div className="w-12 h-12 bg-gradient-to-br from-[#e6ebfc] to-[#c7d2fe] rounded-full border-2 border-white shadow-lg"></div>
+              </div>
+              <div className="text-left">
+                <p className="text-white font-semibold text-lg">Trusted by 10,000+ creators</p>
+                <p className="text-white/70 text-sm">Building authentic AI relationships</p>
+              </div>
+            </div>
+            <div className="grid md:grid-cols-3 gap-6 mt-8">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-[#f3aacb] mb-2">99.9%</div>
+                <div className="text-white/80">Content Safety Rate</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-[#a3bffa] mb-2">100%</div>
+                <div className="text-white/80">AI Transparency</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-[#e6ebfc] mb-2">24/7</div>
+                <div className="text-white/80">Safety Monitoring</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <Footer />
       <CookieBanner />
     </div>
