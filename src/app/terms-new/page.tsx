@@ -3,18 +3,17 @@ import { useI18n } from '@/hooks/useI18n';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
-export default function TermsOfService() {
+export default function Terms() {
   const router = useRouter();
-  const { currentLocale } = useI18n();
+  const { locale } = useI18n('en'); // Default to English
 
   useEffect(() => {
-    // Redirect to the appropriate language version based on current locale
-    if (currentLocale === 'de') {
+    if (locale === 'de') {
       router.push('/terms');
     } else {
       router.push('/terms-en');
     }
-  }, [currentLocale, router]);
+  }, [locale, router]);
 
   // Show loading while redirecting
   return (

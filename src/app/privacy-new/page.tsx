@@ -3,17 +3,17 @@ import { useI18n } from '@/hooks/useI18n';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
-export default function PrivacyPolicy() {
+export default function Privacy() {
   const router = useRouter();
-  const { currentLocale } = useI18n();
+  const { locale } = useI18n('en'); // Default to English
 
   useEffect(() => {
-    if (currentLocale === 'de') {
+    if (locale === 'de') {
       router.push('/privacy');
     } else {
       router.push('/privacy-en');
     }
-  }, [currentLocale, router]);
+  }, [locale, router]);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 text-[#334269]">

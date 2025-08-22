@@ -42,8 +42,26 @@ const messages = {
       connectInstagram: "Connect Instagram",
       disconnectInstagram: "Disconnect Instagram",
       settings: "Settings",
-      dmSettings: "DM Settings",
-      commentSettings: "Comment Settings",
+      dmSettings: {
+        title: "DM Settings",
+        active: "Active",
+        duration: "Duration",
+        from: "From",
+        until: "Until",
+        productLinks: "Product Links",
+        transparencyMode: "Transparency Mode",
+        transparencyModeSubtitle: "When enabled, the bot identifies itself as such"
+      },
+      commentSettings: {
+        title: "Comment Settings",
+        active: "Active",
+        duration: "Duration",
+        from: "From",
+        until: "Until",
+        productLinks: "Product Links",
+        transparencyMode: "Transparency Mode",
+        transparencyModeSubtitle: "When enabled, the bot identifies itself as such"
+      },
       autorespondingToDMs: "Autoresponding to DMs",
       autorespondingToComments: "Autoresponding to comments",
       delayOfResponse: "Delay of response",
@@ -114,7 +132,7 @@ const messages = {
         addNewExclusionTopic: "Add New Exclusion Topic",
         placeholder: {
           name: "Enter name",
-          description: "Enter description",
+          description: "Enter description - simply everything that does not fit into the fields below",
           trait: "Enter trait",
           interest: "Enter interest",
           trigger: "Enter trigger",
@@ -212,6 +230,23 @@ const messages = {
           content: "These Terms of Use are subject to German law. Jurisdiction is, to the extent legally permissible, the seat of our company."
         },
         note: "Note: These Terms of Use may be updated as needed. Significant changes will be notified to you by email."
+      },
+      footer: {
+        tagline: "AI-powered automation for your Instagram interactions. Let the bot do the work for you.",
+        developedBy: "Developed by",
+        service: "Service",
+        pricing: "Pricing",
+        proFeatures: "Pro Features",
+        dashboard: "Dashboard",
+        documentation: "Documentation",
+        legal: "Legal",
+        imprint: "Imprint",
+        termsOfUse: "Terms of Use",
+        cookiePolicy: "Cookie Policy",
+        privacy: "Privacy",
+        dataDeletion: "Data Deletion",
+        allRightsReserved: "All rights reserved",
+        usageCounter: "{remaining} of {total} attempts remaining today"
       }
     }
   },
@@ -256,8 +291,26 @@ const messages = {
       connectInstagram: "Instagram verbinden",
       disconnectInstagram: "Instagram trennen",
       settings: "Einstellungen",
-      dmSettings: "DM-Einstellungen",
-      commentSettings: "Kommentar-Einstellungen",
+      dmSettings: {
+        title: "DM-Einstellungen",
+        active: "Aktiv",
+        duration: "Dauer",
+        from: "Von",
+        until: "Bis",
+        productLinks: "Produkt-Links",
+        transparencyMode: "Transparenzmodus",
+        transparencyModeSubtitle: "Wenn aktiviert, identifiziert sich der Bot als solcher"
+      },
+      commentSettings: {
+        title: "Kommentar-Einstellungen",
+        active: "Aktiv",
+        duration: "Dauer",
+        from: "Von",
+        until: "Bis",
+        productLinks: "Produkt-Links",
+        transparencyMode: "Transparenzmodus",
+        transparencyModeSubtitle: "Wenn aktiviert, identifiziert sich der Bot als solcher"
+      },
       autorespondingToDMs: "Automatische DM-Antworten",
       autorespondingToComments: "Automatische Kommentar-Antworten",
       delayOfResponse: "Antwortverzögerung",
@@ -328,7 +381,7 @@ const messages = {
         addNewExclusionTopic: "Neues Ausschlussthema hinzufügen",
         placeholder: {
           name: "Name eingeben",
-          description: "Beschreibung eingeben",
+          description: "Beschreibung eingeben - einfach alles, was nicht in die Felder unten passt",
           trait: "Eigenschaft eingeben",
           interest: "Interesse eingeben",
           trigger: "Auslöser eingeben",
@@ -425,6 +478,23 @@ const messages = {
             content: "Diese Nutzungsbedingungen unterliegen deutschem Recht. Gerichtsstand ist, soweit gesetzlich zulässig, der Sitz unseres Unternehmens."
           },
           note: "Hinweis: Diese Nutzungsbedingungen können bei Bedarf aktualisiert werden. Wesentliche Änderungen werden Ihnen per E-Mail mitgeteilt."
+        },
+        footer: {
+          tagline: "KI-gestützte Automatisierung für Ihre Instagram-Interaktionen. Lassen Sie den Bot die Arbeit für Sie erledigen.",
+          developedBy: "Entwickelt von",
+          service: "Service",
+          pricing: "Preise",
+          proFeatures: "Pro Features",
+          dashboard: "Dashboard",
+          documentation: "Dokumentation",
+          legal: "Rechtliches",
+          imprint: "Impressum",
+          termsOfUse: "Nutzungsbedingungen",
+          cookiePolicy: "Cookie-Richtlinie",
+          privacy: "Datenschutz",
+          dataDeletion: "Datenlöschung",
+          allRightsReserved: "Alle Rechte vorbehalten",
+          usageCounter: "{remaining} von {total} Versuchen heute übrig"
         }
       }
     }

@@ -1,6 +1,13 @@
 import Link from "next/link";
+import { useI18n } from "@/hooks/useI18n";
 
-export default function Footer() {
+interface FooterProps {
+  locale?: string;
+}
+
+export default function Footer({ locale = 'en' }: FooterProps) {
+  const { t } = useI18n(locale);
+
   return (
     <footer className="bg-[#15192a] text-[#a3bffa] py-8 mt-16">
       <div className="max-w-6xl mx-auto px-4">
@@ -13,11 +20,10 @@ export default function Footer() {
               </span>
             </div>
             <p className="text-sm text-gray-400 mb-4">
-              KI-gestützte Automatisierung für Ihre Instagram-Interaktionen. 
-              Lassen Sie den Bot die Arbeit für Sie erledigen.
+              {t('footer.tagline')}
             </p>
             <p className="text-xs text-gray-500">
-              Entwickelt von{" "}
+              {t('footer.developedBy')}{" "}
               <a 
                 href="https://rudolpho-ai.de" 
                 target="_blank" 
@@ -31,26 +37,26 @@ export default function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h3 className="font-semibold mb-4">Service</h3>
+            <h3 className="font-semibold mb-4">{t('footer.service')}</h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link href="/pricing" className="hover:text-[#f3aacb] transition-colors">
-                  Preise
+                  {t('footer.pricing')}
                 </Link>
               </li>
               <li>
                 <Link href="/pro" className="hover:text-[#f3aacb] transition-colors">
-                  Pro Features
+                  {t('footer.proFeatures')}
                 </Link>
               </li>
               <li>
                 <Link href="/dashboard" className="hover:text-[#f3aacb] transition-colors">
-                  Dashboard
+                  {t('footer.dashboard')}
                 </Link>
               </li>
               <li>
                 <Link href="/documentation" className="hover:text-[#f3aacb] transition-colors">
-                  Dokumentation
+                  {t('footer.documentation')}
                 </Link>
               </li>
             </ul>
@@ -58,31 +64,31 @@ export default function Footer() {
 
           {/* Legal Links */}
           <div>
-            <h3 className="font-semibold mb-4">Rechtliches</h3>
+            <h3 className="font-semibold mb-4">{t('footer.legal')}</h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link href="/impressum" className="hover:text-[#f3aacb] transition-colors">
-                  Impressum
+                  {t('footer.imprint')}
                 </Link>
               </li>
               <li>
-                        <Link href="/terms-new" className="hover:text-[#f3aacb] transition-colors">
-          Terms of use
-        </Link>
+                <Link href="/terms-new" className="hover:text-[#f3aacb] transition-colors">
+                  {t('footer.termsOfUse')}
+                </Link>
               </li>
               <li>
                 <Link href="/cookie-policy" className="hover:text-[#f3aacb] transition-colors">
-                  Cookie-Richtlinie
+                  {t('footer.cookiePolicy')}
                 </Link>
               </li>
               <li>
                 <Link href="/privacy-new" className="hover:text-[#f3aacb] transition-colors">
-                  Datenschutz
+                  {t('footer.privacy')}
                 </Link>
               </li>
               <li>
                 <Link href="/data-deletion-new" className="hover:text-[#f3aacb] transition-colors">
-                  Datenlöschung
+                  {t('footer.dataDeletion')}
                 </Link>
               </li>
             </ul>
@@ -92,23 +98,23 @@ export default function Footer() {
         {/* Bottom Section */}
         <div className="border-t border-gray-700 mt-8 pt-6 flex flex-col md:flex-row justify-between items-center">
           <p className="text-xs text-gray-500">
-            © {new Date().getFullYear()} rudolpho-chat. Alle Rechte vorbehalten.
+            © {new Date().getFullYear()} rudolpho-chat. {t('footer.allRightsReserved')}
           </p>
           <div className="flex space-x-4 mt-4 md:mt-0">
             <Link href="/impressum" className="text-xs text-gray-500 hover:text-[#f3aacb] transition-colors">
-              Impressum
+              {t('footer.imprint')}
             </Link>
             <Link href="/privacy-new" className="text-xs text-gray-500 hover:text-[#f3aacb] transition-colors">
-              Datenschutz
+              {t('footer.privacy')}
             </Link>
             <Link href="/terms-new" className="text-xs text-gray-500 hover:text-[#f3aacb] transition-colors">
-              Terms of use
+              {t('footer.termsOfUse')}
             </Link>
             <Link href="/cookie-policy" className="text-xs text-gray-500 hover:text-[#f3aacb] transition-colors">
-              Cookie-Richtlinie
+              {t('footer.cookiePolicy')}
             </Link>
             <Link href="/data-deletion-new" className="text-xs text-gray-500 hover:text-[#f3aacb] transition-colors">
-              Datenlöschung
+              {t('footer.dataDeletion')}
             </Link>
           </div>
         </div>

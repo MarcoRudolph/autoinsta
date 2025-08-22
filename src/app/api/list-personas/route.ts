@@ -75,12 +75,19 @@ export async function GET(request: Request) {
         active = false;
       }
       
-      console.log(`Persona ${row.id} (${name}): active=${active}, data:`, data);
+      // Check for transparency mode - it should be at data.transparencyMode level
+      let transparencyMode = true; // Default to true
+      if (data?.transparencyMode !== undefined && data?.transparencyMode !== null) {
+        transparencyMode = Boolean(data.transparencyMode);
+      }
+      
+      console.log(`Persona ${row.id} (${name}): active=${active}, transparencyMode=${transparencyMode}, data:`, data);
       
       return {
         id: row.id,
         name: name,
         active: active,
+        transparencyMode: transparencyMode,
       };
     });
     console.log('Final personasList:', JSON.stringify(personasList, null, 2));

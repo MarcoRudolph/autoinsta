@@ -12,6 +12,7 @@ interface EditValueModalProps {
   buttonText?: string;
   cancelText?: string;
   editText?: string;
+  locale?: string;
 }
 
 export default function EditValueModal({
@@ -22,11 +23,32 @@ export default function EditValueModal({
   currentValue,
   placeholder,
   subtitle,
-  buttonText = 'Aktualisieren',
-  cancelText = 'Abbrechen',
-  editText = 'Wert bearbeiten'
+  buttonText,
+  cancelText,
+  editText,
+  locale = 'en'
 }: EditValueModalProps) {
   const [value, setValue] = useState(currentValue);
+
+  // Simple translation function for this component
+  const t = (key: string) => {
+    const translations = {
+      en: {
+        editValue: 'Edit Value',
+        editValueFor: 'Edit the value for',
+        cancel: 'Cancel',
+        update: 'Update'
+      },
+      de: {
+        editValue: 'Wert bearbeiten',
+        editValueFor: 'Bearbeite den Wert für',
+        cancel: 'Abbrechen',
+        update: 'Aktualisieren'
+      }
+    };
+    
+    return translations[locale as keyof typeof translations]?.[key as keyof typeof translations.en] || key;
+  };
 
   useEffect(() => {
     setValue(currentValue);
@@ -50,13 +72,13 @@ export default function EditValueModal({
       <DialogContent className="bg-white text-gray-900 max-w-md">
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold text-gray-800">
-            {editText}
+            {editText || t('editValue')}
           </DialogTitle>
         </DialogHeader>
         
         <div className="py-4">
           <p className="text-sm text-gray-600 mb-4">
-            {subtitle || `Bearbeite den Wert für "${title}"`}
+            {subtitle || `${t('editValueFor')} "${title}"`}
           </p>
           
           <input
@@ -75,14 +97,14 @@ export default function EditValueModal({
             onClick={onClose}
             className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
-            {cancelText}
+            {cancelText || t('cancel')}
           </button>
           <button
             onClick={handleSave}
             disabled={!value.trim() || value.trim() === currentValue}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {buttonText}
+            {buttonText || t('update')}
           </button>
         </DialogFooter>
       </DialogContent>

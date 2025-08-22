@@ -97,7 +97,7 @@
       "addNewExclusionTopic": "Add New Exclusion Topic",
       "placeholder": {
         "name": "Enter name",
-        "description": "Enter description",
+        "description": "Enter description - simply everything that does not fit into the fields below",
         "trait": "Enter trait",
         "interest": "Enter interest",
         "trigger": "Enter trigger",
@@ -111,7 +111,9 @@
       "duration": "Duration",
       "from": "From",
       "until": "Until",
-      "productLinks": "Product Links"
+      "productLinks": "Product Links",
+      "transparencyMode": "Transparency Mode",
+      "transparencyModeSubtitle": "When enabled, the bot identifies itself as such"
     },
     "commentSettings": {
       "title": "Comment Settings",
@@ -119,7 +121,9 @@
       "duration": "Duration",
       "from": "From",
       "until": "Until",
-      "productLinks": "Product Links"
+      "productLinks": "Product Links",
+      "transparencyMode": "Transparency Mode",
+      "transparencyModeSubtitle": "When enabled, the bot identifies itself as such"
     },
     "systemPrompt": {
       "title": "System Prompt",
@@ -150,6 +154,23 @@
       },
       "getStarted": "Get Started"
     }
+  },
+  "footer": {
+    "tagline": "AI-powered automation for your Instagram interactions. Let the bot do the work for you.",
+    "developedBy": "Developed by",
+    "service": "Service",
+    "pricing": "Pricing",
+    "proFeatures": "Pro Features",
+    "dashboard": "Dashboard",
+    "documentation": "Documentation",
+    "legal": "Legal",
+    "imprint": "Imprint",
+    "termsOfUse": "Terms of Use",
+    "cookiePolicy": "Cookie Policy",
+    "privacy": "Privacy",
+    "dataDeletion": "Data Deletion",
+    "allRightsReserved": "All rights reserved",
+    "usageCounter": "{remaining} of {total} attempts remaining today"
   },
   "modals": {
     "addValue": {

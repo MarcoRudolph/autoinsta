@@ -1,0 +1,24 @@
+{
+  "name": "rudolpho-chat",
+  "short_name": "rudolpho-chat",
+  "description": "Let the bot do the chat for you",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1b1f2b",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/images/appicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/appicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

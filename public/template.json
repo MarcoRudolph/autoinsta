@@ -71,5 +71,6 @@
       }
   },
   "delayMin": 5,
-  "delayMax": 10
+  "delayMax": 10,
+  "transparencyMode": true
 }

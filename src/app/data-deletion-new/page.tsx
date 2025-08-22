@@ -5,15 +5,15 @@ import { useEffect } from 'react';
 
 export default function DataDeletion() {
   const router = useRouter();
-  const { currentLocale } = useI18n();
+  const { locale } = useI18n('en'); // Default to English
 
   useEffect(() => {
-    if (currentLocale === 'de') {
+    if (locale === 'de') {
       router.push('/data-deletion');
     } else {
       router.push('/data-deletion-en');
     }
-  }, [currentLocale, router]);
+  }, [locale, router]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#15192a] via-[#232946] to-[#334269] text-white">

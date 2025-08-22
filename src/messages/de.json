@@ -97,7 +97,7 @@
       "addNewExclusionTopic": "Neues Ausschlussthema hinzufügen",
       "placeholder": {
         "name": "Name eingeben",
-        "description": "Beschreibung eingeben",
+        "description": "Beschreibung eingeben - einfach alles, was nicht in die Felder unten passt",
         "trait": "Eigenschaft eingeben",
         "interest": "Interesse eingeben",
         "trigger": "Auslöser eingeben",
@@ -111,7 +111,9 @@
       "duration": "Dauer",
       "from": "Von",
       "until": "Bis",
-      "productLinks": "Produkt-Links"
+      "productLinks": "Produkt-Links",
+      "transparencyMode": "Transparenz-Modus",
+      "transparencyModeSubtitle": "Wenn aktiviert, gibt sich der Bot als solcher zu erkennen"
     },
     "commentSettings": {
       "title": "Kommentar-Einstellungen",
@@ -119,7 +121,9 @@
       "duration": "Dauer",
       "from": "Von",
       "until": "Bis",
-      "productLinks": "Produkt-Links"
+      "productLinks": "Produkt-Links",
+      "transparencyMode": "Transparenz-Modus",
+      "transparencyModeSubtitle": "Wenn aktiviert, gibt sich der Bot als solcher zu erkennen"
     },
     "systemPrompt": {
       "title": "System-Prompt",
@@ -150,6 +154,23 @@
       },
       "getStarted": "Jetzt loslegen"
     }
+  },
+  "footer": {
+    "tagline": "KI-gestützte Automatisierung für Ihre Instagram-Interaktionen. Lassen Sie den Bot die Arbeit für Sie erledigen.",
+    "developedBy": "Entwickelt von",
+    "service": "Service",
+    "pricing": "Preise",
+    "proFeatures": "Pro Features",
+    "dashboard": "Dashboard",
+    "documentation": "Dokumentation",
+    "legal": "Rechtliches",
+    "imprint": "Impressum",
+    "termsOfUse": "Nutzungsbedingungen",
+    "cookiePolicy": "Cookie-Richtlinie",
+    "privacy": "Datenschutz",
+    "dataDeletion": "Datenlöschung",
+    "allRightsReserved": "Alle Rechte vorbehalten",
+    "usageCounter": "{remaining} von {total} Versuchen heute übrig"
   },
   "modals": {
     "addValue": {

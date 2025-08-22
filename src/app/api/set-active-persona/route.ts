@@ -11,12 +11,12 @@ type PersonaData = {
 
 export async function POST(req: NextRequest) {
   try {
-    const { personaId, userId } = await req.json();
-    if (!personaId || !userId) {
-      return NextResponse.json({ error: 'Missing personaId or userId' }, { status: 400 });
+    const { personaId, userId, active } = await req.json();
+    if (!personaId || !userId || active === undefined) {
+      return NextResponse.json({ error: 'Missing personaId, userId, or active status' }, { status: 400 });
     }
     
-    console.log(`Setting active persona: ${personaId} for user: ${userId}`);
+    console.log(`Setting active persona: ${personaId} for user: ${userId} with active=${active}`);
     
     // Initialize Supabase client
     const supabase = createClient(
@@ -37,18 +37,32 @@ export async function POST(req: NextRequest) {
 
     console.log(`Found ${allPersonas?.length || 0} personas for user`);
     
-    // Set active=false for all, active=true for the selected one
+    // If we're activating a persona, deactivate all others
+    // If we're deactivating a persona, just update that one
     for (const p of allPersonas || []) {
       const data = p.data as PersonaData;
-      const isActive = p.id === personaId;
+      let shouldBeActive = false;
+      
+      if (active === true) {
+        // Activating: only the selected persona should be active
+        shouldBeActive = p.id === personaId;
+      } else {
+        // Deactivating: only update the selected persona to false
+        if (p.id === personaId) {
+          shouldBeActive = false;
+        } else {
+          // Keep other personas as they are
+          continue;
+        }
+      }
       
       // Update only the active status at the top level for consistency
       const updatedData = {
         ...data,
-        active: isActive
+        active: shouldBeActive
       };
       
-      console.log(`Updating persona ${p.id} with active=${isActive}, current data:`, data);
+      console.log(`Updating persona ${p.id} with active=${shouldBeActive}, current data:`, data);
       console.log(`Updated data will be:`, updatedData);
       
       // Update persona using Supabase
@@ -60,11 +74,11 @@ export async function POST(req: NextRequest) {
       if (updateError) {
         console.error(`Error updating persona ${p.id}:`, updateError);
       } else {
-        console.log(`Successfully updated persona ${p.id} with active=${isActive}`);
+        console.log(`Successfully updated persona ${p.id} with active=${shouldBeActive}`);
       }
     }
     
-    // Return the updated active persona
+    // Return the updated persona
     const { data: updated, error: getError } = await supabase
       .from('personas')
       .select('*')

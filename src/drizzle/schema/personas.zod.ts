@@ -33,7 +33,8 @@ export const PersonaDataSchema = z.object({
       })
     })
   }),
-  productLinks: z.array(z.string()).optional().default([])
+  productLinks: z.array(z.string()).optional().default([]),
+  transparencyMode: z.boolean().default(true)
 }).passthrough();
 
 export const PersonaInsertSchema = z.object({
