@@ -1,29 +1,31 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
+import { sql } from 'drizzle-orm';
+import { db } from '@/drizzle';
 
 export async function GET() {
+  const hasPostgresUrl = Boolean(process.env.POSTGRES_URL);
+
   try {
-    // Initialize Supabase client
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const connectivityProbe = await db.execute(sql`select 1 as ok`);
+    const isConnected = connectivityProbe.rowCount !== 0;
 
-    const { data: result, error } = await supabase
-      .from('users')
-      .select('*');
-
-    if (error) {
-      console.error('Error fetching users:', error);
-      return NextResponse.json({ error: 'Database error', details: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ 
-      success: true, 
-      count: result?.length || 0,
-      users: (result || []).map(user => ({ id: user.id, email: user.email }))
+    return NextResponse.json({
+      success: true,
+      runtime: 'drizzle',
+      hasPostgresUrl,
+      isConnected,
     });
   } catch (error) {
-    return NextResponse.json({ error: 'Database error', details: String(error) }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        runtime: 'drizzle',
+        hasPostgresUrl,
+        isConnected: false,
+        error: 'Database error',
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 }
+    );
   }
 }

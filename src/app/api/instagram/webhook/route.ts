@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { processIncomingDm, recordInstagramMessage, type StoredMessageInput } from '@/lib/instagram/dmPipeline';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 type InstagramWebhookPayload = {
   object?: string;

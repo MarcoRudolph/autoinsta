@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { eq } from 'drizzle-orm';
+import { db } from '@/drizzle';
+import { instagramConnections } from '@/drizzle/schema/instagram';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 type MetaTokenResponse = {
   access_token?: string;
@@ -49,14 +51,6 @@ function decodeState(rawState: string | null): OAuthState {
   }
 }
 
-function createAdminSupabaseClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !serviceRoleKey) return null;
-  return createClient(supabaseUrl, serviceRoleKey);
-}
-
 async function subscribeInstagramAccountToApp(input: {
   igAccountId: string;
   accessToken: string;
@@ -95,27 +89,43 @@ async function upsertInstagramConnection(input: {
   provider: 'instagram_login' | 'meta_business';
   userId?: string | null;
 }) {
-  const supabase = createAdminSupabaseClient();
-  if (!supabase) return;
-
   const tokenExpiresAt =
-    typeof input.expiresInSeconds === 'number'
-      ? new Date(Date.now() + input.expiresInSeconds * 1000).toISOString()
-      : null;
+    typeof input.expiresInSeconds === 'number' ? new Date(Date.now() + input.expiresInSeconds * 1000) : null;
 
-  await supabase.from('instagram_connections').upsert(
-    {
-      ig_account_id: input.igAccountId,
-      ig_username: input.igUsername || null,
-      access_token: input.accessToken || null,
-      token_expires_at: tokenExpiresAt,
+  await db
+    .insert(instagramConnections)
+    .values({
+      igAccountId: input.igAccountId,
+      igUsername: input.igUsername || null,
+      accessToken: input.accessToken || null,
+      tokenExpiresAt,
       provider: input.provider,
-      user_id: input.userId || null,
+      userId: input.userId || null,
       status: 'connected',
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'ig_account_id' }
-  );
+      updatedAt: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: instagramConnections.igAccountId,
+      set: {
+        igUsername: input.igUsername || null,
+        accessToken: input.accessToken || null,
+        tokenExpiresAt,
+        provider: input.provider,
+        userId: input.userId || null,
+        status: 'connected',
+        updatedAt: new Date(),
+      },
+    });
+
+  const saved = await db
+    .select({ igAccountId: instagramConnections.igAccountId })
+    .from(instagramConnections)
+    .where(eq(instagramConnections.igAccountId, input.igAccountId))
+    .limit(1);
+
+  if (saved.length === 0) {
+    throw new Error(`Failed to persist instagram connection for account ${input.igAccountId}`);
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -208,14 +218,28 @@ export async function GET(request: NextRequest) {
 
       if (firstConnected?.instagram_business_account?.id) {
         const connectionToken = firstConnected.access_token || tokenData.access_token;
-        await upsertInstagramConnection({
-          igAccountId: firstConnected.instagram_business_account.id,
-          igUsername: firstConnected.instagram_business_account.username || null,
-          accessToken: connectionToken,
-          expiresInSeconds: tokenData.expires_in,
-          provider: 'meta_business',
-          userId: flowUserId,
-        });
+        try {
+          await upsertInstagramConnection({
+            igAccountId: firstConnected.instagram_business_account.id,
+            igUsername: firstConnected.instagram_business_account.username || null,
+            accessToken: connectionToken,
+            expiresInSeconds: tokenData.expires_in,
+            provider: 'meta_business',
+            userId: flowUserId,
+          });
+        } catch (error) {
+          console.error('Failed to persist Instagram connection (meta business flow)', {
+            igAccountId: firstConnected.instagram_business_account.id,
+            provider: 'meta_business',
+            error: error instanceof Error ? error.message : String(error),
+          });
+          return NextResponse.redirect(
+            new URL(
+              '/dashboard?instagramConnected=false&instagramError=Database write failed while linking Instagram account',
+              normalizedSiteUrl
+            )
+          );
+        }
 
         if (connectionToken) {
           const subscriptionResult = await subscribeInstagramAccountToApp({
@@ -289,13 +313,27 @@ export async function GET(request: NextRequest) {
 
       const igAccountId = tokenData.user_id ? String(tokenData.user_id) : null;
       if (igAccountId) {
-        await upsertInstagramConnection({
-          igAccountId,
-          accessToken: tokenData.access_token,
-          expiresInSeconds: tokenData.expires_in,
-          provider: 'instagram_login',
-          userId: flowUserId,
-        });
+        try {
+          await upsertInstagramConnection({
+            igAccountId,
+            accessToken: tokenData.access_token,
+            expiresInSeconds: tokenData.expires_in,
+            provider: 'instagram_login',
+            userId: flowUserId,
+          });
+        } catch (error) {
+          console.error('Failed to persist Instagram connection (instagram login flow)', {
+            igAccountId,
+            provider: 'instagram_login',
+            error: error instanceof Error ? error.message : String(error),
+          });
+          return NextResponse.redirect(
+            new URL(
+              '/dashboard?instagramConnected=false&instagramError=Database write failed while linking Instagram account',
+              normalizedSiteUrl
+            )
+          );
+        }
 
         const subscriptionResult = await subscribeInstagramAccountToApp({
           igAccountId,

@@ -1,4 +1,13 @@
-import { createClient } from '@supabase/supabase-js';
+import { and, desc, eq } from 'drizzle-orm';
+import { db } from '@/drizzle';
+import {
+  instagramConnections,
+  instagramDeliveryAudit,
+  instagramMessages,
+  instagramPromoAudit,
+  instagramThreads,
+} from '@/drizzle/schema/instagram';
+import { personas } from '@/drizzle/schema/personas';
 import { decideProductLink, type ProductLink } from './productLinkDecision';
 
 type MessageKind = 'dm' | 'comment';
@@ -25,9 +34,9 @@ export type ThreadState = {
 };
 
 type ConnectionRecord = {
-  ig_account_id: string;
-  user_id: string | null;
-  access_token: string | null;
+  igAccountId: string;
+  userId: string | null;
+  accessToken: string | null;
 };
 
 type PersonaRecord = {
@@ -88,27 +97,10 @@ class GraphApiRequestError extends Error {
 
 const GRAPH_API_VERSION = 'v23.0';
 const DM_PIPELINE_DEBUG = process.env.DM_PIPELINE_DEBUG !== '0';
-let loggedMissingAdminClient = false;
 
 function logDmDebug(event: string, details: Record<string, unknown>) {
   if (!DM_PIPELINE_DEBUG) return;
   console.log(`[dmPipeline] ${event}`, details);
-}
-
-function createAdminSupabaseClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !serviceRoleKey) {
-    if (!loggedMissingAdminClient) {
-      loggedMissingAdminClient = true;
-      console.error('[dmPipeline] Missing admin supabase env', {
-        hasSupabaseUrl: Boolean(supabaseUrl),
-        hasServiceRoleKey: Boolean(serviceRoleKey),
-      });
-    }
-    return null;
-  }
-  return createClient(supabaseUrl, serviceRoleKey);
 }
 
 function normalizeProductLinks(rawLinks: unknown): ProductLink[] {
@@ -163,25 +155,28 @@ function normalizePersona(row: PersonaRecord): NormalizedPersona {
 }
 
 async function getConnectionByAccountId(igAccountId: string): Promise<ConnectionRecord | null> {
-  const supabase = createAdminSupabaseClient();
-  if (!supabase) return null;
+  const rows = await db
+    .select({
+      igAccountId: instagramConnections.igAccountId,
+      userId: instagramConnections.userId,
+      accessToken: instagramConnections.accessToken,
+    })
+    .from(instagramConnections)
+    .where(eq(instagramConnections.igAccountId, igAccountId))
+    .limit(1);
 
-  const { data } = await supabase
-    .from('instagram_connections')
-    .select('ig_account_id,user_id,access_token')
-    .eq('ig_account_id', igAccountId)
-    .limit(1)
-    .maybeSingle();
-
-  return (data as ConnectionRecord | null) ?? null;
+  return rows[0] ?? null;
 }
 
 async function getActivePersonaForUser(userId: string): Promise<NormalizedPersona | null> {
-  const supabase = createAdminSupabaseClient();
-  if (!supabase) return null;
+  const rows = (await db
+    .select({
+      id: personas.id,
+      data: personas.data,
+    })
+    .from(personas)
+    .where(eq(personas.userId, userId))) as PersonaRecord[];
 
-  const { data } = await supabase.from('personas').select('id,data').eq('userId', userId);
-  const rows = (data as PersonaRecord[] | null) || [];
   if (rows.length === 0) return null;
 
   const normalized = rows.map(normalizePersona);
@@ -194,36 +189,29 @@ async function getRecentThreadMessages(
   threadKey: string,
   excludeMessageId: string
 ): Promise<Array<{ role: 'user' | 'assistant'; content: string }>> {
-  const supabase = createAdminSupabaseClient();
-  if (!supabase) return [];
-
-  const { data } = await supabase
-    .from('instagram_messages')
-    .select('platform_message_id,direction,message_text,sent_at')
-    .eq('ig_account_id', igAccountId)
-    .eq('thread_key', threadKey)
-    .order('sent_at', { ascending: false })
+  const rows = await db
+    .select({
+      platformMessageId: instagramMessages.platformMessageId,
+      direction: instagramMessages.direction,
+      messageText: instagramMessages.messageText,
+    })
+    .from(instagramMessages)
+    .where(and(eq(instagramMessages.igAccountId, igAccountId), eq(instagramMessages.threadKey, threadKey)))
+    .orderBy(desc(instagramMessages.sentAt))
     .limit(20);
-
-  const rows =
-    (data as Array<{
-      platform_message_id?: string;
-      direction?: string;
-      message_text?: string | null;
-    }> | null) || [];
 
   return rows
     .filter(
       (row) =>
-        row.platform_message_id !== excludeMessageId &&
-        typeof row.message_text === 'string' &&
-        row.message_text.trim().length > 0 &&
+        row.platformMessageId !== excludeMessageId &&
+        typeof row.messageText === 'string' &&
+        row.messageText.trim().length > 0 &&
         (row.direction === 'incoming' || row.direction === 'outgoing')
     )
     .reverse()
     .map((row) => ({
       role: row.direction === 'incoming' ? 'user' : 'assistant',
-      content: row.message_text as string,
+      content: row.messageText as string,
     }));
 }
 
@@ -331,19 +319,16 @@ async function insertDeliveryAudit(input: {
   retryCount?: number;
   metadata?: Record<string, unknown>;
 }) {
-  const supabase = createAdminSupabaseClient();
-  if (!supabase) return;
-
-  await supabase.from('instagram_delivery_audit').insert({
-    ig_account_id: input.igAccountId,
-    thread_key: input.threadKey,
+  await db.insert(instagramDeliveryAudit).values({
+    igAccountId: input.igAccountId,
+    threadKey: input.threadKey,
     direction: input.direction,
     status: input.status,
-    provider_message_id: input.providerMessageId || null,
-    error_code: input.errorCode ?? null,
-    error_type: input.errorType ?? null,
-    error_message: input.errorMessage ?? null,
-    retry_count: input.retryCount ?? 0,
+    providerMessageId: input.providerMessageId || null,
+    errorCode: input.errorCode ?? null,
+    errorType: input.errorType ?? null,
+    errorMessage: input.errorMessage ?? null,
+    retryCount: input.retryCount ?? 0,
     metadata: input.metadata ?? null,
   });
 }
@@ -430,18 +415,14 @@ async function sendInstagramDm(
 }
 
 async function setThreadPromoState(igAccountId: string, threadKey: string, platformMessageId: string) {
-  const supabase = createAdminSupabaseClient();
-  if (!supabase) return;
-
-  await supabase
-    .from('instagram_threads')
-    .update({
-      last_promo_at: new Date().toISOString(),
-      last_promo_message_id: platformMessageId,
-      updated_at: new Date().toISOString(),
+  await db
+    .update(instagramThreads)
+    .set({
+      lastPromoAt: new Date(),
+      lastPromoMessageId: platformMessageId,
+      updatedAt: new Date(),
     })
-    .eq('ig_account_id', igAccountId)
-    .eq('thread_key', threadKey);
+    .where(and(eq(instagramThreads.igAccountId, igAccountId), eq(instagramThreads.threadKey, threadKey)));
 }
 
 async function insertPromoAudit(input: {
@@ -456,73 +437,56 @@ async function insertPromoAudit(input: {
   selectedSendingBehavior?: string | null;
   metadata?: Record<string, unknown>;
 }) {
-  const supabase = createAdminSupabaseClient();
-  if (!supabase) return;
-
-  await supabase.from('instagram_promo_audit').insert({
-    ig_account_id: input.igAccountId,
-    thread_key: input.threadKey,
-    platform_message_id: input.platformMessageId || null,
-    persona_id: input.personaId || null,
+  await db.insert(instagramPromoAudit).values({
+    igAccountId: input.igAccountId,
+    threadKey: input.threadKey,
+    platformMessageId: input.platformMessageId || null,
+    personaId: input.personaId || null,
     decision: input.decision,
     reason: input.reason,
-    selected_link_url: input.selectedLinkUrl || null,
-    selected_action_type: input.selectedActionType || null,
-    selected_sending_behavior: input.selectedSendingBehavior || null,
+    selectedLinkUrl: input.selectedLinkUrl || null,
+    selectedActionType: input.selectedActionType || null,
+    selectedSendingBehavior: input.selectedSendingBehavior || null,
     metadata: input.metadata || null,
   });
 }
 
 async function loadThreadState(igAccountId: string, threadKey: string): Promise<ThreadState> {
-  const supabase = createAdminSupabaseClient();
-  if (!supabase) {
-    return { incomingMessageCount: 0, outgoingMessageCount: 0, lastPromoAt: null };
-  }
+  const data = await db
+    .select({
+      incomingMessageCount: instagramThreads.incomingMessageCount,
+      outgoingMessageCount: instagramThreads.outgoingMessageCount,
+      lastPromoAt: instagramThreads.lastPromoAt,
+    })
+    .from(instagramThreads)
+    .where(and(eq(instagramThreads.igAccountId, igAccountId), eq(instagramThreads.threadKey, threadKey)))
+    .limit(1);
 
-  const { data } = await supabase
-    .from('instagram_threads')
-    .select('incoming_message_count,outgoing_message_count,last_promo_at')
-    .eq('ig_account_id', igAccountId)
-    .eq('thread_key', threadKey)
-    .limit(1)
-    .maybeSingle();
+  const row = data[0];
 
   return {
-    incomingMessageCount: Number(data?.incoming_message_count || 0),
-    outgoingMessageCount: Number(data?.outgoing_message_count || 0),
-    lastPromoAt: (data?.last_promo_at as string | null) || null,
+    incomingMessageCount: Number(row?.incomingMessageCount || 0),
+    outgoingMessageCount: Number(row?.outgoingMessageCount || 0),
+    lastPromoAt: row?.lastPromoAt ? row.lastPromoAt.toISOString() : null,
   };
 }
 
 export async function recordInstagramMessage(
   message: StoredMessageInput
 ): Promise<{ inserted: boolean; threadState: ThreadState; reason: 'inserted' | 'duplicate' | 'error' }> {
-  const supabase = createAdminSupabaseClient();
-  if (!supabase) {
-    console.error('[dmPipeline] Skipping recordInstagramMessage due to missing admin client', {
-      igAccountId: message.igAccountId,
-      threadKey: message.threadKey,
-      platformMessageId: message.platformMessageId,
-    });
-    return {
-      inserted: false,
-      threadState: { incomingMessageCount: 0, outgoingMessageCount: 0, lastPromoAt: null },
-      reason: 'error',
-    };
-  }
-
-  const { data: existing, error: existingError } = await supabase
-    .from('instagram_messages')
-    .select('platform_message_id')
-    .eq('platform_message_id', message.platformMessageId)
-    .limit(1);
-
-  if (existingError) {
+  let existing: Array<{ platformMessageId: string }> = [];
+  try {
+    existing = await db
+      .select({ platformMessageId: instagramMessages.platformMessageId })
+      .from(instagramMessages)
+      .where(eq(instagramMessages.platformMessageId, message.platformMessageId))
+      .limit(1);
+  } catch (error) {
     console.error('[dmPipeline] Failed to check existing message', {
       igAccountId: message.igAccountId,
       threadKey: message.threadKey,
       platformMessageId: message.platformMessageId,
-      error: existingError.message,
+      error: error instanceof Error ? error.message : String(error),
     });
     return {
       inserted: false,
@@ -531,7 +495,7 @@ export async function recordInstagramMessage(
     };
   }
 
-  if (existing && existing.length > 0) {
+  if (existing.length > 0) {
     logDmDebug('duplicate_message', {
       igAccountId: message.igAccountId,
       threadKey: message.threadKey,
@@ -544,27 +508,27 @@ export async function recordInstagramMessage(
     };
   }
 
-  const { error: insertError } = await supabase.from('instagram_messages').insert({
-    ig_account_id: message.igAccountId,
-    thread_key: message.threadKey,
-    platform_message_id: message.platformMessageId,
-    message_kind: message.messageKind,
-    direction: message.direction,
-    sender_ig_id: message.senderIgId,
-    recipient_ig_id: message.recipientIgId,
-    message_text: message.messageText,
-    sent_at: message.sentAt,
-    raw_payload: message.rawPayload,
-  });
-
-  if (insertError) {
+  try {
+    await db.insert(instagramMessages).values({
+      igAccountId: message.igAccountId,
+      threadKey: message.threadKey,
+      platformMessageId: message.platformMessageId,
+      messageKind: message.messageKind,
+      direction: message.direction,
+      senderIgId: message.senderIgId,
+      recipientIgId: message.recipientIgId,
+      messageText: message.messageText,
+      sentAt: new Date(message.sentAt),
+      rawPayload: message.rawPayload,
+    });
+  } catch (error) {
     console.error('[dmPipeline] Failed to insert instagram_messages row', {
       igAccountId: message.igAccountId,
       threadKey: message.threadKey,
       platformMessageId: message.platformMessageId,
       direction: message.direction,
       messageKind: message.messageKind,
-      error: insertError.message,
+      error: error instanceof Error ? error.message : String(error),
     });
     return {
       inserted: false,
@@ -573,52 +537,83 @@ export async function recordInstagramMessage(
     };
   }
 
-  const { data: existingThread, error: existingThreadError } = await supabase
-    .from('instagram_threads')
-    .select('*')
-    .eq('ig_account_id', message.igAccountId)
-    .eq('thread_key', message.threadKey)
-    .limit(1)
-    .maybeSingle();
+  let existingThread:
+    | {
+        incomingMessageCount: number;
+        outgoingMessageCount: number;
+        lastIncomingAt: Date | null;
+        lastOutgoingAt: Date | null;
+        lastPromoAt: Date | null;
+        lastPromoMessageId: string | null;
+      }
+    | undefined;
 
-  if (existingThreadError) {
+  try {
+    const threadRows = await db
+      .select({
+        incomingMessageCount: instagramThreads.incomingMessageCount,
+        outgoingMessageCount: instagramThreads.outgoingMessageCount,
+        lastIncomingAt: instagramThreads.lastIncomingAt,
+        lastOutgoingAt: instagramThreads.lastOutgoingAt,
+        lastPromoAt: instagramThreads.lastPromoAt,
+        lastPromoMessageId: instagramThreads.lastPromoMessageId,
+      })
+      .from(instagramThreads)
+      .where(and(eq(instagramThreads.igAccountId, message.igAccountId), eq(instagramThreads.threadKey, message.threadKey)))
+      .limit(1);
+    existingThread = threadRows[0];
+  } catch (error) {
     console.error('[dmPipeline] Failed to read instagram_threads row', {
       igAccountId: message.igAccountId,
       threadKey: message.threadKey,
       platformMessageId: message.platformMessageId,
-      error: existingThreadError.message,
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 
   const isIncoming = message.direction === 'incoming';
-  const incomingCount = Number(existingThread?.incoming_message_count || 0) + (isIncoming ? 1 : 0);
-  const outgoingCount = Number(existingThread?.outgoing_message_count || 0) + (isIncoming ? 0 : 1);
+  const incomingCount = Number(existingThread?.incomingMessageCount || 0) + (isIncoming ? 1 : 0);
+  const outgoingCount = Number(existingThread?.outgoingMessageCount || 0) + (isIncoming ? 0 : 1);
+  const sentAtDate = new Date(message.sentAt);
 
-  const { error: upsertThreadError } = await supabase.from('instagram_threads').upsert(
-    {
-      ig_account_id: message.igAccountId,
-      thread_key: message.threadKey,
-      participant_ig_id: message.participantIgId,
-      incoming_message_count: incomingCount,
-      outgoing_message_count: outgoingCount,
-      last_incoming_at: isIncoming ? message.sentAt : existingThread?.last_incoming_at || null,
-      last_outgoing_at: isIncoming ? existingThread?.last_outgoing_at || null : message.sentAt,
-      last_message_at: message.sentAt,
-      last_promo_at: existingThread?.last_promo_at || null,
-      last_promo_message_id: existingThread?.last_promo_message_id || null,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'ig_account_id,thread_key' }
-  );
-
-  if (upsertThreadError) {
+  try {
+    await db
+      .insert(instagramThreads)
+      .values({
+        igAccountId: message.igAccountId,
+        threadKey: message.threadKey,
+        participantIgId: message.participantIgId,
+        incomingMessageCount: incomingCount,
+        outgoingMessageCount: outgoingCount,
+        lastIncomingAt: isIncoming ? sentAtDate : existingThread?.lastIncomingAt || null,
+        lastOutgoingAt: isIncoming ? existingThread?.lastOutgoingAt || null : sentAtDate,
+        lastMessageAt: sentAtDate,
+        lastPromoAt: existingThread?.lastPromoAt || null,
+        lastPromoMessageId: existingThread?.lastPromoMessageId || null,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: [instagramThreads.igAccountId, instagramThreads.threadKey],
+        set: {
+          participantIgId: message.participantIgId,
+          incomingMessageCount: incomingCount,
+          outgoingMessageCount: outgoingCount,
+          lastIncomingAt: isIncoming ? sentAtDate : existingThread?.lastIncomingAt || null,
+          lastOutgoingAt: isIncoming ? existingThread?.lastOutgoingAt || null : sentAtDate,
+          lastMessageAt: sentAtDate,
+          lastPromoAt: existingThread?.lastPromoAt || null,
+          lastPromoMessageId: existingThread?.lastPromoMessageId || null,
+          updatedAt: new Date(),
+        },
+      });
+  } catch (error) {
     console.error('[dmPipeline] Failed to upsert instagram_threads row', {
       igAccountId: message.igAccountId,
       threadKey: message.threadKey,
       platformMessageId: message.platformMessageId,
       incomingCount,
       outgoingCount,
-      error: upsertThreadError.message,
+      error: error instanceof Error ? error.message : String(error),
     });
     return {
       inserted: false,
@@ -627,17 +622,17 @@ export async function recordInstagramMessage(
     };
   }
 
-  const { error: connectionUpdateError } = await supabase
-    .from('instagram_connections')
-    .update({ webhook_verified: true, updated_at: new Date().toISOString() })
-    .eq('ig_account_id', message.igAccountId);
-
-  if (connectionUpdateError) {
+  try {
+    await db
+      .update(instagramConnections)
+      .set({ webhookVerified: true, updatedAt: new Date() })
+      .where(eq(instagramConnections.igAccountId, message.igAccountId));
+  } catch (error) {
     console.error('[dmPipeline] Failed to mark webhook_verified on instagram_connections', {
       igAccountId: message.igAccountId,
       threadKey: message.threadKey,
       platformMessageId: message.platformMessageId,
-      error: connectionUpdateError.message,
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 
@@ -656,7 +651,7 @@ export async function recordInstagramMessage(
     threadState: {
       incomingMessageCount: incomingCount,
       outgoingMessageCount: outgoingCount,
-      lastPromoAt: (existingThread?.last_promo_at as string | null) || null,
+      lastPromoAt: existingThread?.lastPromoAt ? existingThread.lastPromoAt.toISOString() : null,
     },
     reason: 'inserted',
   };
@@ -669,8 +664,8 @@ export async function processIncomingDm(input: DmOrchestrationInput): Promise<vo
   }
 
   const connection = await getConnectionByAccountId(inboundMessage.igAccountId);
-  const accessToken = connection?.access_token || process.env.INSTAGRAM_ACCESS_TOKEN || null;
-  if (!connection || !connection.user_id || !accessToken) {
+  const accessToken = connection?.accessToken || process.env.INSTAGRAM_ACCESS_TOKEN || null;
+  if (!connection || !connection.userId || !accessToken) {
     await insertPromoAudit({
       igAccountId: inboundMessage.igAccountId,
       threadKey: inboundMessage.threadKey,
@@ -681,7 +676,7 @@ export async function processIncomingDm(input: DmOrchestrationInput): Promise<vo
     return;
   }
 
-  const persona = await getActivePersonaForUser(connection.user_id);
+  const persona = await getActivePersonaForUser(connection.userId);
   if (!persona) {
     await insertPromoAudit({
       igAccountId: inboundMessage.igAccountId,
