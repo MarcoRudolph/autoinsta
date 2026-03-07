@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const runtime = 'edge';
+
 type MetaTokenResponse = {
   access_token?: string;
   token_type?: string;

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/auth/supabaseClient.server';
 
+export const runtime = 'edge';
+
 type PersonaPayload = {
   transparencyMode?: boolean;
   data?: {
