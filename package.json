@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run cf:assert-workers && next build",
     "start": "next start",
     "lint": "next lint",
     "test:instagram": "tsx --test src/lib/instagram/*.test.ts",
