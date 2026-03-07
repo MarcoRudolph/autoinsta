@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getSupabaseServerConfig } from '@/lib/supabase/serverConfig';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 
 export const runtime = 'nodejs';
 
@@ -10,14 +11,31 @@ export async function POST(request: NextRequest) {
 
     const supabaseConfig = getSupabaseServerConfig();
     if (!supabaseConfig) {
-      return NextResponse.json({ error: 'Supabase configuration missing on server' }, { status: 500 });
+      let bindingKeys: string[] = [];
+      try {
+        bindingKeys = Object.keys((getCloudflareContext().env as Record<string, unknown>) || {});
+      } catch {
+        // ignore context probe failure
+      }
+
+      const hasAnySupabaseLikeVar =
+        bindingKeys.some((k) => k.includes('SUPABASE')) ||
+        Object.keys(process.env).some((k) => k.includes('SUPABASE'));
+
+      return NextResponse.json(
+        {
+          error:
+            'Supabase configuration missing on server. Expected one URL key (NEXT_PUBLIC_SUPABASE_URL or SUPABASE_URL) and one anon key (NEXT_PUBLIC_SUPABASE_ANON_KEY / NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY / SUPABASE_ANON_KEY).',
+          hasAnySupabaseLikeVar,
+        },
+        { status: 500 }
+      );
     }
 
     const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
 
-      // Get the site URL with proper fallback
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 
-    (process.env.NEXT_PUBLIC_APP_URL || 'https://rudolpho-chat.de');
+    const origin = request.nextUrl.origin;
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || origin;
 
     // Get the callback URL
     const callbackUrl = `${siteUrl}/api/auth/callback`;

@@ -15,16 +15,20 @@ function readFromBindings(name: string): string | undefined {
   }
 }
 
+function readEnv(name: string): string | undefined {
+  return process.env[name] || readFromBindings(name);
+}
+
 export function getSupabaseServerConfig(): SupabaseServerConfig | null {
   const url =
-    process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    readFromBindings("NEXT_PUBLIC_SUPABASE_URL");
+    readEnv("NEXT_PUBLIC_SUPABASE_URL") ||
+    readEnv("SUPABASE_URL");
 
   const anonKey =
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ||
-    readFromBindings("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY") ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    readFromBindings("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+    readEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY") ||
+    readEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY") ||
+    readEnv("SUPABASE_ANON_KEY") ||
+    readEnv("SUPABASE_PUBLISHABLE_KEY");
 
   if (!url || !anonKey) {
     return null;
