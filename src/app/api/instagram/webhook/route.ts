@@ -153,7 +153,15 @@ export async function GET(request: NextRequest) {
   const expectedVerifyToken =
     process.env.INSTAGRAM_WEBHOOK_VERIFY_TOKEN || process.env.META_WEBHOOK_VERIFY_TOKEN;
 
+  console.log('Instagram webhook verification request', {
+    mode: mode || null,
+    hasVerifyToken: Boolean(verifyToken),
+    hasChallenge: Boolean(challenge),
+    hasExpectedVerifyToken: Boolean(expectedVerifyToken),
+  });
+
   if (!expectedVerifyToken) {
+    console.error('Instagram webhook verification failed: missing server verify token');
     return NextResponse.json(
       { error: 'Webhook verify token is not configured on server' },
       { status: 500 }
@@ -161,12 +169,18 @@ export async function GET(request: NextRequest) {
   }
 
   if (mode === 'subscribe' && verifyToken === expectedVerifyToken && challenge) {
+    console.log('Instagram webhook verification succeeded');
     return new NextResponse(challenge, {
       status: 200,
       headers: { 'Content-Type': 'text/plain' },
     });
   }
 
+  console.error('Instagram webhook verification failed: token mismatch or invalid mode', {
+    mode: mode || null,
+    tokenMatch: Boolean(verifyToken && expectedVerifyToken && verifyToken === expectedVerifyToken),
+    hasChallenge: Boolean(challenge),
+  });
   return NextResponse.json({ error: 'Webhook verification failed' }, { status: 403 });
 }
 
@@ -181,6 +195,12 @@ export async function POST(request: NextRequest) {
     const appSecret =
       process.env.INSTAGRAM_APP_SECRET || process.env.META_APP_SECRET || process.env.FACEBOOK_APP_SECRET;
 
+    console.log('Instagram webhook POST received', {
+      hasSignature: Boolean(signature),
+      hasAppSecret: Boolean(appSecret),
+      rawBodyLength: rawBody.length,
+    });
+
     if (signature && appSecret) {
       const validSignature = await verifyRequestSignature(rawBody, signature, appSecret);
       if (!validSignature) {
@@ -191,6 +211,11 @@ export async function POST(request: NextRequest) {
         });
         return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 });
       }
+    } else {
+      console.warn('Instagram webhook signature check skipped', {
+        hasSignature: Boolean(signature),
+        hasAppSecret: Boolean(appSecret),
+      });
     }
 
     const payload = JSON.parse(rawBody) as InstagramWebhookPayload;

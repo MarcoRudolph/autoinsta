@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { and, eq, inArray, sql } from 'drizzle-orm';
-import { db } from '@/drizzle';
+import { db, hasPostgresUrlConfig } from '@/drizzle';
 import { personas } from '@/drizzle/schema/personas';
 import { instagramConnections, instagramMessages } from '@/drizzle/schema/instagram';
 
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Missing personaId' }, { status: 400 });
   }
 
-  if (!process.env.POSTGRES_URL) {
+  if (!hasPostgresUrlConfig()) {
     return NextResponse.json({ error: 'POSTGRES_URL not configured' }, { status: 500 });
   }
 

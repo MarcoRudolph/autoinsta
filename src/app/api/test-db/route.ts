@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { sql } from 'drizzle-orm';
-import { db } from '@/drizzle';
+import { db, hasPostgresUrlConfig } from '@/drizzle';
 
 export async function GET() {
-  const hasPostgresUrl = Boolean(process.env.POSTGRES_URL);
+  const hasPostgresUrl = hasPostgresUrlConfig();
 
   try {
     const connectivityProbe = await db.execute(sql`select 1 as ok`);
