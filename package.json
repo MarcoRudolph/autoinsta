@@ -14,7 +14,7 @@
     "cf:assert-workers": "node scripts/ensure-cloudflare-workers.js",
     "cf:build": "npm run cf:assert-workers && opennextjs-cloudflare build",
     "cf:preview": "npm run cf:assert-workers && opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy:cloudflare": "npm run cf:assert-workers && opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "deploy:cloudflare": "npm run cf:build && npx wrangler deploy --experimental-autoconfig=false",
     "cf:typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "clean": "rimraf .next out"
   },
