@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'expired'>('loading');
   const [message, setMessage] = useState('');
   const searchParams = useSearchParams();
@@ -175,6 +175,30 @@ export default function VerifyEmailPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function VerifyEmailFallback() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#334155] flex items-center justify-center px-4">
+      <div className="max-w-md w-full">
+        <div className="bg-[#1e293b] rounded-lg p-8 border border-gray-700 text-center">
+          <div className="w-16 h-16 bg-gradient-to-r from-sky-700 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
+          </div>
+          <h1 className="text-2xl font-bold text-white mb-4">Loading...</h1>
+          <p className="text-[#a3bffa]">Preparing email verification...</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={<VerifyEmailFallback />}>
+      <VerifyEmailContent />
+    </Suspense>
   );
 }
 

@@ -17,7 +17,7 @@ export default function LandingPage() {
   const router = useRouter();
   const [checkingSession, setCheckingSession] = useState(true);
   const [currentLocale, setCurrentLocale] = useState('en');
-  const { t } = useI18n(currentLocale);
+  const { t, tList } = useI18n(currentLocale);
 
   useEffect(() => {
     let mounted = true;
@@ -251,7 +251,7 @@ export default function LandingPage() {
                 {t('landing.trustTransparency.contentSafety.description')}
               </p>
               <div className="space-y-3">
-                {t('landing.trustTransparency.contentSafety.features').map((feature: string, index: number) => (
+                {tList('landing.trustTransparency.contentSafety.features').map((feature: string, index: number) => (
                   <div key={index} className="flex items-center text-white/70">
                     <span className="w-2 h-2 bg-green-400 rounded-full mr-3"></span>
                     {feature}
@@ -274,7 +274,7 @@ export default function LandingPage() {
                 {t('landing.trustTransparency.aiTransparency.description')}
               </p>
               <div className="space-y-3">
-                {t('landing.trustTransparency.aiTransparency.features').map((feature: string, index: number) => (
+                {tList('landing.trustTransparency.aiTransparency.features').map((feature: string, index: number) => (
                   <div key={index} className="flex items-center text-white/70">
                     <span className="w-2 h-2 bg-blue-400 rounded-full mr-3"></span>
                     {feature}

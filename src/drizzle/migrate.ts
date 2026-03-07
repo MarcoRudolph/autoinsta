@@ -18,19 +18,18 @@ if (existsSync(envPath)) {
   }
 }
 
-const connectionString = process.env.POSTGRES_URL;
-if (!connectionString || typeof connectionString !== "string") {
-  console.error("POSTGRES_URL is missing or invalid. Set it in .env (e.g. from Supabase: Settings → Database → Connection string).");
-  process.exit(1);
-}
-
 async function main() {
+  const connectionString = process.env.POSTGRES_URL;
+  if (!connectionString || typeof connectionString !== "string") {
+    throw new Error("POSTGRES_URL is missing or invalid. Set it in .env (e.g. from Supabase: Settings -> Database -> Connection string).");
+  }
+
   let pool: Pool;
   try {
     const url = new URL(connectionString);
     pool = new Pool({
       host: url.hostname,
-      port: url.port || "5432",
+      port: Number(url.port || "5432"),
       database: url.pathname.slice(1) || "postgres",
       user: url.username,
       password: url.password,

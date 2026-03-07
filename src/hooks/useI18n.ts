@@ -43,7 +43,7 @@ export function useI18n(locale: string = 'en') {
   return useMemo(() => {
     const currentMessages = messages[locale as keyof typeof messages] || messages.en;
     
-    const t = (key: string, params?: Record<string, string>): string | string[] | Record<string, unknown> => {
+    const resolveValue = (key: string): unknown => {
       const keys = key.split('.');
       let value: unknown = currentMessages;
       
@@ -52,23 +52,45 @@ export function useI18n(locale: string = 'en') {
           value = (value as Record<string, unknown>)[k];
         } else {
           console.warn(`Translation key not found: ${key}`);
-          return key; // Return key if translation not found
+          return key;
         }
       }
+
+      return value;
+    };
+
+    const t = (key: string, params?: Record<string, string | number>): string => {
+      const value = resolveValue(key);
       
-      if (typeof value === 'string' && params) {
-        return Object.entries(params).reduce((str, [key, val]) => {
-          return str.replace(new RegExp(`{${key}}`, 'g'), val);
+      if (typeof value === 'string') {
+        if (!params) {
+          return value;
+        }
+
+        return Object.entries(params).reduce((str, [paramKey, paramVal]) => {
+          return str.replace(new RegExp(`{${paramKey}}`, 'g'), String(paramVal));
         }, value);
       }
       
-      return value as string | string[] | Record<string, unknown>; // Return the actual value, not the key
+      console.warn(`Translation key does not resolve to a string: ${key}`);
+      return key;
     };
 
-    const tCommon = (key: string) => {
+    const tList = (key: string): string[] => {
+      const value = resolveValue(key);
+
+      if (Array.isArray(value) && value.every((item) => typeof item === 'string')) {
+        return value;
+      }
+
+      console.warn(`Translation key does not resolve to a string array: ${key}`);
+      return [];
+    };
+
+    const tCommon = (key: string): string => {
       return t(`common.${key}`);
     };
     
-    return { t, tCommon, locale };
+    return { t, tList, tCommon, locale };
   }, [locale]);
 }
