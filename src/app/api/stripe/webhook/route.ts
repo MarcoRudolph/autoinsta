@@ -3,6 +3,8 @@ import { stripe, mapPriceToPlan } from '@/lib/stripe';
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 
+export const runtime = 'edge';
+
 // Disable body parsing for raw body access
 
 /**

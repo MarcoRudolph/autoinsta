@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 
+export const runtime = 'edge';
+
 const verifyEmailSchema = z.object({
   token: z.string().min(1),
 });
@@ -93,24 +95,25 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Function to send welcome email using Resend
 async function sendWelcomeEmail(email: string) {
   try {
-    // Import Resend dynamically to avoid issues in edge runtime
-    const { Resend } = await import('resend');
-    
-    if (!process.env.RESEND_API_KEY) {
+    const resendApiKey = process.env.RESEND_API_KEY;
+    if (!resendApiKey) {
       console.error('RESEND_API_KEY not configured');
       throw new Error('Email service not configured');
     }
-    
-    const resend = new Resend(process.env.RESEND_API_KEY);
-    
-    const { data, error } = await resend.emails.send({
-      from: 'Boost Your Date <noreply@boostyourdate.com>', // Update with your verified domain
-      to: [email],
-      subject: '🎉 Welcome to Boost Your Date - Let\'s Get Started!',
-      html: `
+
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'Boost Your Date <noreply@boostyourdate.com>',
+        to: [email],
+        subject: '🎉 Welcome to Boost Your Date - Let\'s Get Started!',
+        html: `
         <!DOCTYPE html>
         <html>
         <head>
@@ -163,13 +166,15 @@ async function sendWelcomeEmail(email: string) {
         </body>
         </html>
       `,
+      }),
     });
 
-    if (error) {
-      console.error('Resend welcome email error:', error);
-      throw new Error(`Failed to send welcome email: ${error.message}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to send welcome email: ${response.status} ${errorText}`);
     }
 
+    const data = await response.json();
     console.log('Welcome email sent successfully:', data);
     return data;
     

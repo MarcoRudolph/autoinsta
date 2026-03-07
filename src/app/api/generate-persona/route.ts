@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+export const runtime = 'edge';
+
 export async function POST(request: Request) {
   const { prompt: userPrompt = 'random' } = await request.json();
   const apiKey = process.env.OPENAI_API_KEY;

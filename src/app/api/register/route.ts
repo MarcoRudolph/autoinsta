@@ -3,13 +3,20 @@ import { createClient } from '@supabase/supabase-js';
 import { hash } from 'bcryptjs';
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
-import crypto from 'crypto';
 import { checkRegistrationRateLimit, getClientIP } from '@/lib/rateLimit';
+
+export const runtime = 'edge';
 
 const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
 });
+
+function generateVerificationToken(): string {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -60,7 +67,7 @@ export async function POST(req: NextRequest) {
     const userId = uuidv4();
 
     // Generate verification token (24 hours expiry)
-    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationToken = generateVerificationToken();
     const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
 
     // Create new user using Supabase with verification fields
@@ -112,27 +119,28 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Function to send verification email using Resend
 async function sendVerificationEmail(email: string, token: string) {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3001';
   const verificationUrl = `${baseUrl}/verify-email?token=${token}`;
   
   try {
-    // Import Resend dynamically to avoid issues in edge runtime
-    const { Resend } = await import('resend');
-    
-    if (!process.env.RESEND_API_KEY) {
+    const resendApiKey = process.env.RESEND_API_KEY;
+    if (!resendApiKey) {
       console.error('RESEND_API_KEY not configured');
       throw new Error('Email service not configured');
     }
-    
-    const resend = new Resend(process.env.RESEND_API_KEY);
-    
-    const { data, error } = await resend.emails.send({
-      from: 'Boost Your Date <noreply@boostyourdate.com>', // Update with your verified domain
-      to: [email],
-      subject: 'Welcome to Boost Your Date - Verify Your Email',
-      html: `
+
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'Boost Your Date <noreply@boostyourdate.com>',
+        to: [email],
+        subject: 'Welcome to Boost Your Date - Verify Your Email',
+        html: `
         <!DOCTYPE html>
         <html>
         <head>
@@ -173,13 +181,15 @@ async function sendVerificationEmail(email: string, token: string) {
         </body>
         </html>
       `,
+      }),
     });
 
-    if (error) {
-      console.error('Resend error:', error);
-      throw new Error(`Failed to send verification email: ${error.message}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to send verification email: ${response.status} ${errorText}`);
     }
 
+    const data = await response.json();
     console.log('Verification email sent successfully:', data);
     return data;
     

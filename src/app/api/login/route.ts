@@ -3,6 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 import { compare } from 'bcryptjs';
 import { z } from 'zod';
 
+export const runtime = 'edge';
+
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
