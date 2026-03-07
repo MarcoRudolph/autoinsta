@@ -31,6 +31,12 @@ This project is configured for Node runtime deployment on Cloudflare Workers via
 4. **Deploy to Cloudflare Workers**
    - `npm run deploy:cloudflare`
 
+### Do not deploy this app with Cloudflare Pages
+
+This app uses Node route handlers (`runtime = 'nodejs'`) for Drizzle + `pg`.
+Cloudflare Pages uses `next-on-pages`, which only supports Edge route handlers for Next.js routes.
+If a Pages build is triggered, the build now fails fast with a clear message via `scripts/ensure-cloudflare-workers.js`.
+
 5. **Environment Variables**:
    Configure these variables in Cloudflare:
    - `POSTGRES_URL`: Your database connection string
