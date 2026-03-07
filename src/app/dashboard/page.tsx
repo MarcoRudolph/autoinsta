@@ -902,14 +902,6 @@ function DashboardContent() {
     checkDailyLimit();
   }, []);
 
-  // Get remaining attempts for today
-  const getRemainingAttempts = () => {
-    const today = new Date().toDateString();
-    const dailyLimit = isProUser ? 10 : 2;
-    if (lastAiTemplateDate !== today) return dailyLimit;
-    return Math.max(0, dailyLimit - aiTemplateCount);
-  };
-
   useEffect(() => {
     // Facebook/Meta OAuth can append "#_=_" after redirect; remove it to avoid route-state issues.
     if (typeof window !== 'undefined' && window.location.hash === '#_=_') {
@@ -1576,16 +1568,31 @@ function DashboardContent() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Craft Persona Section */}
         <div className="bg-[#15192a]/80 backdrop-blur-lg rounded-xl shadow-2xl p-6 text-white">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl md:text-4xl bg-gradient-to-r from-[#f3aacb] via-[#a3bffa] to-[#e6ebfc] bg-clip-text text-transparent drop-shadow-lg tracking-tight" style={{
-              fontFamily: '"Inter", sans-serif',
-              fontWeight: '800',
-              letterSpacing: '-0.04em',
-              lineHeight: '1.2em',
-              color: '#ffffff'
-            }}>
-              {t('dashboard.craftPersona')}
-            </h2>
+          <div className="flex items-center justify-between mb-4 gap-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-2xl md:text-4xl bg-gradient-to-r from-[#f3aacb] via-[#a3bffa] to-[#e6ebfc] bg-clip-text text-transparent drop-shadow-lg tracking-tight" style={{
+                fontFamily: '"Inter", sans-serif',
+                fontWeight: '800',
+                letterSpacing: '-0.04em',
+                lineHeight: '1.2em',
+                color: '#ffffff'
+              }}>
+                {t('dashboard.craftPersona')}
+              </h2>
+              {!(currentPersonaId && !areAllFieldsEmpty()) && (
+                <>
+                  <span className="text-sm md:text-base text-white/80">or use</span>
+                  <button
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold py-2 px-4 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
+                    type="button"
+                    onClick={() => setAiPersonaBuilderModalOpen(true)}
+                    disabled={loadingAI || !canGenerateAITemplate()}
+                  >
+                    {loadingAI ? 'Generating...' : 'AI Persona Builder'}
+                  </button>
+                </>
+              )}
+            </div>
             {/* Show New Persona button only when an existing persona is displayed and not all fields are empty */}
             {currentPersonaId && !areAllFieldsEmpty() && (
               <button
@@ -2379,23 +2386,6 @@ function DashboardContent() {
 
               {/* Production Buttons Row - Right Side, New Order */}
               <div className="flex gap-2 mb-3 ml-auto">
-                <div className="flex flex-col gap-1">
-                  <button
-                    className="bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold py-3 px-6 rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
-                    type="button"
-                    onClick={() => setAiPersonaBuilderModalOpen(true)}
-                    disabled={loadingAI || !canGenerateAITemplate()}
-                  >
-                    {loadingAI ? 'Generating...' : 'AI Persona Builder'}
-                  </button>
-                  <span className="text-xs text-gray-400 text-center">
-                    {t('dashboard.footer.usageCounter', { 
-                      remaining: String(getRemainingAttempts()), 
-                      total: String(isProUser ? 10 : 2) 
-                    })}
-                    {isProUser && <span className="text-green-400 ml-1">(Pro)</span>}
-                  </span>
-                </div>
                 <button 
                   className={`bg-gradient-to-r from-red-500 to-pink-600 text-white font-bold py-3 px-6 rounded-xl hover:from-red-600 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 ${
                     !selectedPersonaId ? 'opacity-50 cursor-not-allowed transform-none shadow-none' : ''
