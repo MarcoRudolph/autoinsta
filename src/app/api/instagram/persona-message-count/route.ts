@@ -7,8 +7,9 @@ import { instagramConnections, instagramMessages } from '@/drizzle/schema/instag
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
-  const personaId = request.nextUrl.searchParams.get('personaId');
-  if (!personaId) {
+  const personaIdRaw = request.nextUrl.searchParams.get('personaId');
+  const personaId = Number(personaIdRaw);
+  if (!personaIdRaw || !Number.isInteger(personaId)) {
     return NextResponse.json({ error: 'Missing personaId' }, { status: 400 });
   }
 

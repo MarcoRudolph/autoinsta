@@ -15,18 +15,23 @@ export default function AuthForm() {
     setError(null);
     
     try {
-      const { createClient } = await import('@/lib/auth/supabaseClient.client');
-      const supabase = createClient();
-      
-      // Use custom callback URL
-      const { error } = await supabase.auth.signInWithOAuth({ 
-        provider: 'google',
-        options: {
-          redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://rudolpho-chat.de'}/auth/callback`
-        }
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ provider: 'google' }),
       });
-      if (error) setError(error.message);
-      // Don't redirect here - let the callback handle it
+
+      const data = await response.json();
+      if (!response.ok || data.error) {
+        setError(data.error || 'Google login failed');
+        return;
+      }
+
+      if (data.url) {
+        window.location.href = data.url;
+      }
     } catch (error) {
       console.error('Google login error:', error);
       setError('Google login failed');

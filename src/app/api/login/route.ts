@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { compare } from 'bcryptjs';
 import { z } from 'zod';
+import { eq } from 'drizzle-orm';
+import { db } from '@/drizzle';
+import { users } from '@/drizzle/schema/users';
 
 export const runtime = 'nodejs';
 
@@ -15,43 +17,26 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { email, password } = loginSchema.parse(body);
 
-    // Initialize Supabase client
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-
-    // Find user using Supabase
-    const { data: users, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', email)
+    const matchedUsers = await db
+      .select({
+        id: users.id,
+        passwordHash: users.passwordHash,
+      })
+      .from(users)
+      .where(eq(users.email, email))
       .limit(1);
 
-    if (error || !users || users.length === 0) {
+    const user = matchedUsers[0];
+    if (!user) {
       return NextResponse.json({ code: 'INVALID_CREDENTIALS', message: 'Invalid email or password.' }, { status: 401 });
     }
 
-    const user = users[0];
-
-    // Check if email is verified
-    if (!user.emailVerified) {
-      return NextResponse.json({ 
-        code: 'EMAIL_NOT_VERIFIED', 
-        message: 'Please verify your email address before logging in. Check your inbox for the verification link.' 
-      }, { status: 401 });
-    }
-
-    // Compare password
     const valid = await compare(password, user.passwordHash);
     if (!valid) {
       return NextResponse.json({ code: 'INVALID_CREDENTIALS', message: 'Invalid email or password.' }, { status: 401 });
     }
 
-    // TODO: Create a proper session/token system
-    // For now, just return success - the frontend will handle session management
-    return NextResponse.json({ message: 'Login successful.' }, { status: 200 });
-
+    return NextResponse.json({ message: 'Login successful.', userId: user.id }, { status: 200 });
   } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ code: 'VALIDATION_ERROR', message: error.issues }, { status: 400 });
@@ -62,4 +47,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ code: 'INTERNAL_ERROR', message: 'Unknown error' }, { status: 500 });
   }
 }
-

@@ -1,9 +1,8 @@
-import { pgTable, uuid, jsonb, timestamp } from 'drizzle-orm/pg-core';
-import { users } from './users';
+import { pgTable, uuid, jsonb, timestamp, serial } from 'drizzle-orm/pg-core';
 
 export const personas = pgTable('personas', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('userId').notNull().references(() => users.id),
+  id: serial('id').primaryKey(),
+  userId: uuid('userId').notNull(),
   data: jsonb('data').notNull(),
   createdAt: timestamp('createdAt').defaultNow().notNull(),
   updatedAt: timestamp('updatedAt').defaultNow().notNull(),

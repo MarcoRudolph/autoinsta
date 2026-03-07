@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getSupabaseServerConfig } from '@/lib/supabase/serverConfig';
 
 export const runtime = 'nodejs';
 
@@ -7,10 +8,12 @@ export async function POST(request: NextRequest) {
   try {
     const { provider = 'facebook' } = await request.json();
 
-    // Initialize Supabase client
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabaseConfig = getSupabaseServerConfig();
+    if (!supabaseConfig) {
+      return NextResponse.json({ error: 'Supabase configuration missing on server' }, { status: 500 });
+    }
+
+    const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
 
       // Get the site URL with proper fallback
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 

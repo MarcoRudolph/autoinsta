@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/auth/supabaseClient.server';
+import { createSupabaseAnonServerClient } from '@/lib/supabase/serverClient';
 
 export const runtime = 'nodejs';
 
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createClient();
+    const supabase = createSupabaseAnonServerClient();
     
     // Get the current persona data
     const { data: personaData, error: fetchError } = await supabase

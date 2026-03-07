@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createSupabaseAnonServerClient } from '@/lib/supabase/serverClient';
 
 export const runtime = 'nodejs';
 
@@ -24,20 +24,17 @@ export async function POST(req: NextRequest) {
 		console.log('Setting user as pro (users table fallback):', userId);
 
 		// Initialize Supabase client
-		const supabase = createClient(
-			process.env.NEXT_PUBLIC_SUPABASE_URL!,
-			process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-		);
+		const supabase = createSupabaseAnonServerClient();
 
 		// Update the users table directly using Supabase
 		const { error: updateError } = await supabase
 			.from('users')
 			.update({
-				isPro: true,
-				subscriptionStatus: 'active',
-				subscriptionPlan: 'pro',
-				subscriptionStartDate: new Date().toISOString(),
-				subscriptionEndDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+				is_pro: true,
+				subscription_status: 'active',
+				subscription_plan: 'pro',
+				subscription_start_date: new Date().toISOString(),
+				subscription_end_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
 				updatedAt: new Date().toISOString(),
 			})
 			.eq('id', userId);
@@ -62,4 +59,5 @@ export async function POST(req: NextRequest) {
 		);
 	}
 }
+
 

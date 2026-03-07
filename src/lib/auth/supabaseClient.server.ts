@@ -1,15 +1,17 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey =
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ||
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+import { getSupabaseServerConfig } from '@/lib/supabase/serverConfig';
 
 // Cloudflare-compatible server client without cookies dependency
-export const createClient = () =>
-  createSupabaseClient(supabaseUrl, supabaseKey, {
+export const createClient = () => {
+  const config = getSupabaseServerConfig();
+  if (!config) {
+    throw new Error('Supabase public configuration missing on server.');
+  }
+
+  return createSupabaseClient(config.url, config.anonKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
     },
   });
+};

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createSupabaseAnonServerClient } from '@/lib/supabase/serverClient';
 
 export const runtime = 'nodejs';
 
@@ -31,10 +31,7 @@ export async function GET(request: Request) {
   const userId = searchParams.get('userId');
   try {
     // Initialize Supabase client
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const supabase = createSupabaseAnonServerClient();
 
     let query = supabase.from('personas').select('*');
     
@@ -102,4 +99,5 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Failed to list personas', details: String(error) }, { status: 500 });
   }
 } 
+
 

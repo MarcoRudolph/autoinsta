@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createSupabaseAnonServerClient } from '@/lib/supabase/serverClient';
 
 export const runtime = 'nodejs';
 
@@ -19,10 +19,7 @@ export async function POST(req: NextRequest) {
     console.log(`Setting active persona: ${personaId} for user: ${userId} with active=${active}`);
     
     // Initialize Supabase client
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const supabase = createSupabaseAnonServerClient();
     
     // Fetch all personas for this user
     const { data: allPersonas, error: fetchError } = await supabase
@@ -97,4 +94,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to set active persona', details: String(error) }, { status: 500 });
   }
 } 
+
 

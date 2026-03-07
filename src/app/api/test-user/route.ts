@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createSupabaseAnonServerClient } from '@/lib/supabase/serverClient';
+import { randomUUID } from 'crypto';
 
 export const runtime = 'nodejs';
 
@@ -15,10 +16,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Initialize Supabase client
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const supabase = createSupabaseAnonServerClient();
 
     // Check if user already exists
     const { data: existingUser, error: checkError } = await supabase
@@ -47,17 +45,18 @@ export async function POST(request: NextRequest) {
     const { data: newUser, error: insertError } = await supabase
       .from('users')
       .insert({
+        id: randomUUID(),
         email,
         passwordHash,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         // Add default values for Stripe fields
-        stripeCustomerId: null,
-        subscriptionStatus: 'free',
-        subscriptionPlan: 'free',
-        subscriptionStartDate: null,
-        subscriptionEndDate: null,
-        isPro: false,
+        stripe_customer_id: null,
+        subscription_status: 'free',
+        subscription_plan: 'free',
+        subscription_start_date: null,
+        subscription_end_date: null,
+        is_pro: false,
       })
       .select()
       .single();
@@ -99,10 +98,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Initialize Supabase client
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const supabase = createSupabaseAnonServerClient();
 
     const { data: user, error } = await supabase
       .from('users')
@@ -130,10 +126,10 @@ export async function GET(request: NextRequest) {
       user: {
         id: user[0].id,
         email: user[0].email,
-        stripeCustomerId: user[0].stripeCustomerId,
-        subscriptionStatus: user[0].subscriptionStatus,
-        subscriptionPlan: user[0].subscriptionPlan,
-        isPro: user[0].isPro,
+        stripeCustomerId: user[0].stripe_customer_id,
+        subscriptionStatus: user[0].subscription_status,
+        subscriptionPlan: user[0].subscription_plan,
+        isPro: user[0].is_pro,
       },
     });
   } catch (error: unknown) {
@@ -145,4 +141,5 @@ export async function GET(request: NextRequest) {
     }, { status: 500 });
   }
 }
+
 

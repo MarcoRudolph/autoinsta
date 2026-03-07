@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe, mapPriceToPlan } from '@/lib/stripe';
-import { createClient } from '@supabase/supabase-js';
+import { createSupabaseAnonServerClient } from '@/lib/supabase/serverClient';
 import Stripe from 'stripe';
 
 export const runtime = 'nodejs';
@@ -49,10 +49,7 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event) {
 
   try {
     // Initialize Supabase client
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const supabase = createSupabaseAnonServerClient();
 
     // Re-fetch session for completeness
     const s = await stripe.checkout.sessions.retrieve(session.id, {
@@ -71,7 +68,7 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event) {
     const { error: updateError } = await supabase
       .from('users')
       .update({ 
-        stripeCustomerId: customerId,
+        stripe_customer_id: customerId,
         updatedAt: new Date().toISOString(),
       })
       .eq('id', appUserId);
@@ -91,21 +88,21 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event) {
       const { error: insertError } = await supabase
         .from('subscriptions')
         .insert({
-          subscriptionId: sub.id,
-          userId: appUserId,
-          customerId: customerId,
+          subscription_id: sub.id,
+          user_id: appUserId,
+          customer_id: customerId,
           status: sub.status,
-          cancelAtPeriodEnd: sub.cancel_at_period_end ?? false,
-          currentPeriodStart: toDate(sub.current_period_start)?.toISOString(),
-          currentPeriodEnd: toDate(sub.current_period_end)?.toISOString(),
-          trialEnd: toDate(sub.trial_end)?.toISOString(),
-          priceId: planPriceId,
-          productId,
+          cancel_at_period_end: sub.cancel_at_period_end ?? false,
+          current_period_start: toDate(sub.current_period_start)?.toISOString(),
+          current_period_end: toDate(sub.current_period_end)?.toISOString(),
+          trial_end: toDate(sub.trial_end)?.toISOString(),
+          price_id: planPriceId,
+          product_id: productId,
           plan,
           quantity: sub.items.data[0]?.quantity ?? 1,
-          latestInvoiceId: typeof sub.latest_invoice === 'string' ? sub.latest_invoice : sub.latest_invoice?.id ?? null,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          latest_invoice_id: typeof sub.latest_invoice === 'string' ? sub.latest_invoice : sub.latest_invoice?.id ?? null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         });
 
       if (insertError) {
@@ -132,10 +129,7 @@ async function handleSubscriptionChange(event: Stripe.Event) {
   
   try {
     // Initialize Supabase client
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const supabase = createSupabaseAnonServerClient();
 
     // Re-fetch canonical subscription to avoid stale/out-of-order data
     const sub = await stripe.subscriptions.retrieve(payload.id, {
@@ -167,21 +161,21 @@ async function handleSubscriptionChange(event: Stripe.Event) {
     const { error: updateError } = await supabase
       .from('subscriptions')
       .update({
-        userId: userData.id,
-        customerId: typeof sub.customer === 'string' ? sub.customer : sub.customer.id,
+        user_id: userData.id,
+        customer_id: typeof sub.customer === 'string' ? sub.customer : sub.customer.id,
         status: sub.status,
-        cancelAtPeriodEnd: sub.cancel_at_period_end ?? false,
-        currentPeriodStart: toDate(sub.current_period_start)?.toISOString(),
-        currentPeriodEnd: toDate(sub.current_period_end)?.toISOString(),
-        trialEnd: toDate(sub.trial_end)?.toISOString(),
-        priceId: planPriceId,
-        productId,
+        cancel_at_period_end: sub.cancel_at_period_end ?? false,
+        current_period_start: toDate(sub.current_period_start)?.toISOString(),
+        current_period_end: toDate(sub.current_period_end)?.toISOString(),
+        trial_end: toDate(sub.trial_end)?.toISOString(),
+        price_id: planPriceId,
+        product_id: productId,
         plan,
         quantity: sub.items.data[0]?.quantity ?? 1,
-        latestInvoiceId: typeof sub.latest_invoice === 'string' ? sub.latest_invoice : sub.latest_invoice?.id ?? null,
-        updatedAt: new Date().toISOString(),
+        latest_invoice_id: typeof sub.latest_invoice === 'string' ? sub.latest_invoice : sub.latest_invoice?.id ?? null,
+        updated_at: new Date().toISOString(),
       })
-      .eq('subscriptionId', sub.id)
+      .eq('subscription_id', sub.id)
       .select()
       .single();
 
@@ -189,21 +183,21 @@ async function handleSubscriptionChange(event: Stripe.Event) {
       const { error: insertError } = await supabase
         .from('subscriptions')
         .insert({
-          subscriptionId: sub.id,
-          userId: userData.id,
-          customerId: typeof sub.customer === 'string' ? sub.customer : sub.customer.id,
+          subscription_id: sub.id,
+          user_id: userData.id,
+          customer_id: typeof sub.customer === 'string' ? sub.customer : sub.customer.id,
           status: sub.status,
-          cancelAtPeriodEnd: sub.cancel_at_period_end ?? false,
-          currentPeriodStart: toDate(sub.current_period_start)?.toISOString(),
-          currentPeriodEnd: toDate(sub.current_period_end)?.toISOString(),
-          trialEnd: toDate(sub.trial_end)?.toISOString(),
-          priceId: planPriceId,
-          productId,
+          cancel_at_period_end: sub.cancel_at_period_end ?? false,
+          current_period_start: toDate(sub.current_period_start)?.toISOString(),
+          current_period_end: toDate(sub.current_period_end)?.toISOString(),
+          trial_end: toDate(sub.trial_end)?.toISOString(),
+          price_id: planPriceId,
+          product_id: productId,
           plan,
           quantity: sub.items.data[0]?.quantity ?? 1,
-          latestInvoiceId: typeof sub.latest_invoice === 'string' ? sub.latest_invoice : sub.latest_invoice?.id ?? null,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          latest_invoice_id: typeof sub.latest_invoice === 'string' ? sub.latest_invoice : sub.latest_invoice?.id ?? null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         });
 
       if (insertError) {
@@ -235,18 +229,15 @@ async function handleInvoice(event: Stripe.Event) {
 
   try {
     // Initialize Supabase client
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const supabase = createSupabaseAnonServerClient();
 
     const { error: updateError } = await supabase
       .from('subscriptions')
       .update({
-        latestInvoiceId: invoice.id,
-        updatedAt: new Date().toISOString(),
+        latest_invoice_id: invoice.id,
+        updated_at: new Date().toISOString(),
       })
-      .eq('subscriptionId', subId);
+      .eq('subscription_id', subId);
 
     if (updateError) {
       console.error('Error updating invoice:', updateError);
@@ -289,17 +280,14 @@ export async function POST(req: NextRequest) {
   try {
     // Check idempotency: skip if already processed
     // Initialize Supabase client for idempotency check
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const supabase = createSupabaseAnonServerClient();
 
     const { data: alreadyProcessed } = await supabase
-      .from('webhookEvents')
+      .from('webhook_events')
       .select()
-      .eq('eventId', event.id);
+      .eq('event_id', event.id);
 
-    if (alreadyProcessed) {
+    if (alreadyProcessed && alreadyProcessed.length > 0) {
       console.log(`Event ${event.id} already processed, skipping`);
       return NextResponse.json({ received: true, alreadyProcessed: true });
     }
@@ -328,13 +316,13 @@ export async function POST(req: NextRequest) {
 
     // Record successful processing
     const { error: insertError } = await supabase
-      .from('webhookEvents')
+      .from('webhook_events')
       .insert({
-        eventId: event.id,
+        event_id: event.id,
         type: event.type,
-        objectId: getObjectId(event),
+        object_id: getObjectId(event),
         status: 'processed',
-        processedAt: new Date().toISOString(),
+        processed_at: new Date().toISOString(),
       });
 
     if (insertError) {
@@ -349,20 +337,17 @@ export async function POST(req: NextRequest) {
     // Record failure for retry/DLQ
     try {
       // Initialize Supabase client for failure recording
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
+      const supabase = createSupabaseAnonServerClient();
 
       const { error: insertError } = await supabase
-        .from('webhookEvents')
+        .from('webhook_events')
         .insert({
-          eventId: event.id,
+          event_id: event.id,
           type: event.type,
-          objectId: getObjectId(event),
+          object_id: getObjectId(event),
           status: 'failed',
           error: errorMessage.slice(0, 500),
-          processedAt: new Date().toISOString(),
+          processed_at: new Date().toISOString(),
         });
 
       if (insertError) {
@@ -376,4 +361,5 @@ export async function POST(req: NextRequest) {
     return new NextResponse(`Webhook handler failed: ${errorMessage}`, { status: 500 });
   }
 }
+
 

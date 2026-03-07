@@ -40,7 +40,7 @@ type ConnectionRecord = {
 };
 
 type PersonaRecord = {
-  id: string;
+  id: number;
   data: Record<string, unknown>;
 };
 
@@ -146,7 +146,7 @@ function normalizePersona(row: PersonaRecord): NormalizedPersona {
   const productLinks = normalizeProductLinks(nested.productLinks ?? payload.productLinks ?? []);
 
   return {
-    id: row.id,
+    id: String(row.id),
     active,
     transparencyMode,
     personality,

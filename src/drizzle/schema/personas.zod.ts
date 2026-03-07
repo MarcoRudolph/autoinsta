@@ -45,7 +45,7 @@ export const PersonaInsertSchema = z.object({
 });
 
 export const PersonaSelectSchema = PersonaInsertSchema.extend({
-  id: z.string().uuid(),
+  id: z.number().int().positive(),
 });
 
 export type PersonaInsert = z.infer<typeof PersonaInsertSchema>;

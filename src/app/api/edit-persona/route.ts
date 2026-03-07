@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createSupabaseAnonServerClient } from '@/lib/supabase/serverClient';
 
 export const runtime = 'nodejs';
 
@@ -11,10 +11,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Initialize Supabase client
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const supabase = createSupabaseAnonServerClient();
 
     // Update persona using Supabase
     const { data: result, error } = await supabase
@@ -35,4 +32,5 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to edit persona', details: String(error) }, { status: 500 });
   }
 } 
+
 

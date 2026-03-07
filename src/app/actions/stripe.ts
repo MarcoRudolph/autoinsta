@@ -1,7 +1,7 @@
 'use server';
 
 import { stripe } from '@/lib/stripe';
-import { createClient } from '@supabase/supabase-js';
+import { createSupabaseAnonServerClient } from '@/lib/supabase/serverClient';
 import { revalidatePath } from 'next/cache';
 
 // Price ID for the 10 Euro monthly product
@@ -21,11 +21,7 @@ export async function createSubscriptionCheckout(
       throw new Error('Stripe is not configured');
     }
 
-    // Initialize Supabase client
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const supabase = createSupabaseAnonServerClient();
 
     // Get user details
     const { data: user, error: userError } = await supabase
@@ -40,7 +36,7 @@ export async function createSubscriptionCheckout(
     }
 
     // Ensure/attach a Stripe Customer
-    let customerId = user.stripeCustomerId;
+    let customerId = user.stripe_customer_id;
     
     if (!customerId) {
       const customer = await stripe.customers.create({
@@ -53,7 +49,7 @@ export async function createSubscriptionCheckout(
       const { error: updateError } = await supabase
         .from('users')
         .update({ 
-          stripeCustomerId: customerId,
+          stripe_customer_id: customerId,
           updatedAt: new Date().toISOString(),
         })
         .eq('id', userId);
@@ -103,11 +99,7 @@ export async function createBillingPortal(userId: string, returnUrl?: string) {
       throw new Error('Stripe is not configured');
     }
 
-    // Initialize Supabase client
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const supabase = createSupabaseAnonServerClient();
 
     const { data: user, error: userError } = await supabase
       .from('users')
@@ -116,12 +108,12 @@ export async function createBillingPortal(userId: string, returnUrl?: string) {
       .limit(1)
       .single();
 
-    if (userError || !user?.stripeCustomerId) {
+    if (userError || !user?.stripe_customer_id) {
       throw new Error('No Stripe customer found');
     }
 
     const session = await stripe.billingPortal.sessions.create({
-      customer: user.stripeCustomerId,
+      customer: user.stripe_customer_id,
       return_url: returnUrl || `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`,
     });
 
@@ -142,28 +134,24 @@ export async function cancelSubscriptionAtPeriodEnd(userId: string) {
       throw new Error('Stripe is not configured');
     }
 
-    // Initialize Supabase client
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const supabase = createSupabaseAnonServerClient();
 
     // Get user's active subscription
     const { data: userSubscription, error: subscriptionError } = await supabase
       .from('subscriptions')
       .select('*')
-      .eq('userId', userId)
+      .eq('user_id', userId)
       .eq('status', 'active')
-      .order('createdAt', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(1)
       .single();
 
-    if (subscriptionError || !userSubscription?.subscriptionId) {
+    if (subscriptionError || !userSubscription?.subscription_id) {
       throw new Error('No active subscription found');
     }
 
     // Cancel at period end via Stripe
-    await stripe.subscriptions.update(userSubscription.subscriptionId, {
+    await stripe.subscriptions.update(userSubscription.subscription_id, {
       cancel_at_period_end: true,
     });
 
@@ -171,10 +159,10 @@ export async function cancelSubscriptionAtPeriodEnd(userId: string) {
     const { error: updateError } = await supabase
       .from('subscriptions')
       .update({
-        cancelAtPeriodEnd: true,
-        updatedAt: new Date().toISOString(),
+        cancel_at_period_end: true,
+        updated_at: new Date().toISOString(),
       })
-      .eq('subscriptionId', userSubscription.subscriptionId);
+      .eq('subscription_id', userSubscription.subscription_id);
 
     if (updateError) {
       console.error('Error updating subscription:', updateError);
@@ -199,27 +187,23 @@ export async function reactivateSubscription(userId: string) {
       throw new Error('Stripe is not configured');
     }
 
-    // Initialize Supabase client
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const supabase = createSupabaseAnonServerClient();
 
     const { data: userSubscription, error: subscriptionError } = await supabase
       .from('subscriptions')
       .select('*')
-      .eq('userId', userId)
+      .eq('user_id', userId)
       .eq('status', 'active')
-      .order('createdAt', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(1)
       .single();
 
-    if (subscriptionError || !userSubscription?.subscriptionId) {
+    if (subscriptionError || !userSubscription?.subscription_id) {
       throw new Error('No active subscription found');
     }
 
     // Reactivate via Stripe
-    await stripe.subscriptions.update(userSubscription.subscriptionId, {
+    await stripe.subscriptions.update(userSubscription.subscription_id, {
       cancel_at_period_end: false,
     });
 
@@ -227,10 +211,10 @@ export async function reactivateSubscription(userId: string) {
     const { error: updateError } = await supabase
       .from('subscriptions')
       .update({
-        cancelAtPeriodEnd: false,
-        updatedAt: new Date().toISOString(),
+        cancel_at_period_end: false,
+        updated_at: new Date().toISOString(),
       })
-      .eq('subscriptionId', userSubscription.subscriptionId);
+      .eq('subscription_id', userSubscription.subscription_id);
 
     if (updateError) {
       console.error('Error updating subscription:', updateError);

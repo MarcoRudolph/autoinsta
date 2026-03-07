@@ -13,9 +13,6 @@ export async function GET(request: NextRequest) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 
     (process.env.NEXT_PUBLIC_APP_URL || 'https://rudolpho-chat.de');
 
-  // Initialize Supabase client
-  const supabase = createClient();
-
   if (error) {
     console.error('OAuth error:', error, errorDescription);
     return NextResponse.redirect(
@@ -31,6 +28,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const supabase = createClient();
+
     // Exchange the authorization code for a session
     const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
     

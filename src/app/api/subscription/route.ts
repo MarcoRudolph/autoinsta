@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createSupabaseAnonServerClient } from '@/lib/supabase/serverClient';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -17,10 +17,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Initialize Supabase client
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const supabase = createSupabaseAnonServerClient();
 
     // Get user subscription from users table
     const { data: user, error } = await supabase
@@ -38,13 +35,13 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({
-      subscriptionStatus: user.subscriptionStatus || 'free',
-      subscriptionPlan: user.subscriptionPlan || 'free',
-      isPro: user.isPro || false,
-      subscriptionStartDate: user.subscriptionStartDate,
-      subscriptionEndDate: user.subscriptionEndDate,
+      subscriptionStatus: user.subscription_status || 'free',
+      subscriptionPlan: user.subscription_plan || 'free',
+      isPro: user.is_pro || false,
+      subscriptionStartDate: user.subscription_start_date,
+      subscriptionEndDate: user.subscription_end_date,
       cancelAtPeriodEnd: false, // Not implemented in current schema
-      currentPeriodEnd: user.subscriptionEndDate,
+      currentPeriodEnd: user.subscription_end_date,
     });
 
   } catch (error) {
@@ -55,4 +52,5 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
 

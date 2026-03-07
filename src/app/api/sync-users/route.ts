@@ -1,14 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
+import { createSupabaseAnonServerClient } from '@/lib/supabase/serverClient';
 
 export const runtime = 'nodejs';
 
 export async function POST() {
   try {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const supabase = createSupabaseAnonServerClient();
+
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      return NextResponse.json(
+        {
+          error:
+            'sync-users requires SUPABASE_SERVICE_ROLE_KEY. Current project intentionally runs without service role key.',
+        },
+        { status: 501 }
+      );
+    }
     
     // Get all users from Supabase Auth
     const { data: authUsers, error } = await supabase.auth.admin.listUsers();
@@ -83,4 +90,5 @@ export async function POST() {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
 

@@ -1,5 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
 
 export async function POST() {
   // Session/token invalidation would go here

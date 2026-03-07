@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createSupabaseAnonServerClient } from '@/lib/supabase/serverClient';
 
 export const runtime = 'nodejs';
 
@@ -10,10 +10,7 @@ export async function POST(req: NextRequest) {
     console.log('Data being inserted into database:', JSON.stringify(payload, null, 2));
     
     // Initialize Supabase client
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const supabase = createSupabaseAnonServerClient();
     
     if (!payload?.userId || !payload?.data) {
       return NextResponse.json({ error: 'Missing userId or persona data' }, { status: 400 });
@@ -50,4 +47,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to save persona', details: String(error) }, { status: 500 });
   }
 } 
+
 
