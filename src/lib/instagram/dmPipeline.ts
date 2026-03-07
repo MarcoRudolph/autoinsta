@@ -98,28 +98,31 @@ function createAdminSupabaseClient() {
 function normalizeProductLinks(rawLinks: unknown): ProductLink[] {
   if (!Array.isArray(rawLinks)) return [];
 
-  return rawLinks
-    .map((link) => {
-      if (typeof link === 'string') {
-        return { url: link, actionType: 'buy', sendingBehavior: 'proactive' };
-      }
+  const normalized: ProductLink[] = [];
 
-      if (!link || typeof link !== 'object') return null;
-      const candidate = link as {
-        id?: string;
-        url?: string;
-        actionType?: string;
-        sendingBehavior?: string;
-      };
-      if (!candidate.url) return null;
-      return {
-        id: candidate.id,
-        url: candidate.url,
-        actionType: candidate.actionType || 'buy',
-        sendingBehavior: candidate.sendingBehavior || 'proactive',
-      };
-    })
-    .filter((link): link is ProductLink => Boolean(link?.url));
+  for (const link of rawLinks) {
+    if (typeof link === 'string') {
+      normalized.push({ url: link, actionType: 'buy', sendingBehavior: 'proactive' });
+      continue;
+    }
+
+    if (!link || typeof link !== 'object') continue;
+    const candidate = link as {
+      id?: string;
+      url?: string;
+      actionType?: string;
+      sendingBehavior?: string;
+    };
+    if (!candidate.url) continue;
+    normalized.push({
+      id: candidate.id,
+      url: candidate.url,
+      actionType: candidate.actionType || 'buy',
+      sendingBehavior: candidate.sendingBehavior || 'proactive',
+    });
+  }
+
+  return normalized;
 }
 
 function normalizePersona(row: PersonaRecord): NormalizedPersona {
