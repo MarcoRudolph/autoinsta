@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid filename format' }, { status: 400 });
     }
 
-    // Cloudflare Pages requires Edge runtime; writing to local filesystem is not supported.
+    // Cloudflare Worker/Edge runtimes do not provide writable local filesystem access.
     // Keep endpoint stable but return a clear actionable error.
     return NextResponse.json(
       {
@@ -32,3 +32,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+

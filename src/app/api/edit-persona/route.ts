@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 export async function PATCH(req: NextRequest) {
   try {
@@ -35,3 +35,4 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to edit persona', details: String(error) }, { status: 500 });
   }
 } 
+

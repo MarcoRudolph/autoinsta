@@ -3,7 +3,7 @@ import { stripe, mapPriceToPlan } from '@/lib/stripe';
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 // Disable body parsing for raw body access
 
@@ -376,3 +376,4 @@ export async function POST(req: NextRequest) {
     return new NextResponse(`Webhook handler failed: ${errorMessage}`, { status: 500 });
   }
 }
+

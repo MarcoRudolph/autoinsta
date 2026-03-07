@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { compare } from 'bcryptjs';
 import { z } from 'zod';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -62,3 +62,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ code: 'INTERNAL_ERROR', message: 'Unknown error' }, { status: 500 });
   }
 }
+

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 type PersonaData = {
   transparencyMode?: boolean;
@@ -61,3 +61,4 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Database error', details: String(error) }, { status: 500 });
   }
 } 
+

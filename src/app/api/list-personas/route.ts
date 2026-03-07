@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 type PersonaData = {
   name?: string;
@@ -102,3 +102,4 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Failed to list personas', details: String(error) }, { status: 500 });
   }
 } 
+

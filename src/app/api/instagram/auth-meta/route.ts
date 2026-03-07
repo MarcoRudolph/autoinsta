@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 function encodeState(payload: Record<string, unknown>): string {
   const json = JSON.stringify(payload);
@@ -48,3 +48,4 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.redirect(url.toString());
 }
+

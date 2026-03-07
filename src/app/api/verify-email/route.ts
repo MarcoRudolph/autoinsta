@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 const verifyEmailSchema = z.object({
   token: z.string().min(1),
@@ -183,6 +183,7 @@ async function sendWelcomeEmail(email: string) {
     throw error;
   }
 }
+
 
 
 

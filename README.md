@@ -15,22 +15,24 @@ AI-powered dating profile optimization and Instagram automation
 
 ## Deployment
 
-This project is configured for Node runtime deployment (recommended: Vercel).
+This project is configured for Node runtime deployment on Cloudflare Workers via OpenNext.
 
-### Recommended: Vercel
+### Cloudflare Workers (Node Runtime)
 
-1. **Connect Repository**:
-   - Go to [Vercel Dashboard](https://vercel.com/dashboard)
-   - Create a new project
-   - Connect your GitHub repository
+1. **Install dependencies**
+   - `npm install`
 
-2. **Build Settings**:
-   - **Build command**: `npm run build`
-   - **Output**: Next.js default
-   - **Root directory**: (leave empty)
+2. **Build for Cloudflare**
+   - `npm run cf:build`
 
-3. **Environment Variables**:
-   In your Vercel project settings, add these environment variables:
+3. **Preview locally with Wrangler**
+   - `npm run cf:preview`
+
+4. **Deploy to Cloudflare Workers**
+   - `npm run deploy:cloudflare`
+
+5. **Environment Variables**:
+   Configure these variables in Cloudflare:
    - `POSTGRES_URL`: Your database connection string
    - `OPENAI_API_KEY`: Your OpenAI API key
    - `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL
@@ -39,7 +41,8 @@ This project is configured for Node runtime deployment (recommended: Vercel).
 ### Important runtime note
 
 Instagram API routes use `runtime = 'nodejs'` with Drizzle + `pg`.  
-Cloudflare Pages with `@cloudflare/next-on-pages` requires Edge runtime for all non-static routes and is therefore not compatible with this Node route setup.
+Cloudflare Workers via `@opennextjs/cloudflare` supports Node runtime route handlers.  
+Instagram routes such as `/api/instagram/callback`, `/api/instagram/persona-message-count`, and `/api/instagram/webhook` stay on `runtime = 'nodejs'`.
 
 ### Local Development
 

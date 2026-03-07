@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
 import { checkRegistrationRateLimit, getClientIP } from '@/lib/rateLimit';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -200,3 +200,4 @@ async function sendVerificationEmail(email: string, token: string) {
     throw error;
   }
 }
+
