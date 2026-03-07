@@ -184,11 +184,29 @@ export async function POST(request: NextRequest) {
     if (signature && appSecret) {
       const validSignature = await verifyRequestSignature(rawBody, signature, appSecret);
       if (!validSignature) {
+        console.error('Instagram webhook signature validation failed', {
+          hasSignature: Boolean(signature),
+          hasAppSecret: Boolean(appSecret),
+          rawBodyLength: rawBody.length,
+        });
         return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 });
       }
     }
 
     const payload = JSON.parse(rawBody) as InstagramWebhookPayload;
+    const entrySummaries = (payload.entry || []).slice(0, 5).map((entry) => ({
+      igAccountId: String(entry.id || 'unknown'),
+      messagingCount: entry.messaging?.length || 0,
+      changesCount: entry.changes?.length || 0,
+      hasMessaging: Array.isArray(entry.messaging),
+      hasChanges: Array.isArray(entry.changes),
+    }));
+
+    console.log('Instagram webhook payload summary', {
+      object: payload.object || 'unknown',
+      entryCount: payload.entry?.length || 0,
+      entrySummaries,
+    });
 
     const eventType = payload.object || 'unknown';
     const events: StoredMessageInput[] = [];
@@ -210,15 +228,24 @@ export async function POST(request: NextRequest) {
 
     let storedCount = 0;
     let duplicateCount = 0;
+    let storeErrorCount = 0;
     let processedDmCount = 0;
     let failedDmCount = 0;
 
     for (const event of events) {
-      const { inserted, threadState } = await recordInstagramMessage(event);
+      const { inserted, threadState, reason } = await recordInstagramMessage(event);
       if (inserted) {
         storedCount += 1;
-      } else {
+      } else if (reason === 'duplicate') {
         duplicateCount += 1;
+      } else {
+        storeErrorCount += 1;
+        console.error('Instagram webhook failed to persist event', {
+          platformMessageId: event.platformMessageId,
+          igAccountId: event.igAccountId,
+          threadKey: event.threadKey,
+          reason,
+        });
       }
 
       const isIncomingDm =
@@ -248,6 +275,7 @@ export async function POST(request: NextRequest) {
       eventCount: events.length,
       storedCount,
       duplicateCount,
+      storeErrorCount,
       processedDmCount,
       failedDmCount,
       dmCount: events.filter((item) => item.messageKind === 'dm').length,
@@ -260,6 +288,7 @@ export async function POST(request: NextRequest) {
       events: events.length,
       stored: storedCount,
       duplicates: duplicateCount,
+      storeErrors: storeErrorCount,
       processedDm: processedDmCount,
       failedDm: failedDmCount,
     });

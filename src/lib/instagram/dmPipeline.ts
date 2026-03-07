@@ -87,11 +87,27 @@ class GraphApiRequestError extends Error {
 }
 
 const GRAPH_API_VERSION = 'v23.0';
+const DM_PIPELINE_DEBUG = process.env.DM_PIPELINE_DEBUG !== '0';
+let loggedMissingAdminClient = false;
+
+function logDmDebug(event: string, details: Record<string, unknown>) {
+  if (!DM_PIPELINE_DEBUG) return;
+  console.log(`[dmPipeline] ${event}`, details);
+}
 
 function createAdminSupabaseClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !serviceRoleKey) return null;
+  if (!supabaseUrl || !serviceRoleKey) {
+    if (!loggedMissingAdminClient) {
+      loggedMissingAdminClient = true;
+      console.error('[dmPipeline] Missing admin supabase env', {
+        hasSupabaseUrl: Boolean(supabaseUrl),
+        hasServiceRoleKey: Boolean(serviceRoleKey),
+      });
+    }
+    return null;
+  }
   return createClient(supabaseUrl, serviceRoleKey);
 }
 
@@ -480,29 +496,55 @@ async function loadThreadState(igAccountId: string, threadKey: string): Promise<
 
 export async function recordInstagramMessage(
   message: StoredMessageInput
-): Promise<{ inserted: boolean; threadState: ThreadState }> {
+): Promise<{ inserted: boolean; threadState: ThreadState; reason: 'inserted' | 'duplicate' | 'error' }> {
   const supabase = createAdminSupabaseClient();
   if (!supabase) {
+    console.error('[dmPipeline] Skipping recordInstagramMessage due to missing admin client', {
+      igAccountId: message.igAccountId,
+      threadKey: message.threadKey,
+      platformMessageId: message.platformMessageId,
+    });
     return {
       inserted: false,
       threadState: { incomingMessageCount: 0, outgoingMessageCount: 0, lastPromoAt: null },
+      reason: 'error',
     };
   }
 
-  const { data: existing } = await supabase
+  const { data: existing, error: existingError } = await supabase
     .from('instagram_messages')
     .select('platform_message_id')
     .eq('platform_message_id', message.platformMessageId)
     .limit(1);
 
-  if (existing && existing.length > 0) {
+  if (existingError) {
+    console.error('[dmPipeline] Failed to check existing message', {
+      igAccountId: message.igAccountId,
+      threadKey: message.threadKey,
+      platformMessageId: message.platformMessageId,
+      error: existingError.message,
+    });
     return {
       inserted: false,
       threadState: await loadThreadState(message.igAccountId, message.threadKey),
+      reason: 'error',
     };
   }
 
-  await supabase.from('instagram_messages').insert({
+  if (existing && existing.length > 0) {
+    logDmDebug('duplicate_message', {
+      igAccountId: message.igAccountId,
+      threadKey: message.threadKey,
+      platformMessageId: message.platformMessageId,
+    });
+    return {
+      inserted: false,
+      threadState: await loadThreadState(message.igAccountId, message.threadKey),
+      reason: 'duplicate',
+    };
+  }
+
+  const { error: insertError } = await supabase.from('instagram_messages').insert({
     ig_account_id: message.igAccountId,
     thread_key: message.threadKey,
     platform_message_id: message.platformMessageId,
@@ -515,7 +557,23 @@ export async function recordInstagramMessage(
     raw_payload: message.rawPayload,
   });
 
-  const { data: existingThread } = await supabase
+  if (insertError) {
+    console.error('[dmPipeline] Failed to insert instagram_messages row', {
+      igAccountId: message.igAccountId,
+      threadKey: message.threadKey,
+      platformMessageId: message.platformMessageId,
+      direction: message.direction,
+      messageKind: message.messageKind,
+      error: insertError.message,
+    });
+    return {
+      inserted: false,
+      threadState: await loadThreadState(message.igAccountId, message.threadKey),
+      reason: 'error',
+    };
+  }
+
+  const { data: existingThread, error: existingThreadError } = await supabase
     .from('instagram_threads')
     .select('*')
     .eq('ig_account_id', message.igAccountId)
@@ -523,11 +581,20 @@ export async function recordInstagramMessage(
     .limit(1)
     .maybeSingle();
 
+  if (existingThreadError) {
+    console.error('[dmPipeline] Failed to read instagram_threads row', {
+      igAccountId: message.igAccountId,
+      threadKey: message.threadKey,
+      platformMessageId: message.platformMessageId,
+      error: existingThreadError.message,
+    });
+  }
+
   const isIncoming = message.direction === 'incoming';
   const incomingCount = Number(existingThread?.incoming_message_count || 0) + (isIncoming ? 1 : 0);
   const outgoingCount = Number(existingThread?.outgoing_message_count || 0) + (isIncoming ? 0 : 1);
 
-  await supabase.from('instagram_threads').upsert(
+  const { error: upsertThreadError } = await supabase.from('instagram_threads').upsert(
     {
       ig_account_id: message.igAccountId,
       thread_key: message.threadKey,
@@ -544,10 +611,45 @@ export async function recordInstagramMessage(
     { onConflict: 'ig_account_id,thread_key' }
   );
 
-  await supabase
+  if (upsertThreadError) {
+    console.error('[dmPipeline] Failed to upsert instagram_threads row', {
+      igAccountId: message.igAccountId,
+      threadKey: message.threadKey,
+      platformMessageId: message.platformMessageId,
+      incomingCount,
+      outgoingCount,
+      error: upsertThreadError.message,
+    });
+    return {
+      inserted: false,
+      threadState: await loadThreadState(message.igAccountId, message.threadKey),
+      reason: 'error',
+    };
+  }
+
+  const { error: connectionUpdateError } = await supabase
     .from('instagram_connections')
     .update({ webhook_verified: true, updated_at: new Date().toISOString() })
     .eq('ig_account_id', message.igAccountId);
+
+  if (connectionUpdateError) {
+    console.error('[dmPipeline] Failed to mark webhook_verified on instagram_connections', {
+      igAccountId: message.igAccountId,
+      threadKey: message.threadKey,
+      platformMessageId: message.platformMessageId,
+      error: connectionUpdateError.message,
+    });
+  }
+
+  logDmDebug('message_recorded', {
+    igAccountId: message.igAccountId,
+    threadKey: message.threadKey,
+    platformMessageId: message.platformMessageId,
+    direction: message.direction,
+    messageKind: message.messageKind,
+    incomingCount,
+    outgoingCount,
+  });
 
   return {
     inserted: true,
@@ -556,6 +658,7 @@ export async function recordInstagramMessage(
       outgoingMessageCount: outgoingCount,
       lastPromoAt: (existingThread?.last_promo_at as string | null) || null,
     },
+    reason: 'inserted',
   };
 }
 
