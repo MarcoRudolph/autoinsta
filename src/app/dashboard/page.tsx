@@ -373,12 +373,32 @@ function DashboardContent() {
         console.log('Valid personas with active status:', verifiedPersonas.map((p: {id: string, name: string, active?: boolean, transparencyMode?: boolean}) => ({ id: p.id, name: p.name, active: p.active, transparencyMode: p.transparencyMode })));
         console.log('Valid personas full details:', JSON.stringify(verifiedPersonas, null, 2));
         setPersonas(verifiedPersonas);
-        
-        // Only clear selected persona if we have no personas
-        if (validPersonas.length === 0) {
-          setSelectedPersonaId('');
-          setCurrentPersonaId(null);
-        }
+
+        // Keep an existing valid selection; otherwise auto-select a valid persona.
+        setSelectedPersonaId((previousSelectedPersonaId) => {
+          if (validPersonas.length === 0) {
+            setCurrentPersonaId(null);
+            return '';
+          }
+
+          const hasPreviousSelection = previousSelectedPersonaId
+            ? validPersonas.some(
+                (persona: { id: string }) => String(persona.id) === String(previousSelectedPersonaId)
+              )
+            : false;
+
+          if (hasPreviousSelection) {
+            setCurrentPersonaId(String(previousSelectedPersonaId));
+            return String(previousSelectedPersonaId);
+          }
+
+          const fallbackPersona = validPersonas.find(
+            (persona: { active?: boolean }) => Boolean(persona.active)
+          ) ?? validPersonas[0];
+          const fallbackPersonaId = String(fallbackPersona.id);
+          setCurrentPersonaId(fallbackPersonaId);
+          return fallbackPersonaId;
+        });
       } else {
         console.error('Failed to fetch personas:', res.status, res.statusText);
         setPersonas([]);
@@ -397,7 +417,7 @@ function DashboardContent() {
   useEffect(() => {
     // Clear any potential cached data and force fresh fetch
     const clearCacheAndFetch = async () => {
-      // Clear any cached personas data
+      // Clear any potential cached personas data
       if (typeof window !== 'undefined') {
         // Clear any potential cached API responses
         if ('caches' in window) {
@@ -759,17 +779,12 @@ function DashboardContent() {
   }, []);
 
   const handleInstagramLogin = () => {
-    const clientId = process.env.NEXT_PUBLIC_INSTAGRAM_CLIENT_ID;
-    const redirectUri = process.env.NEXT_PUBLIC_SITE_URL ? `${process.env.NEXT_PUBLIC_SITE_URL}/api/instagram/callback` : 'https://www.rudolpho-chat.de/api/instagram/callback';
-    
-    if (!clientId) {
-      console.error('Instagram client ID not configured');
-      alert('Instagram integration not configured');
-      return;
-    }
-    
+    const provider =
+      typeof window !== 'undefined'
+        ? localStorage.getItem('chatboxLoginProvider') || 'instagram'
+        : 'instagram';
     window.location.href =
-      `https://www.instagram.com/oauth/authorize?force_reauth=true&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=instagram_business_basic%2Cinstagram_business_manage_messages%2Cinstagram_business_manage_comments%2Cinstagram_business_content_publish%2Cinstagram_business_manage_insights`;
+      provider === 'meta-business' ? '/api/instagram/auth-meta' : '/api/instagram/auth';
   };
 
 
@@ -860,17 +875,30 @@ function DashboardContent() {
   };
 
   useEffect(() => {
+    // Facebook/Meta OAuth can append "#_=_" after redirect; remove it to avoid route-state issues.
+    if (typeof window !== 'undefined' && window.location.hash === '#_=_') {
+      const cleanUrl = `${window.location.pathname}${window.location.search}`;
+      window.history.replaceState({}, '', cleanUrl);
+    }
+  }, []);
+
+  useEffect(() => {
     const param = searchParams.get('instagramConnected');
+    const instagramError = searchParams.get('instagramError');
     if (param === 'true') {
       setInstagramConnected(true);
       if (typeof window !== 'undefined') {
         localStorage.setItem('instagramConnected', 'true');
         const url = new URL(window.location.href);
         url.searchParams.delete('instagramConnected');
+        url.searchParams.delete('instagramError');
         window.history.replaceState({}, '', url.toString());
       }
     } else if (param === 'false') {
       setInstagramConnected(false);
+      if (instagramError) {
+        alert(`Instagram connection failed: ${instagramError}`);
+      }
     } else if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('instagramConnected');
       if (stored === 'true') setInstagramConnected(true);
@@ -1019,12 +1047,55 @@ function DashboardContent() {
     );
   }
 
+  const NEW_PERSONA_OPTION_VALUE = '__new_persona__';
+
   // Make sure to install lodash.isequal: npm install lodash.isequal
   const handlePersonaDropdownChange = async (id: string) => {
+    if (id === NEW_PERSONA_OPTION_VALUE) {
+      setPersonality({
+        name: '',
+        description: '',
+        systemPrompt: '',
+        childhoodExperiences: {
+          personalDevelopment: [],
+          sexuality: [],
+          generalExperiences: [],
+          socialEnvironmentFriendships: [],
+          educationLearning: [],
+          familyRelationships: []
+        },
+        emotionalTriggers: [],
+        characterTraits: [],
+        positiveTraits: {
+          socialCommunicative: [],
+          professionalCognitive: [],
+          personalIntrinsic: []
+        },
+        negativeTraits: [],
+        areasOfInterest: [],
+        communicationStyle: {
+          tone: '',
+          wordChoice: '',
+          responsePatterns: '',
+          humor: {
+            humorEnabled: false,
+            humorTypes: [],
+            humorIntensity: '',
+            humorExclusionTopics: []
+          }
+        },
+        delayMin: 5,
+        delayMax: 10
+      });
+      setCurrentPersonaId(null);
+      setSelectedPersonaId('');
+      setProductLinks([]);
+      return;
+    }
+
     // Add null check for the selected ID
     if (!id || id === 'null' || id === 'undefined') {
       console.warn('Invalid persona ID selected:', id);
-      alert(t('dashboard.invalidPersona'));
       return;
     }
     
@@ -2282,7 +2353,7 @@ function DashboardContent() {
                     {loadingAI ? 'Generating...' : 'AI Persona Builder'}
                   </button>
                   <span className="text-xs text-gray-400 text-center">
-                    {t('footer.usageCounter', { 
+                    {t('dashboard.footer.usageCounter', { 
                       remaining: String(getRemainingAttempts()), 
                       total: String(isProUser ? 10 : 2) 
                     })}
@@ -2396,10 +2467,10 @@ function DashboardContent() {
                 <div className="flex items-center gap-4">
                 <select
                   className="p-2 border rounded text-black min-w-[220px]" // wider dropdown
-                  value={selectedPersonaId}
+                  value={selectedPersonaId || NEW_PERSONA_OPTION_VALUE}
                   onChange={e => handlePersonaDropdownChange(e.target.value)}
                 >
-                  <option value="">{t('dashboard.selectPersona')}</option>
+                  <option value={NEW_PERSONA_OPTION_VALUE}>{String(t('dashboard.newPersona'))}</option>
                   {personas.filter(persona => persona && persona.id && persona.name).map((persona) => (
                     <option key={persona.id} value={persona.id}>
                       {persona.name} {persona.active ? ' (Live)' : ''}

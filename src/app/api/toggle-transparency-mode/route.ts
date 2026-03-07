@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/auth/supabaseClient.server';
 
+type PersonaPayload = {
+  transparencyMode?: boolean;
+  data?: {
+    transparencyMode?: boolean;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+};
+
 export async function POST(request: NextRequest) {
   try {
     const { personaId, userId, transparencyMode } = await request.json();
@@ -30,13 +39,26 @@ export async function POST(request: NextRequest) {
     }
 
     // Update the persona data with the new transparency mode value
-    const currentData = personaData.data;
+    const currentData = personaData.data as PersonaPayload;
+    const updatedData: PersonaPayload = currentData?.data
+      ? {
+          ...currentData,
+          transparencyMode: transparencyMode,
+          data: {
+            ...currentData.data,
+            transparencyMode: transparencyMode,
+          },
+        }
+      : {
+          ...currentData,
+          transparencyMode: transparencyMode,
+        };
     
     // Update the persona data
     const { error: updateError } = await supabase
       .from('personas')
       .update({ 
-        data: { ...currentData, transparencyMode: transparencyMode },
+        data: updatedData,
         updatedAt: new Date().toISOString()
       })
       .eq('id', personaId)

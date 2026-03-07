@@ -14,6 +14,8 @@
   "dashboard": {
     "title": "Dashboard",
     "welcome": "Welcome to your dashboard",
+    "yourPersonas": "Your Personas",
+    "noPersonasYet": "No personas yet",
     "newPersona": "New Persona",
     "savePersona": "Save Persona",
     "personaSaved": "Persona saved!",
@@ -36,6 +38,9 @@
     "aiTemplateLimitDescription": "You have reached the daily limit for AI template generation. Please try again tomorrow.",
     "instagramConnected": "Instagram Connected",
     "instagramDisconnected": "Instagram Disconnected",
+    "autorespondingToDMs": "Auto-responding to DMs",
+    "autorespondingToComments": "Auto-responding to comments",
+    "delayOfResponse": "Delay of response",
     "connectInstagram": "Connect Instagram",
     "disconnectInstagram": "Disconnect Instagram",
     "settings": "Settings",
@@ -153,6 +158,51 @@
         "description": "Connect your Instagram account and activate the bot"
       },
       "getStarted": "Get Started"
+    },
+    "footer": {
+      "usageCounter": "{remaining} of {total} attempts remaining today"
+    }
+  },
+  "landing": {
+    "howItWorks": {
+      "title": "How it works",
+      "steps": [
+        "Craft your AI-Chatbot\nDefine personality, writing style, and responses – exactly how your bot should sound.",
+        "Link your Instagram to your personalized AI-Chatbot.",
+        "Let him chat for you\nYour AI-Chatbot automatically responds to messages in your style – 24/7.",
+        "Thanks to Zep-Memory, our AI-Chatbot remembers every interaction – building a genuine, long-term connection with your followers. No endless repetitions, but a smart companion who knows them, understands them, and grows with them."
+      ]
+    },
+    "trustTransparency": {
+      "title": "Trust & Transparency",
+      "subtitle": "We believe in responsible AI that builds genuine connections while maintaining the highest standards of safety and transparency.",
+      "contentSafety": {
+        "title": "Content Safety First",
+        "description": "Every AI-generated persona undergoes rigorous content safety checks. Our advanced filtering system ensures your AI chatbot maintains appropriate, professional, and respectful communication at all times.",
+        "features": [
+          "Real-time content moderation",
+          "Zero tolerance for harmful content",
+          "Professional communication standards"
+        ]
+      },
+      "aiTransparency": {
+        "title": "AI Transparency",
+        "description": "Your AI chatbot proudly identifies itself as AI in conversations. This builds trust with your audience while maintaining authentic engagement. No deception, just genuine AI-powered communication.",
+        "features": [
+          "Clear AI identification in chats",
+          "Honest communication approach",
+          "Builds genuine audience trust"
+        ]
+      },
+      "socialProof": {
+        "trustedBy": "Trusted by 0 creators so far =)",
+        "buildingRelationships": "Building authentic AI relationships",
+        "stats": {
+          "contentSafety": "Content Safety Rate",
+          "aiTransparency": "AI Transparency",
+          "safetyMonitoring": "Safety Monitoring"
+        }
+      }
     }
   },
   "footer": {

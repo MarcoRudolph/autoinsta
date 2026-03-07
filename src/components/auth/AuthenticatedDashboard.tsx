@@ -15,16 +15,12 @@ const AuthenticatedDashboard = () => {
   const userDropdownRef = useRef<HTMLDivElement>(null);
 
   const handleInstagramLogin = () => { 
-    const clientId = process.env.NEXT_PUBLIC_INSTAGRAM_CLIENT_ID;
-    const redirectUri = process.env.NEXT_PUBLIC_SITE_URL ? `${process.env.NEXT_PUBLIC_SITE_URL}/api/instagram/callback` : 'https://www.rudolpho-chat.de/api/instagram/callback';
-    
-    if (!clientId) {
-      console.error('Instagram client ID not configured');
-      alert('Instagram integration not configured');
-      return;
-    }
-    
-    window.location.href = `https://www.instagram.com/oauth/authorize?force_reauth=true&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=instagram_business_basic%2Cinstagram_business_manage_messages%2Cinstagram_business_manage_comments%2Cinstagram_business_content_publish%2Cinstagram_business_manage_insights`; 
+    const provider =
+      typeof window !== 'undefined'
+        ? localStorage.getItem('chatboxLoginProvider') || 'instagram'
+        : 'instagram';
+    window.location.href =
+      provider === 'meta-business' ? '/api/instagram/auth-meta' : '/api/instagram/auth';
   };
 
   useEffect(() => { 

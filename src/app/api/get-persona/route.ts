@@ -1,14 +1,14 @@
-export const runtime = 'edge';
-
-// Official Drizzle ORM folder: src/drizzle
-
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 type PersonaData = {
+  transparencyMode?: boolean;
+  active?: boolean;
   data?: {
     personality?: Record<string, unknown>;
     productLinks?: unknown[];
+    transparencyMode?: boolean;
+    active?: boolean;
   };
   personality?: Record<string, unknown>;
   productLinks?: unknown[];
@@ -41,9 +41,17 @@ export async function GET(req: NextRequest) {
 
     console.log('Raw persona data from DB:', JSON.stringify(result.data, null, 2));
     
-    // Handle double-wrapped data structure: the actual persona data is in result.data.data
+    // Handle double-wrapped data structure while preferring top-level runtime flags
+    // (legacy rows may have nested data + top-level updates from toggle routes).
     const personaData = result.data as PersonaData; // Proper type instead of any
-    const actualPersona = personaData?.data || personaData;
+    const actualPersona = personaData?.data
+      ? {
+          ...personaData.data,
+          transparencyMode:
+            personaData.transparencyMode ?? personaData.data.transparencyMode ?? true,
+          active: personaData.active ?? personaData.data.active ?? false,
+        }
+      : personaData;
     
     console.log('Extracted persona data:', JSON.stringify(actualPersona, null, 2));
     return NextResponse.json({ persona: actualPersona });

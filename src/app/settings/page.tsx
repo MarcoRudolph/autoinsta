@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -10,6 +10,19 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [useMetaBusinessLogin, setUseMetaBusinessLogin] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const storedMode = localStorage.getItem('chatboxLoginProvider');
+    setUseMetaBusinessLogin(storedMode === 'meta-business');
+  }, []);
+
+  const handleLoginProviderToggle = (checked: boolean) => {
+    setUseMetaBusinessLogin(checked);
+    if (typeof window === 'undefined') return;
+    localStorage.setItem('chatboxLoginProvider', checked ? 'meta-business' : 'instagram');
+  };
 
   const handleLogout = async () => {
     try {
@@ -171,6 +184,37 @@ export default function SettingsPage() {
                 <button className="px-4 py-2 bg-[#f3aacb] text-[#334269] font-semibold rounded-lg hover:bg-[#e6ebfc] transition-colors">
                   Aktiviert
                 </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Chat Box Login Provider */}
+          <div className="bg-[#15192a]/80 backdrop-blur-lg rounded-xl shadow-2xl p-6 text-white">
+            <h2 className="text-2xl font-bold mb-4 text-[#f3aacb]">Chat Box Integration</h2>
+            <div className="p-4 bg-[#1a1f2e] rounded-lg space-y-3">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-semibold">Meta Business Login fuer Chat Box nutzen</h3>
+                  <p className="text-sm text-gray-400">
+                    Standard ist Instagram Login. Wenn aktiv, nutzt der Connect-Button Meta Business Login.
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={useMetaBusinessLogin}
+                    onChange={(event) => handleLoginProviderToggle(event.target.checked)}
+                  />
+                  <div className="w-14 h-8 bg-gray-300 peer-checked:bg-blue-500 rounded-full transition-colors" />
+                  <div className="absolute left-1 top-1 w-6 h-6 bg-white rounded-full shadow-md transition-transform peer-checked:translate-x-6" />
+                </label>
+              </div>
+              <div className="text-sm text-gray-300">
+                Aktueller Modus:{' '}
+                <span className="font-semibold text-white">
+                  {useMetaBusinessLogin ? 'Meta Business Login' : 'Instagram Login'}
+                </span>
               </div>
             </div>
           </div>

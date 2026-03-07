@@ -1,11 +1,10 @@
-export const runtime = 'edge';
-
-import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
 type PersonaData = {
   name?: string;
   active?: boolean;
+  transparencyMode?: boolean;
   personality?: {
     name?: string;
     active?: boolean;
@@ -14,6 +13,7 @@ type PersonaData = {
   data?: {
     name?: string;
     active?: boolean;
+    transparencyMode?: boolean;
     personality?: {
       name?: string;
       active?: boolean;
@@ -66,19 +66,23 @@ export async function GET(request: Request) {
       console.log(`Persona ${row.id} - data?.personality:`, data?.personality);
       console.log(`Persona ${row.id} - final name:`, name);
       
-      // Check for active status - it should be at data.active level
+      // Check for active status in both flat and legacy nested data shapes
       let active = false;
       if (data?.active !== undefined) {
         active = data.active;
+      } else if (data?.data?.active !== undefined) {
+        active = data.data.active;
       } else {
         // If active field doesn't exist, default to false
         active = false;
       }
       
-      // Check for transparency mode - it should be at data.transparencyMode level
+      // Check for transparency mode in both flat and legacy nested data shapes
       let transparencyMode = true; // Default to true
       if (data?.transparencyMode !== undefined && data?.transparencyMode !== null) {
         transparencyMode = Boolean(data.transparencyMode);
+      } else if (data?.data?.transparencyMode !== undefined && data?.data?.transparencyMode !== null) {
+        transparencyMode = Boolean(data.data.transparencyMode);
       }
       
       console.log(`Persona ${row.id} (${name}): active=${active}, transparencyMode=${transparencyMode}, data:`, data);

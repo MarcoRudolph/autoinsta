@@ -1,13 +1,11 @@
-export const runtime = 'edge';
-
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 export async function POST(req: NextRequest) {
   try {
-    const data = await req.json();
-    console.log('Save persona API received data:', JSON.stringify(data, null, 2));
-    console.log('Data being inserted into database:', JSON.stringify(data, null, 2));
+    const payload = await req.json();
+    console.log('Save persona API received data:', JSON.stringify(payload, null, 2));
+    console.log('Data being inserted into database:', JSON.stringify(payload, null, 2));
     
     // Initialize Supabase client
     const supabase = createClient(
@@ -15,17 +13,24 @@ export async function POST(req: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
     
-    // Ensure the persona data has an active status
+    if (!payload?.userId || !payload?.data) {
+      return NextResponse.json({ error: 'Missing userId or persona data' }, { status: 400 });
+    }
+
+    // Normalize to a flat persona payload in `personas.data` for consistent reads/writes.
     const personaData = {
-      ...data,
-      active: data.active !== undefined ? data.active : false
+      ...(payload.data as Record<string, unknown>),
+      active:
+        (payload.data as { active?: boolean })?.active !== undefined
+          ? Boolean((payload.data as { active?: boolean }).active)
+          : false,
     };
     
     // Insert new persona using Supabase
     const { data: result, error } = await supabase
       .from('personas')
       .insert({
-        userId: data.userId, // ensure userId is provided
+        userId: payload.userId, // ensure userId is provided
         data: personaData,
       })
       .select()

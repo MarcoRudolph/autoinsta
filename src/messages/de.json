@@ -14,6 +14,8 @@
   "dashboard": {
     "title": "Dashboard",
     "welcome": "Willkommen in deinem Dashboard",
+    "yourPersonas": "Deine Personas",
+    "noPersonasYet": "Noch keine Personas",
     "newPersona": "Neuer AI-Chatbot",
     "savePersona": "AI-Chatbot speichern",
     "personaSaved": "AI-Chatbot gespeichert!",
@@ -36,6 +38,9 @@
     "aiTemplateLimitDescription": "Sie haben das Tageslimit für die AI-Template-Generierung erreicht. Bitte versuchen Sie es morgen erneut.",
     "instagramConnected": "Instagram verbunden",
     "instagramDisconnected": "Instagram getrennt",
+    "autorespondingToDMs": "Automatische Antworten auf DMs",
+    "autorespondingToComments": "Automatische Antworten auf Kommentare",
+    "delayOfResponse": "Antwortverzögerung",
     "connectInstagram": "Instagram verbinden",
     "disconnectInstagram": "Instagram trennen",
     "settings": "Einstellungen",
@@ -153,6 +158,51 @@
         "description": "Verbinden Sie Ihr Instagram-Konto und aktivieren Sie den Bot"
       },
       "getStarted": "Jetzt loslegen"
+    },
+    "footer": {
+      "usageCounter": "{remaining} von {total} Versuchen heute übrig"
+    }
+  },
+  "landing": {
+    "howItWorks": {
+      "title": "Wie es funktioniert",
+      "steps": [
+        "Erstelle deinen AI-Chatbot\nDefiniere Persönlichkeit, Schreibstil und Antworten – genau wie dein Bot sein soll.",
+        "Verbinde dein Instagram mit deinem personalisierten AI-Chatbot.",
+        "Lasse ihn für dich chatten\nDein AI-Chatbot antwortet automatisch auf Nachrichten in deinem Stil – rund um die Uhr.",
+        "Dank Zep-Memory erinnert sich unser KI-Chatbot an jede Interaktion – und baut so eine echte, langfristige Verbindung zu deinen Followern auf. Keine endlosen Wiederholungen, sondern ein smarter Begleiter, der sie kennt, versteht und mit ihnen wächst."
+      ]
+    },
+    "trustTransparency": {
+      "title": "Vertrauen & Transparenz",
+      "subtitle": "Wir glauben an verantwortungsvolle KI, die echte Verbindungen aufbaut und dabei die höchsten Standards für Sicherheit und Transparenz einhält.",
+      "contentSafety": {
+        "title": "Inhaltsicherheit an erster Stelle",
+        "description": "Jede KI-generierte Persönlichkeit durchläuft strenge Inhaltsicherheitsprüfungen. Unser fortschrittliches Filtersystem stellt sicher, dass dein KI-Chatbot jederzeit angemessene, professionelle und respektvolle Kommunikation aufrechterhält.",
+        "features": [
+          "Echtzeit-Inhaltsmoderation",
+          "Null-Toleranz für schädliche Inhalte",
+          "Professionelle Kommunikationsstandards"
+        ]
+      },
+      "aiTransparency": {
+        "title": "KI-Transparenz",
+        "description": "Dein KI-Chatbot identifiziert sich stolz als KI in Gesprächen. Das schafft Vertrauen bei deinem Publikum und erhält dabei authentisches Engagement aufrecht. Keine Täuschung, nur echte KI-gestützte Kommunikation.",
+        "features": [
+          "Klare KI-Identifikation in Chats",
+          "Ehrlicher Kommunikationsansatz",
+          "Schafft echtes Publikumsvertrauen"
+        ]
+      },
+      "socialProof": {
+        "trustedBy": "Vertraut von 0 Kreativen bisher =)",
+        "buildingRelationships": "Aufbau authentischer KI-Beziehungen",
+        "stats": {
+          "contentSafety": "Inhaltsicherheitsrate",
+          "aiTransparency": "KI-Transparenz",
+          "safetyMonitoring": "Sicherheitsüberwachung"
+        }
+      }
     }
   },
   "footer": {
