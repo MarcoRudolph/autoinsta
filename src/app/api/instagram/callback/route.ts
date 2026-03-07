@@ -57,6 +57,36 @@ function createAdminSupabaseClient() {
   return createClient(supabaseUrl, serviceRoleKey);
 }
 
+async function subscribeInstagramAccountToApp(input: {
+  igAccountId: string;
+  accessToken: string;
+}): Promise<{ ok: boolean; status?: number; error?: string }> {
+  try {
+    const response = await fetch(
+      `https://graph.facebook.com/v23.0/${encodeURIComponent(input.igAccountId)}/subscribed_apps?access_token=${encodeURIComponent(
+        input.accessToken
+      )}`,
+      { method: 'POST' }
+    );
+
+    const bodyText = await response.text();
+    if (!response.ok) {
+      return {
+        ok: false,
+        status: response.status,
+        error: bodyText.slice(0, 1000),
+      };
+    }
+
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
 async function upsertInstagramConnection(input: {
   igAccountId: string;
   igUsername?: string | null;
@@ -118,6 +148,7 @@ export async function GET(request: NextRequest) {
   const flowUserId = parsedState.userId || null;
   const isMetaBusinessFlow = flow === 'meta_business_login';
   const isInstagramLoginFlow = flow === 'instagram_login' || !flow;
+  let webhookSubscriptionFailed = false;
 
   try {
     if (isMetaBusinessFlow) {
@@ -176,14 +207,40 @@ export async function GET(request: NextRequest) {
       const firstConnected = accountData.data?.find((page) => page.instagram_business_account?.id);
 
       if (firstConnected?.instagram_business_account?.id) {
+        const connectionToken = firstConnected.access_token || tokenData.access_token;
         await upsertInstagramConnection({
           igAccountId: firstConnected.instagram_business_account.id,
           igUsername: firstConnected.instagram_business_account.username || null,
-          accessToken: firstConnected.access_token || tokenData.access_token,
+          accessToken: connectionToken,
           expiresInSeconds: tokenData.expires_in,
           provider: 'meta_business',
           userId: flowUserId,
         });
+
+        if (connectionToken) {
+          const subscriptionResult = await subscribeInstagramAccountToApp({
+            igAccountId: firstConnected.instagram_business_account.id,
+            accessToken: connectionToken,
+          });
+
+          if (!subscriptionResult.ok) {
+            webhookSubscriptionFailed = true;
+            console.error('Instagram webhook subscription failed (meta business flow)', {
+              igAccountId: firstConnected.instagram_business_account.id,
+              status: subscriptionResult.status || null,
+              error: subscriptionResult.error || 'unknown',
+            });
+          } else {
+            console.log('Instagram webhook subscription succeeded (meta business flow)', {
+              igAccountId: firstConnected.instagram_business_account.id,
+            });
+          }
+        } else {
+          webhookSubscriptionFailed = true;
+          console.error('Instagram webhook subscription skipped due to missing token (meta business flow)', {
+            igAccountId: firstConnected.instagram_business_account.id,
+          });
+        }
       }
     } else if (isInstagramLoginFlow) {
       const clientId =
@@ -239,6 +296,24 @@ export async function GET(request: NextRequest) {
           provider: 'instagram_login',
           userId: flowUserId,
         });
+
+        const subscriptionResult = await subscribeInstagramAccountToApp({
+          igAccountId,
+          accessToken: tokenData.access_token,
+        });
+
+        if (!subscriptionResult.ok) {
+          webhookSubscriptionFailed = true;
+          console.error('Instagram webhook subscription failed (instagram login flow)', {
+            igAccountId,
+            status: subscriptionResult.status || null,
+            error: subscriptionResult.error || 'unknown',
+          });
+        } else {
+          console.log('Instagram webhook subscription succeeded (instagram login flow)', {
+            igAccountId,
+          });
+        }
       }
     } else {
       return NextResponse.redirect(
@@ -249,7 +324,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.redirect(new URL('/dashboard?instagramConnected=true', normalizedSiteUrl));
+    const dashboardUrl = new URL('/dashboard?instagramConnected=true', normalizedSiteUrl);
+    if (webhookSubscriptionFailed) {
+      dashboardUrl.searchParams.set('instagramWebhookSubscribed', 'false');
+    }
+    return NextResponse.redirect(dashboardUrl);
   } catch {
     return NextResponse.redirect(
       new URL('/dashboard?instagramConnected=false&instagramError=Unexpected callback error', normalizedSiteUrl)
