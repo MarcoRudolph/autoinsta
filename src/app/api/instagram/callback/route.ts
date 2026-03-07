@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
 export const runtime = 'edge';
 
@@ -6,6 +7,7 @@ type MetaTokenResponse = {
   access_token?: string;
   token_type?: string;
   expires_in?: number;
+  user_id?: number | string;
   error?: {
     message?: string;
     type?: string;
@@ -13,6 +15,78 @@ type MetaTokenResponse = {
     fbtrace_id?: string;
   };
 };
+
+type MetaAccountListResponse = {
+  data?: Array<{
+    id?: string;
+    name?: string;
+    access_token?: string;
+    instagram_business_account?: {
+      id?: string;
+      username?: string;
+    };
+  }>;
+};
+
+type OAuthState = {
+  flow?: string;
+  userId?: string | null;
+};
+
+function decodeState(rawState: string | null): OAuthState {
+  if (!rawState) return {};
+  if (rawState === 'instagram_login' || rawState === 'meta_business_login') {
+    return { flow: rawState };
+  }
+
+  try {
+    const normalized = rawState.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+    const parsed = JSON.parse(atob(padded)) as OAuthState;
+    return parsed;
+  } catch {
+    return { flow: rawState };
+  }
+}
+
+function createAdminSupabaseClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) return null;
+  return createClient(supabaseUrl, serviceRoleKey);
+}
+
+async function upsertInstagramConnection(input: {
+  igAccountId: string;
+  igUsername?: string | null;
+  accessToken?: string | null;
+  expiresInSeconds?: number;
+  provider: 'instagram_login' | 'meta_business';
+  userId?: string | null;
+}) {
+  const supabase = createAdminSupabaseClient();
+  if (!supabase) return;
+
+  const tokenExpiresAt =
+    typeof input.expiresInSeconds === 'number'
+      ? new Date(Date.now() + input.expiresInSeconds * 1000).toISOString()
+      : null;
+
+  await supabase.from('instagram_connections').upsert(
+    {
+      ig_account_id: input.igAccountId,
+      ig_username: input.igUsername || null,
+      access_token: input.accessToken || null,
+      token_expires_at: tokenExpiresAt,
+      provider: input.provider,
+      user_id: input.userId || null,
+      status: 'connected',
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'ig_account_id' }
+  );
+}
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -39,8 +113,11 @@ export async function GET(request: NextRequest) {
 
   const redirectUri = `${normalizedSiteUrl}/api/instagram/callback`;
 
-  const isMetaBusinessFlow = state === 'meta_business_login';
-  const isInstagramLoginFlow = state === 'instagram_login' || !state;
+  const parsedState = decodeState(state);
+  const flow = parsedState.flow;
+  const flowUserId = parsedState.userId || null;
+  const isMetaBusinessFlow = flow === 'meta_business_login';
+  const isInstagramLoginFlow = flow === 'instagram_login' || !flow;
 
   try {
     if (isMetaBusinessFlow) {
@@ -94,6 +171,20 @@ export async function GET(request: NextRequest) {
           )
         );
       }
+
+      const accountData = (await accountResponse.json()) as MetaAccountListResponse;
+      const firstConnected = accountData.data?.find((page) => page.instagram_business_account?.id);
+
+      if (firstConnected?.instagram_business_account?.id) {
+        await upsertInstagramConnection({
+          igAccountId: firstConnected.instagram_business_account.id,
+          igUsername: firstConnected.instagram_business_account.username || null,
+          accessToken: firstConnected.access_token || tokenData.access_token,
+          expiresInSeconds: tokenData.expires_in,
+          provider: 'meta_business',
+          userId: flowUserId,
+        });
+      }
     } else if (isInstagramLoginFlow) {
       const clientId =
         process.env.INSTAGRAM_APP_ID ||
@@ -137,6 +228,17 @@ export async function GET(request: NextRequest) {
             normalizedSiteUrl
           )
         );
+      }
+
+      const igAccountId = tokenData.user_id ? String(tokenData.user_id) : null;
+      if (igAccountId) {
+        await upsertInstagramConnection({
+          igAccountId,
+          accessToken: tokenData.access_token,
+          expiresInSeconds: tokenData.expires_in,
+          provider: 'instagram_login',
+          userId: flowUserId,
+        });
       }
     } else {
       return NextResponse.redirect(

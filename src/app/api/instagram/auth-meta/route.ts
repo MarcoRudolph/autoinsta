@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'edge';
 
+function encodeState(payload: Record<string, unknown>): string {
+  const json = JSON.stringify(payload);
+  return btoa(json)
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
+}
+
 export async function GET(request: NextRequest) {
   const clientId =
     process.env.META_APP_ID ||
@@ -9,6 +17,7 @@ export async function GET(request: NextRequest) {
     process.env.NEXT_PUBLIC_INSTAGRAM_CLIENT_ID ||
     process.env.INSTAGRAM_CLIENT_ID;
   const requestOrigin = new URL(request.url).origin;
+  const userId = request.nextUrl.searchParams.get('userId');
 
   if (!clientId) {
     return NextResponse.json({ error: 'Meta Business OAuth is not configured' }, { status: 500 });
@@ -31,7 +40,11 @@ export async function GET(request: NextRequest) {
   url.searchParams.append('redirect_uri', redirectUri);
   url.searchParams.append('response_type', 'code');
   url.searchParams.append('scope', scopes.join(','));
-  url.searchParams.append('state', 'meta_business_login');
+  const state = encodeState({
+    flow: 'meta_business_login',
+    userId: userId || null,
+  });
+  url.searchParams.append('state', state);
 
   return NextResponse.redirect(url.toString());
 }

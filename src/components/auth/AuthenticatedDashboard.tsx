@@ -12,6 +12,7 @@ const AuthenticatedDashboard = () => {
   const [checkingSession, setCheckingSession] = useState(true);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string>('');
+  const [userId, setUserId] = useState<string>('');
   const userDropdownRef = useRef<HTMLDivElement>(null);
 
   const handleInstagramLogin = () => { 
@@ -19,8 +20,12 @@ const AuthenticatedDashboard = () => {
       typeof window !== 'undefined'
         ? localStorage.getItem('chatboxLoginProvider') || 'instagram'
         : 'instagram';
-    window.location.href =
-      provider === 'meta-business' ? '/api/instagram/auth-meta' : '/api/instagram/auth';
+    const targetPath = provider === 'meta-business' ? '/api/instagram/auth-meta' : '/api/instagram/auth';
+    const params = new URLSearchParams();
+    if (userId) {
+      params.set('userId', userId);
+    }
+    window.location.href = params.toString() ? `${targetPath}?${params.toString()}` : targetPath;
   };
 
   useEffect(() => { 
@@ -47,6 +52,9 @@ const AuthenticatedDashboard = () => {
         if (user?.email) { 
           setUserEmail(user.email); 
         } 
+        if (user?.id) {
+          setUserId(user.id);
+        }
       } catch (error) {
         console.error('Error getting user email:', error);
       }

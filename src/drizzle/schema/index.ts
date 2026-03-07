@@ -1,6 +1,7 @@
 export * from './users';
 export * from './personas';
 export * from './subscriptions';
+export * from './instagram';
 export * from './relations';
 
 // Export subscription types
