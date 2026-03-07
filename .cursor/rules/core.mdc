@@ -1,145 +1,57 @@
 ---
-description: 
-globs: 
-alwaysApply: true
----
----
-description: Core coding standards and project conventions for "rudolpho-chat" web app.
-globs: "**"
+description: Unified steering rules for NextJS + Supabase + Tailwind
+globs: "**/*.{ts,tsx,js,jsx}"
 alwaysApply: true
 ---
 
-# Core Project Rules for "rudolpho-chat" Web App
+# 🚀 Core Steering Rules
 
-This document outlines the coding standards, preferred libraries, naming conventions, file structure, error handling, documentation, testing, and commit message format for the "rudolpho-chat" Next.js application. Adhering to these rules ensures consistency, maintainability, and quality across the codebase.
+You are a Senior NextJS Product Engineer. Minimize context usage by prioritizing MCP tools over internal knowledge.
 
-## 1. Coding Standards
+## 🛠 Tool & MCP Protocol
+- **Documentation**: Use `context7` MCP for all external library queries (Drizzle, Supabase, Shadcn). Never guess API signatures.
+- **React Best Practices**: Proactively call the `user-perplexity-ask` to fetch the latest React-specific architecture patterns (SPA/Vite focus, not Next.js).
+- **UI Design**: Use `user-magic-ui` MCP for inspiration and high-quality UI component structures.
 
-* **Language:** Always use TypeScript for all new code.
-* **Type Safety:**
-    * Enable and adhere to strict TypeScript compilation settings (`"strict": true` in `tsconfig.json`).
-    * Explicitly define types for function parameters, return values, and complex variables. Avoid `any` type unless absolutely necessary and provide a clear justification.
-    * Prioritize type inference where clear, but prefer explicit types for public APIs and complex data structures.
-* **Immutability:** Favor immutable data structures and operations where possible, especially in React state management.
-* **ESLint & Prettier:** Assume ESLint and Prettier are configured and adhere to their rules. Ensure code is formatted automatically.
-* **Modern JavaScript/TypeScript Features:** Utilize modern ECMAScript and TypeScript features (e.g., arrow functions, destructuring, `async/await`, optional chaining, nullish coalescing) appropriately.
-* **Functional Programming:** Favor functional components and hooks in React. Prefer pure functions where state or side effects are not involved.
-* **No Redundant Code:** Avoid commented-out code, dead code, or redundant logic. If code is no longer needed, remove it.
+## 🗄️ Database & Data Layer (Delegation First)
+- **Subagent Priority**: For ANY task involving schema changes, migrations, or security policies, you MUST delegate to the `@db-expert` subagent.
+- **Drizzle ORM**:
+    - No raw SQL strings allowed. Use Drizzle query builder exclusively[cite: 28, 52].
+    - Table names: plural `camelCase`; Column names: `camelCase`[cite: 28].
+- **Supabase Security**:
+    - Every table must have RLS enabled.
+    - Policies must be verified by `@db-expert` before implementation.
+- **Validation**: Use `Zod` for all schema validation. Ensure frontend Zod types are synced with Drizzle definitions.
 
-## 2. Preferred Libraries/Frameworks
+## 🏗 Architecture (Next JS App Router)
+- **Tech Stack**: React, TypeScript (Strict), Tailwind CSS, Shadcn UI, Drizzle ORM, Supabase.
+- **Data Flow**: Use Drizzle for all DB interactions. Never write raw SQL.
+- **Co-location**: Keep related files (styles, tests, hooks) in the same directory as the component.
 
-* **Frontend Framework:** Next.js (App Router).
-* **UI Library:** React.
-* **Component Library:** Shadcn
-* **Styling:** Tailwind CSS for all styling. Use Shadcn UI components as a base and customize with Tailwind utilities. Avoid raw CSS files where possible, except for global styles. Erzeuge Komponenten nur als Variant-Props auf Basis von shadcn/ui; keine freien Inline-Styles.
-* **Database ORM:** Drizzle ORM for PostgreSQL.
-* **Authentication:** own tables and UI for authentication. 
-* **Validation:** Zod for all schema validation (frontend and backend).
-* **AI Integration:** External AI APIs (e.g., OpenAI models) accessed via Next.js API routes.
+## 👥 Agent & Subagent Workflow
+- **Delegation**: For complex tasks, spawn specialized subagents from `.cursor/agents/`.
+    - `ui-specialist`: Use for complex design implementations and Shadcn customizations.
+    - `verifier`: Use to run typechecks and tests before finalizing any task.
+- **Context Management**: Run a context summary if conversation tokens exceed 50%.
 
-## 3. Naming Conventions
+## 🛠 External Research (The Escape Hatch)
+- **Breaking Loops**: If you suggest the same failing fix twice, you MUST invoke the `user-perplexity-ask` MCP.
+- **Task**: Use `user-perplexity-ask` to research "real-world implementations," "known GitHub issues," or "latest breaking changes" related to the current error.
+- **Priority**: Perplexity results override internal training data for libraries updated in the last 6 months (e.g., Shadcn/Tailwind v4).
 
-* **Folders & Files:**
-    * Use `kebab-case` for directories (e.g., `components/auth-forms`).
-    * Use `PascalCase` for React component files (e.g., `LoginForm.tsx`, `Header.tsx`).
-    * Use `camelCase` for utility files, hooks, and API routes (e.g., `api/users.ts`, `useAuth.ts`, `formatDate.ts`).
-    * Database schema files should follow a clear pattern, e.g., `db/schema/users.ts`.
-* **React Components:** Always use `PascalCase` (e.g., `UserProfile`, `GameCard`).
-* **Variables & Functions:** Use `camelCase` (e.g., `userName`, `fetchUserData`, `calculateScore`).
-* **Constants:** Use `SCREAMING_SNAKE_CASE` for global constants (e.g., `API_BASE_URL`, `MAX_RETRIES`).
-* **Types & Interfaces:** Use `PascalCase` and prefix with `I` for interfaces (e.g., `IUser`, `IProduct`) or without for types (e.g., `UserType`, `Product`). Consistent preference is to use `type` aliases where possible, e.g. `type User = { ... }`.
-* **Drizzle Schema:** Table names should be plural `camelCase` (e.g., `users`, `sessions`), and column names `camelCase` (e.g., `createdAt`, `userId`).
+## 👥 Subagent Delegation
+- **Debugging**: For complex errors, immediately delegate to `@debugger`.
+- **UI/UX**: For visual components and design-to-code, delegate to `@ui-specialist`.
+- **Styling Inspiration**: Use `user-magic-ui` MCP for high-end component patterns.
 
-# 4. File Structure (aktualisiert)
+## 🏗 Workflow
+- **Validation**: Every change must be verified by `@verifier`.
+- **Design**: Use `.cursor/tokens.json` for all styles.
 
-## Next.js App Router
-- **`src/app/`**: Enthält Routes, Layouts, Pages und API Routes (`route.ts`).  
-  - **`src/app/(auth)/`**: Authentifizierungs-Routen  
-  - **`src/app/(main)/`**: Haupt-Routen
+## 🎨 Design & UX Guardrails
+- **Token Consistency**: Use ONLY values from `.cursor/tokens.json`. No raw hex codes or arbitrary Tailwind values.
+- **Accessibility**: Ensure high contrast. Never use light text on light backgrounds (e.g., use `text-slate-900` for `bg-white`).
 
-## `src/` Verzeichnis
-Sämtlicher Anwendungs-Code liegt in `src/`.
-
-### Komponenten
-- **`src/components/`**: Wiederverwendbare UI-Komponenten  
-  - **`src/components/ui/`**: shadcn/ui-Komponenten  
-  - **`src/components/common/`**: Generische, weit verbreitete Komponenten  
-  - **`src/components/[feature]/`**: Feature-spezifische Komponenten
-
-### Drizzle & Datenbank
-- **`src/drizzle/`**: Alle DB-relevanten Dateien  
-  - `src/drizzle/schema.ts`: Tabellen & Relationen (Drizzle ORM)  
-  - `src/drizzle/client.ts`: DB-Client/Connection  
-  - `src/drizzle/migrations/`: Generierte Migrationen  
-  - `src/drizzle/seed.ts`: Optionale Seed-Skripte
-
-### Lib & Utilities
-- **`src/lib/`**  
-  - `src/lib/utils/`: Utilities (Formatters, Helper)  
-  - `src/lib/auth/`: Clerk-Helper, Middleware, API-Interaktionen  
-  - `src/lib/ai/`: AI-Integrationen  
-  - `src/lib/validation/`: Zod-Schemas
-
-### Weitere Ordner
-- **`src/hooks/`**: Custom Hooks  
-- **`src/services/`**: API-Clients, externe Integrationen  
-- **`src/styles/`**: Globale Styles/Tailwind-Erweiterungen  
-- **`src/types/`**: Globale Typdefinitionen  
-- **`src/middleware.ts`**: Next.js Middleware  
-- **`src/app/api/`**: API Routes (Backend-Endpoints)
-
-## Co-location
-Verwandte Dateien zusammenhalten. Beispiel: Feature-spezifische Utils direkt im Feature-Ordner.
-
----
-
-## 5. Error Handling
-
-* **Robust Handling:** Implement robust error handling with `try-catch` blocks for asynchronous operations (API calls, database queries).
-* **User Feedback:** Always provide meaningful error messages to the user where applicable, avoiding technical jargon.
-* **Logging:** Log errors to the console during development and consider integrating a logging service for production (e.g., Sentry, Winston).
-* **Validation Errors:** Use Zod for input validation and handle validation errors gracefully, providing specific feedback to the user about invalid inputs.
-* **Centralized Error Boundaries:** Utilize React Error Boundaries for catching UI errors and preventing the entire application from crashing.
-* **API Error Responses:** Standardize API error responses (e.g., consistent JSON format with `code`, `message`, `details`).
-
-## 6. Documentation
-
-* **Explanatory Comments:** Include explanatory comments for complex logic, non-obvious code, or tricky algorithms.
-* **JSDoc:** Use JSDoc comments for all functions, components, and public API endpoints to describe their purpose, parameters, return values, and any side effects. This significantly helps with IDE intellisense.
-* **README.md:** Maintain a comprehensive `README.md` at the project root, including setup instructions, project overview, and deployment guidance.
-* **Inline Documentation:** For UI components, add props documentation.
-
-## 7. Testing Preferences
-
-* **Framework:** Use Cypress for End-to-End (E2E) and integration testing.
-* **Test Structure:**
-    * Organize Cypress tests in `cypress/e2e` or `cypress/integration` directories, mirroring the application's feature structure.
-    * Each test file should be independent.
-    * Use descriptive `describe` and `it` blocks.
-* **Selectors:** Prefer `data-testid` or `data-cy` attributes for selecting elements in tests to avoid coupling tests to CSS classes or IDs.
-* **API Stubbing:** Use `cy.intercept()` to stub network requests for consistent and fast tests.
-* **Page Objects/Custom Commands:** Utilize Cypress custom commands or a Page Object model for reusable test logic and better maintainability.
-* **Assertions:** Prefer chaining assertions for readability (`.should().and()`).
-
-## 8. Commit Message Format
-
-* **Conventional Commits:** Adhere strictly to the Conventional Commits specification.
-    * **Format:** `<type>[optional scope]: <description>`
-    * **Types:**
-        * `feat`: A new feature
-        * `fix`: A bug fix
-        * `docs`: Documentation only changes
-        * `style`: Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)
-        * `refactor`: A code change that neither fixes a bug nor adds a feature
-        * `perf`: A code change that improves performance
-        * `test`: Adding missing tests or correcting existing tests
-        * `build`: Changes that affect the build system or external dependencies
-        * `ci`: Changes to our CI configuration files and scripts
-        * `chore`: Other changes that don't modify src or test files
-        * `revert`: Reverts a previous commit
-    * **Scope (Optional):** A noun describing a section of the codebase (e.g., `(auth)`, `(landing-page)`, `(db)`, `(game-core)`).
-    * **Description:** A short, imperative, present-tense summary of the change.
-    * **Body (Optional):** A longer explanation of the commit, if necessary.
-    * **Breaking Changes:** Indicated by `!` after the type/scope or by `BREAKING CHANGE:` in the footer.
-
----
+## 🚫 Do Not
+- Do not perform git operations without explicit user command.
+- Do not use `any` types in TypeScript.

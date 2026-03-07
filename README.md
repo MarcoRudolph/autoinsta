@@ -1,5 +1,17 @@
-# rudolpho-chat
-AI Chatbot for Insta DMs
+# Boost Your Date
+AI-powered dating profile optimization and Instagram automation
+
+## 🔒 Security Status
+
+**Row Level Security (RLS)**: ✅ **ENABLED** - All database tables are now properly secured with user isolation policies.
+
+**Recent Security Fixes**:
+- Fixed critical RLS vulnerabilities identified by Supabase
+- Implemented proper access controls for all tables
+- Users can only access their own data
+- Service role properly configured for webhooks and admin operations
+
+**Security Documentation**: See [Security Implementation Guide](docs/security-implementation.md) and [Quick Reference](docs/security-policies-reference.md)
 
 ## Deployment
 

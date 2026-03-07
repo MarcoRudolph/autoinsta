@@ -11,10 +11,13 @@ import {
 import AuthForm from '@/components/auth/AuthForm';
 import CookieBanner from '@/components/CookieBanner';
 import Footer from '@/components/Footer';
+import { useI18n } from '@/hooks/useI18n';
 
 export default function LandingPage() {
   const router = useRouter();
   const [checkingSession, setCheckingSession] = useState(true);
+  const [currentLocale, setCurrentLocale] = useState('en');
+  const { t } = useI18n(currentLocale);
 
   useEffect(() => {
     let mounted = true;
@@ -133,6 +136,16 @@ export default function LandingPage() {
             </DialogContent>
           </Dialog>
         </div>
+        
+        {/* Language Switcher */}
+        <div className="absolute top-4 left-4 z-30 pointer-events-auto">
+          <button
+            onClick={() => setCurrentLocale(currentLocale === 'en' ? 'de' : 'en')}
+            className="px-4 py-2 rounded-full bg-[#334269]/60 text-white font-semibold backdrop-blur-md hover:bg-[#334269]/80 transition-all duration-200"
+          >
+            {currentLocale === 'en' ? 'DE' : 'EN'}
+          </button>
+        </div>
         {/* rudolpho-chat Card + Catchy Lines Block */}
         <div className="absolute top-0 left-0 w-full flex flex-col items-center pt-12 z-20">
           <div className="bg-white/80 backdrop-blur-md shadow-lg rounded-2xl px-8 py-4 max-w-md w-full flex items-center justify-center mb-4">
@@ -149,7 +162,7 @@ export default function LandingPage() {
               Consistent, authentic, automatic.
             </span>
             <div className="pointer-events-auto">
-              <Dialog>
+              <Dialog key="auth-form-dialog">
                 <DialogTrigger asChild>
                   <button
                     className="inline-block bg-[#f3aacb] text-[#334269] font-bold px-10 py-4 rounded-full text-lg md:text-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
@@ -177,15 +190,16 @@ export default function LandingPage() {
           <div className="bg-[#15192a]/80 backdrop-blur-lg rounded-xl shadow-2xl p-8 md:p-12 border border-white/10">
             {/* Heading */}
             <h2 className="text-2xl md:text-4xl font-extrabold text-center mb-10 bg-gradient-to-r from-[#f3aacb] via-[#a3bffa] to-[#e6ebfc] bg-clip-text text-transparent drop-shadow-lg tracking-tight">
-              How it works
+              {t('landing.howItWorks.title')}
             </h2>
             {/* Steps as vertical timeline */}
             <div className="flex flex-col gap-8 relative pl-8 md:pl-12">
               {[
-                "1️⃣ Gestalte deinen AI-Chatbot\nLege Persönlichkeit, Schreibstil und Antworten fest – genau so, wie dein Bot klingen soll.",
-                "2️⃣ Verbinde deine Kanäle\nVerknüpfe Instagram oder andere Plattformen mit deinem AI-Chatbot.",
-                "3️⃣ Lass ihn für dich chatten\nDein AI-Chatbot beantwortet automatisch Nachrichten in deinem Stil – rund um die Uhr."
-              ].map((step, index, arr) => (
+                t('landing.howItWorks.steps.0'),
+                t('landing.howItWorks.steps.1'),
+                t('landing.howItWorks.steps.2'),
+                t('landing.howItWorks.steps.3')
+              ].map((step: string, index: number, arr: string[]) => (
                 <div key={index} className="flex items-start relative">
                   {/* Timeline connector */}
                   <div className="flex flex-col items-center mr-6">
@@ -214,10 +228,10 @@ export default function LandingPage() {
           {/* Section Header */}
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-extrabold mb-6 bg-gradient-to-r from-[#f3aacb] via-[#a3bffa] to-[#e6ebfc] bg-clip-text text-transparent drop-shadow-lg tracking-tight">
-              Trust & Transparency
+              {t('landing.trustTransparency.title')}
             </h2>
             <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto leading-relaxed">
-              We believe in responsible AI that builds genuine connections while maintaining the highest standards of safety and transparency.
+              {t('landing.trustTransparency.subtitle')}
             </p>
           </div>
 
@@ -231,24 +245,18 @@ export default function LandingPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <h3 className="text-2xl font-bold text-white">Content Safety First</h3>
+                <h3 className="text-2xl font-bold text-white">{t('landing.trustTransparency.contentSafety.title')}</h3>
               </div>
               <p className="text-white/80 text-lg leading-relaxed mb-6">
-                Every AI-generated persona undergoes rigorous content safety checks. Our advanced filtering system ensures your AI chatbot maintains appropriate, professional, and respectful communication at all times.
+                {t('landing.trustTransparency.contentSafety.description')}
               </p>
               <div className="space-y-3">
-                <div className="flex items-center text-white/70">
-                  <span className="w-2 h-2 bg-green-400 rounded-full mr-3"></span>
-                  Real-time content moderation
-                </div>
-                <div className="flex items-center text-white/70">
-                  <span className="w-2 h-2 bg-green-400 rounded-full mr-3"></span>
-                  Zero tolerance for harmful content
-                </div>
-                <div className="flex items-center text-white/70">
-                  <span className="w-2 h-2 bg-green-400 rounded-full mr-3"></span>
-                  Professional communication standards
-                </div>
+                {t('landing.trustTransparency.contentSafety.features').map((feature: string, index: number) => (
+                  <div key={index} className="flex items-center text-white/70">
+                    <span className="w-2 h-2 bg-green-400 rounded-full mr-3"></span>
+                    {feature}
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -260,24 +268,18 @@ export default function LandingPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <h3 className="text-2xl font-bold text-white">AI Transparency</h3>
+                <h3 className="text-2xl font-bold text-white">{t('landing.trustTransparency.aiTransparency.title')}</h3>
               </div>
               <p className="text-white/80 text-lg leading-relaxed mb-6">
-                Your AI chatbot proudly identifies itself as AI in conversations. This builds trust with your audience while maintaining authentic engagement. No deception, just genuine AI-powered communication.
+                {t('landing.trustTransparency.aiTransparency.description')}
               </p>
               <div className="space-y-3">
-                <div className="flex items-center text-white/70">
-                  <span className="w-2 h-2 bg-blue-400 rounded-full mr-3"></span>
-                  Clear AI identification in chats
-                </div>
-                <div className="flex items-center text-white/70">
-                  <span className="w-2 h-2 bg-blue-400 rounded-full mr-3"></span>
-                  Honest communication approach
-                </div>
-                <div className="flex items-center text-white/70">
-                  <span className="w-2 h-2 bg-blue-400 rounded-full mr-3"></span>
-                  Builds genuine audience trust
-                </div>
+                {t('landing.trustTransparency.aiTransparency.features').map((feature: string, index: number) => (
+                  <div key={index} className="flex items-center text-white/70">
+                    <span className="w-2 h-2 bg-blue-400 rounded-full mr-3"></span>
+                    {feature}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -291,29 +293,29 @@ export default function LandingPage() {
                 <div className="w-12 h-12 bg-gradient-to-br from-[#e6ebfc] to-[#c7d2fe] rounded-full border-2 border-white shadow-lg"></div>
               </div>
               <div className="text-left">
-                <p className="text-white font-semibold text-lg">Trusted by 10,000+ creators</p>
-                <p className="text-white/70 text-sm">Building authentic AI relationships</p>
+                <p className="text-white font-semibold text-lg">{t('landing.trustTransparency.socialProof.trustedBy')}</p>
+                <p className="text-white/70 text-sm">{t('landing.trustTransparency.socialProof.buildingRelationships')}</p>
               </div>
             </div>
             <div className="grid md:grid-cols-3 gap-6 mt-8">
               <div className="text-center">
                 <div className="text-3xl font-bold text-[#f3aacb] mb-2">99.9%</div>
-                <div className="text-white/80">Content Safety Rate</div>
+                <div className="text-white/80">{t('landing.trustTransparency.socialProof.stats.contentSafety')}</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-[#a3bffa] mb-2">100%</div>
-                <div className="text-white/80">AI Transparency</div>
+                <div className="text-white/80">{t('landing.trustTransparency.socialProof.stats.aiTransparency')}</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-[#e6ebfc] mb-2">24/7</div>
-                <div className="text-white/80">Safety Monitoring</div>
+                <div className="text-white/80">{t('landing.trustTransparency.socialProof.stats.safetyMonitoring')}</div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <Footer />
+      <Footer locale={currentLocale} />
       <CookieBanner />
     </div>
   );

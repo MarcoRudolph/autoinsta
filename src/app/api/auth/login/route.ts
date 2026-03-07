@@ -1,5 +1,3 @@
-export const runtime = 'edge';
-
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
@@ -25,9 +23,16 @@ export async function POST(request: NextRequest) {
       options: {
         redirectTo: callbackUrl,
         queryParams: {
-          // Add any additional Facebook-specific parameters here
-          // For example, you might want to request specific scopes
-          scope: 'email,public_profile'
+          // Facebook-specific parameters - nur public_profile für OAuth-Anmeldung
+          scope: 'public_profile',
+          // Ensure we're requesting the correct permissions
+          response_type: 'code',
+          // Add any additional parameters for better compatibility
+          ...(provider === 'facebook' && {
+            // Facebook-specific parameters
+            display: 'popup',
+            auth_type: 'rerequest'
+          })
         }
       }
     });

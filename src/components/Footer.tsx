@@ -7,6 +7,13 @@ interface FooterProps {
 
 export default function Footer({ locale = 'en' }: FooterProps) {
   const { t } = useI18n(locale);
+  const tf = (key: string, fallback: string): string => {
+    const value = t(key);
+    if (typeof value === 'string' && value && !value.startsWith('footer.')) {
+      return value;
+    }
+    return fallback;
+  };
 
   return (
     <footer className="bg-[#15192a] text-[#a3bffa] py-8 mt-16">
@@ -20,10 +27,10 @@ export default function Footer({ locale = 'en' }: FooterProps) {
               </span>
             </div>
             <p className="text-sm text-gray-400 mb-4">
-              {t('footer.tagline')}
+              {tf('footer.tagline', 'AI-powered automation for your Instagram interactions. Let the bot do the work for you.')}
             </p>
             <p className="text-xs text-gray-500">
-              {t('footer.developedBy')}{" "}
+              {tf('footer.developedBy', 'Developed by')}{" "}
               <a 
                 href="https://rudolpho-ai.de" 
                 target="_blank" 
@@ -37,26 +44,26 @@ export default function Footer({ locale = 'en' }: FooterProps) {
 
           {/* Quick Links */}
           <div>
-            <h3 className="font-semibold mb-4">{t('footer.service')}</h3>
+            <h3 className="font-semibold mb-4">{tf('footer.service', 'Service')}</h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link href="/pricing" className="hover:text-[#f3aacb] transition-colors">
-                  {t('footer.pricing')}
+                  {tf('footer.pricing', 'Pricing')}
                 </Link>
               </li>
               <li>
                 <Link href="/pro" className="hover:text-[#f3aacb] transition-colors">
-                  {t('footer.proFeatures')}
+                  {tf('footer.proFeatures', 'Pro Features')}
                 </Link>
               </li>
               <li>
                 <Link href="/dashboard" className="hover:text-[#f3aacb] transition-colors">
-                  {t('footer.dashboard')}
+                  {tf('footer.dashboard', 'Dashboard')}
                 </Link>
               </li>
               <li>
                 <Link href="/documentation" className="hover:text-[#f3aacb] transition-colors">
-                  {t('footer.documentation')}
+                  {tf('footer.documentation', 'Documentation')}
                 </Link>
               </li>
             </ul>
@@ -64,31 +71,31 @@ export default function Footer({ locale = 'en' }: FooterProps) {
 
           {/* Legal Links */}
           <div>
-            <h3 className="font-semibold mb-4">{t('footer.legal')}</h3>
+            <h3 className="font-semibold mb-4">{tf('footer.legal', 'Legal')}</h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link href="/impressum" className="hover:text-[#f3aacb] transition-colors">
-                  {t('footer.imprint')}
+                  {tf('footer.imprint', 'Imprint')}
                 </Link>
               </li>
               <li>
                 <Link href="/terms-new" className="hover:text-[#f3aacb] transition-colors">
-                  {t('footer.termsOfUse')}
+                  {tf('footer.termsOfUse', 'Terms of Use')}
                 </Link>
               </li>
               <li>
                 <Link href="/cookie-policy" className="hover:text-[#f3aacb] transition-colors">
-                  {t('footer.cookiePolicy')}
+                  {tf('footer.cookiePolicy', 'Cookie Policy')}
                 </Link>
               </li>
               <li>
                 <Link href="/privacy-new" className="hover:text-[#f3aacb] transition-colors">
-                  {t('footer.privacy')}
+                  {tf('footer.privacy', 'Privacy')}
                 </Link>
               </li>
               <li>
                 <Link href="/data-deletion-new" className="hover:text-[#f3aacb] transition-colors">
-                  {t('footer.dataDeletion')}
+                  {tf('footer.dataDeletion', 'Data Deletion')}
                 </Link>
               </li>
             </ul>
@@ -98,23 +105,23 @@ export default function Footer({ locale = 'en' }: FooterProps) {
         {/* Bottom Section */}
         <div className="border-t border-gray-700 mt-8 pt-6 flex flex-col md:flex-row justify-between items-center">
           <p className="text-xs text-gray-500">
-            © {new Date().getFullYear()} rudolpho-chat. {t('footer.allRightsReserved')}
+            © {new Date().getFullYear()} rudolpho-chat. {tf('footer.allRightsReserved', 'All rights reserved')}
           </p>
           <div className="flex space-x-4 mt-4 md:mt-0">
             <Link href="/impressum" className="text-xs text-gray-500 hover:text-[#f3aacb] transition-colors">
-              {t('footer.imprint')}
+              {tf('footer.imprint', 'Imprint')}
             </Link>
             <Link href="/privacy-new" className="text-xs text-gray-500 hover:text-[#f3aacb] transition-colors">
-              {t('footer.privacy')}
+              {tf('footer.privacy', 'Privacy')}
             </Link>
             <Link href="/terms-new" className="text-xs text-gray-500 hover:text-[#f3aacb] transition-colors">
-              {t('footer.termsOfUse')}
+              {tf('footer.termsOfUse', 'Terms of Use')}
             </Link>
             <Link href="/cookie-policy" className="text-xs text-gray-500 hover:text-[#f3aacb] transition-colors">
-              {t('footer.cookiePolicy')}
+              {tf('footer.cookiePolicy', 'Cookie Policy')}
             </Link>
             <Link href="/data-deletion-new" className="text-xs text-gray-500 hover:text-[#f3aacb] transition-colors">
-              {t('footer.dataDeletion')}
+              {tf('footer.dataDeletion', 'Data Deletion')}
             </Link>
           </div>
         </div>

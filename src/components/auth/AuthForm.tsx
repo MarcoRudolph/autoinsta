@@ -8,6 +8,7 @@ export default function AuthForm() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const handleGoogle = async () => {
     setLoading(true);
@@ -17,9 +18,15 @@ export default function AuthForm() {
       const { createClient } = await import('@/lib/auth/supabaseClient.client');
       const supabase = createClient();
       
-      const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
+      // Use custom callback URL
+      const { error } = await supabase.auth.signInWithOAuth({ 
+        provider: 'google',
+        options: {
+          redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://rudolpho-chat.de'}/auth/callback`
+        }
+      });
       if (error) setError(error.message);
-      else router.push('/dashboard');
+      // Don't redirect here - let the callback handle it
     } catch (error) {
       console.error('Google login error:', error);
       setError('Google login failed');
@@ -60,11 +67,13 @@ export default function AuthForm() {
     }
   };
 
+  // Handle rate limit errors specifically
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     setLoading(true);
-    setError(null);
+    setError('');
+    setSuccess('');
+
     try {
       if (mode === 'login') {
         const response = await fetch('/api/login', {
@@ -82,11 +91,7 @@ export default function AuthForm() {
           return;
         }
 
-        // After successful login, create Supabase session
-        const { createClient } = await import('@/lib/auth/supabaseClient.client');
-        const supabase = createClient();
-        
-        // Create a session manually or redirect to dashboard
+        // After successful login, redirect to dashboard
         router.push('/dashboard');
       } else {
         const response = await fetch('/api/register', {
@@ -100,12 +105,27 @@ export default function AuthForm() {
         const data = await response.json();
         
         if (!response.ok) {
-          setError(data.message || 'Registration failed');
+          if (response.status === 429) {
+            // Rate limit exceeded
+            setError(data.message || 'Registration limit exceeded');
+          } else {
+            setError(data.message || 'Registration failed');
+          }
           return;
         }
 
-        // After successful registration, redirect to dashboard
-        router.push('/dashboard');
+        // Check if email verification is required
+        if (data.requiresEmailVerification) {
+          // Show success message with rate limit info
+          setSuccess(`Registration successful! Please check your email to verify your account.`);
+          // Clear the form
+          setEmail('');
+          setPassword('');
+          // Don't redirect - user needs to verify email first
+        } else {
+          // If no verification required, redirect to dashboard
+          router.push('/dashboard');
+        }
       }
     } catch (err: unknown) {
       console.error('Auth error:', err);
@@ -164,6 +184,7 @@ export default function AuthForm() {
           required
         />
         {error && <div className="text-red-500 text-sm text-center">{error}</div>}
+        {success && <div className="text-green-500 text-sm text-center">{success}</div>}
         
         <button
           type="submit"

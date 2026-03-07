@@ -45,6 +45,10 @@ export default function DocumentationPage() {
         {
           title: 'Troubleshooting',
           content: 'Common issues and solutions for Instagram connection problems, bot response issues, and product link problems.'
+        },
+        {
+          title: 'Account/Data Deletion',
+          content: 'Navigate to Settings in your dashboard to manage your account. Click on "Delete Account" to permanently remove your account and all associated data. This action cannot be undone.'
         }
       ]
     },
@@ -84,6 +88,10 @@ export default function DocumentationPage() {
         {
           title: 'Fehlerbehebung',
           content: 'Häufige Probleme und Lösungen für Instagram-Verbindungsprobleme, Bot-Antwortprobleme und Produkt-Link-Probleme.'
+        },
+        {
+          title: 'Konto/Datenlöschung',
+          content: 'Navigieren Sie zu den Einstellungen in Ihrem Dashboard, um Ihr Konto zu verwalten. Klicken Sie auf "Konto löschen", um Ihr Konto und alle zugehörigen Daten dauerhaft zu entfernen. Diese Aktion kann nicht rückgängig gemacht werden.'
         }
       ]
     }

@@ -141,6 +141,8 @@ function DashboardContent() {
   const [instagramConnected, setInstagramConnected] = useState(false);
   const [personas, setPersonas] = useState<{id: string, name: string, active?: boolean, transparencyMode?: boolean}[]>([]);
   const [selectedPersonaId, setSelectedPersonaId] = useState<string>('');
+  const [personaMessageCount, setPersonaMessageCount] = useState<number | null>(null);
+  const [personaMessageCountLoading, setPersonaMessageCountLoading] = useState(false);
   const [loadingAI, setLoadingAI] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
@@ -413,6 +415,27 @@ function DashboardContent() {
     }
   }, []);
 
+  const fetchPersonaMessageCount = useCallback(async (personaId: string) => {
+    if (!personaId) {
+      setPersonaMessageCount(null);
+      return;
+    }
+    try {
+      setPersonaMessageCountLoading(true);
+      const res = await fetch(`/api/instagram/persona-message-count?personaId=${personaId}`);
+      if (!res.ok) {
+        setPersonaMessageCount(null);
+        return;
+      }
+      const data = await res.json();
+      setPersonaMessageCount(typeof data?.count === 'number' ? data.count : null);
+    } catch {
+      setPersonaMessageCount(null);
+    } finally {
+      setPersonaMessageCountLoading(false);
+    }
+  }, []);
+
   // Fetch personas on mount
   useEffect(() => {
     // Clear any potential cached data and force fresh fetch
@@ -458,6 +481,15 @@ function DashboardContent() {
       window.history.replaceState({}, '', url.toString());
     }
   }, [searchParams, fetchPersonas]);
+
+  // Refresh persona message counter when selection changes
+  useEffect(() => {
+    if (selectedPersonaId) {
+      fetchPersonaMessageCount(selectedPersonaId);
+    } else {
+      setPersonaMessageCount(null);
+    }
+  }, [selectedPersonaId, fetchPersonaMessageCount]);
 
   // Check subscription status on component mount
   useEffect(() => {
@@ -2449,7 +2481,7 @@ function DashboardContent() {
                   const activePersona = personas.find(p => p.active);
                   if (activePersona) {
                     return (
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-col md:flex-row md:items-center md:gap-4 gap-2">
                         <span 
                           className="text-sm font-medium text-green-500"
                           style={{
@@ -2459,9 +2491,16 @@ function DashboardContent() {
                         >
                           {t('dashboard.liveChatbot')}:
                         </span>
-                        <span className="text-sm text-white font-medium">
-                          {activePersona.name}
-                        </span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-white font-medium">
+                            {activePersona.name}
+                          </span>
+                          <span className="text-xs text-gray-300">
+                            {personaMessageCountLoading
+                              ? t('dashboard.loading') || 'Loading...'
+                              : `Messages received: ${personaMessageCount ?? 0}`}
+                          </span>
+                        </div>
                       </div>
                     );
                   }

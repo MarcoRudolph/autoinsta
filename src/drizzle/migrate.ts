@@ -1,15 +1,46 @@
 import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
-import "dotenv/config";
+import { readFileSync, existsSync } from "fs";
+import { resolve } from "path";
 
-const pool = new Pool({
-  connectionString: process.env.POSTGRES_URL,
-});
+// Load .env from project root when running standalone (no dotenv dependency)
+const envPath = resolve(process.cwd(), ".env");
+if (existsSync(envPath)) {
+  const content = readFileSync(envPath, "utf-8");
+  for (const line of content.split(/\r?\n/)) {
+    const match = line.match(/^([^#=]+)=(.*)$/);
+    if (match) {
+      const key = match[1].trim();
+      const value = match[2].trim().replace(/^["']|["']$/g, "").replace(/\s+$/g, "");
+      process.env[key] = value;
+    }
+  }
+}
 
-const db = drizzle(pool);
+const connectionString = process.env.POSTGRES_URL;
+if (!connectionString || typeof connectionString !== "string") {
+  console.error("POSTGRES_URL is missing or invalid. Set it in .env (e.g. from Supabase: Settings → Database → Connection string).");
+  process.exit(1);
+}
 
 async function main() {
+  let pool: Pool;
+  try {
+    const url = new URL(connectionString);
+    pool = new Pool({
+      host: url.hostname,
+      port: url.port || "5432",
+      database: url.pathname.slice(1) || "postgres",
+      user: url.username,
+      password: url.password,
+      ssl: url.hostname.includes("supabase") || url.hostname.includes("pooler") ? { rejectUnauthorized: false } : undefined,
+    });
+  } catch {
+    pool = new Pool({ connectionString });
+  }
+
+  const db = drizzle(pool);
   await migrate(db, { migrationsFolder: "./drizzle/migrations" });
   await pool.end();
   console.log("Migration complete");

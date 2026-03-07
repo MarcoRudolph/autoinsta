@@ -1,5 +1,3 @@
-export const runtime = 'edge';
-
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { compare } from 'bcryptjs';
@@ -34,14 +32,24 @@ export async function POST(req: NextRequest) {
 
     const user = users[0];
 
+    // Check if email is verified
+    if (!user.emailVerified) {
+      return NextResponse.json({ 
+        code: 'EMAIL_NOT_VERIFIED', 
+        message: 'Please verify your email address before logging in. Check your inbox for the verification link.' 
+      }, { status: 401 });
+    }
+
     // Compare password
     const valid = await compare(password, user.passwordHash);
     if (!valid) {
       return NextResponse.json({ code: 'INVALID_CREDENTIALS', message: 'Invalid email or password.' }, { status: 401 });
     }
 
-    // (Session management would go here)
+    // TODO: Create a proper session/token system
+    // For now, just return success - the frontend will handle session management
     return NextResponse.json({ message: 'Login successful.' }, { status: 200 });
+
   } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ code: 'VALIDATION_ERROR', message: error.issues }, { status: 400 });
