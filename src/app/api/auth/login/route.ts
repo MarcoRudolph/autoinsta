@@ -37,27 +37,24 @@ export async function POST(request: NextRequest) {
     const origin = request.nextUrl.origin;
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || origin;
 
-    // Get the callback URL
     const callbackUrl = `${siteUrl}/api/auth/callback`;
 
-    // Start OAuth flow
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: provider as 'facebook' | 'google' | 'github',
       options: {
         redirectTo: callbackUrl,
-        queryParams: {
-          // Facebook-specific parameters - nur public_profile für OAuth-Anmeldung
-          scope: 'public_profile',
-          // Ensure we're requesting the correct permissions
-          response_type: 'code',
-          // Add any additional parameters for better compatibility
-          ...(provider === 'facebook' && {
-            // Facebook-specific parameters
-            display: 'popup',
-            auth_type: 'rerequest'
-          })
-        }
-      }
+        queryParams:
+          provider === 'facebook'
+            ? {
+                scope: 'public_profile',
+                response_type: 'code',
+                display: 'popup',
+                auth_type: 'rerequest',
+              }
+            : {
+                response_type: 'code',
+              },
+      },
     });
 
     if (error) {
@@ -67,15 +64,11 @@ export async function POST(request: NextRequest) {
 
     if (data.url) {
       return NextResponse.json({ url: data.url });
-    } else {
-      return NextResponse.json({ error: 'No OAuth URL received' }, { status: 400 });
     }
+
+    return NextResponse.json({ error: 'No OAuth URL received' }, { status: 400 });
   } catch (error) {
     console.error('Unexpected error during OAuth login:', error);
-    return NextResponse.json(
-      { error: 'Unexpected error during OAuth login' }, 
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Unexpected error during OAuth login' }, { status: 500 });
   }
 }
-
