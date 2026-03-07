@@ -15,30 +15,31 @@ AI-powered dating profile optimization and Instagram automation
 
 ## Deployment
 
-This project is configured for deployment to Cloudflare Pages.
+This project is configured for Node runtime deployment (recommended: Vercel).
 
-### Option 1: Cloudflare Dashboard (Recommended)
+### Recommended: Vercel
 
 1. **Connect Repository**:
-   - Go to [Cloudflare Dashboard](https://dash.cloudflare.com)
-   - Navigate to Pages → Create a project
+   - Go to [Vercel Dashboard](https://vercel.com/dashboard)
+   - Create a new project
    - Connect your GitHub repository
 
 2. **Build Settings**:
    - **Build command**: `npm run build`
-   - **Build output directory**: `.next`
+   - **Output**: Next.js default
    - **Root directory**: (leave empty)
 
 3. **Environment Variables**:
-   In your Pages project settings, add these environment variables:
+   In your Vercel project settings, add these environment variables:
    - `POSTGRES_URL`: Your database connection string
    - `OPENAI_API_KEY`: Your OpenAI API key
    - `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase anonymous key
 
-### Automatic Deployment
+### Important runtime note
 
-Cloudflare Pages automatically deploys your application when you push changes to your connected Git repository. No manual deployment needed!
+Instagram API routes use `runtime = 'nodejs'` with Drizzle + `pg`.  
+Cloudflare Pages with `@cloudflare/next-on-pages` requires Edge runtime for all non-static routes and is therefore not compatible with this Node route setup.
 
 ### Local Development
 

@@ -9,9 +9,9 @@
     "lint": "next lint",
     "test:instagram": "tsx --test src/lib/instagram/*.test.ts",
     "db:migrate": "tsx src/drizzle/migrate.ts",
-    "pages:build": "next build",
-    "preview": "npm run pages:build && wrangler pages dev",
-    "deploy": "npm run pages:build && wrangler pages deploy",
+    "preview": "npm run build && npm run start",
+    "deploy": "npx vercel --prod",
+    "deploy:cloudflare": "npm run build && wrangler pages deploy",
     "clean": "rimraf .next out"
   },
   "dependencies": {
