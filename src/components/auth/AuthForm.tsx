@@ -15,6 +15,7 @@ export default function AuthForm() {
     setError(null);
     
     try {
+      console.info('[AuthForm] Google login click');
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -24,12 +25,20 @@ export default function AuthForm() {
       });
 
       const data = await response.json();
+      console.info('[AuthForm] /api/auth/login response', {
+        status: response.status,
+        ok: response.ok,
+        hasUrl: Boolean(data?.url),
+        error: data?.error || null,
+        hasAnySupabaseLikeVar: data?.hasAnySupabaseLikeVar ?? null,
+      });
       if (!response.ok || data.error) {
         setError(data.error || 'Google login failed');
         return;
       }
 
       if (data.url) {
+        console.info('[AuthForm] Redirecting to OAuth provider URL');
         window.location.href = data.url;
       }
     } catch (error) {

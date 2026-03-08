@@ -8,16 +8,29 @@ export const runtime = 'nodejs';
 export async function POST(request: NextRequest) {
   try {
     const { provider = 'facebook' } = await request.json();
+    console.info('[api/auth/login] OAuth request', { provider });
+
+    let bindingKeys: string[] = [];
+    try {
+      bindingKeys = Object.keys((getCloudflareContext().env as Record<string, unknown>) || {});
+    } catch {
+      // ignore context probe failure
+    }
+
+    const serverEnvDebug = {
+      hasNextPublicSupabaseUrl: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL),
+      hasSupabaseUrl: Boolean(process.env.SUPABASE_URL),
+      hasNextPublicSupabaseKey: Boolean(process.env.NEXT_PUBLIC_SUPABASE_KEY),
+      hasNextPublicPublishableDefaultKey: Boolean(process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY),
+      hasNextPublicSupabaseAnonKey: Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
+      hasSupabaseAnonKey: Boolean(process.env.SUPABASE_ANON_KEY),
+      hasSupabasePublishableKey: Boolean(process.env.SUPABASE_PUBLISHABLE_KEY),
+      bindingSupabaseKeys: bindingKeys.filter((k) => k.includes('SUPABASE')).sort(),
+    };
+    console.info('[api/auth/login] server env debug', serverEnvDebug);
 
     const supabaseConfig = getSupabaseServerConfig();
     if (!supabaseConfig) {
-      let bindingKeys: string[] = [];
-      try {
-        bindingKeys = Object.keys((getCloudflareContext().env as Record<string, unknown>) || {});
-      } catch {
-        // ignore context probe failure
-      }
-
       const hasAnySupabaseLikeVar =
         bindingKeys.some((k) => k.includes('SUPABASE')) ||
         Object.keys(process.env).some((k) => k.includes('SUPABASE'));
@@ -38,6 +51,7 @@ export async function POST(request: NextRequest) {
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || origin;
 
     const callbackUrl = `${siteUrl}/api/auth/callback`;
+    console.info('[api/auth/login] OAuth redirect settings', { siteUrl, callbackUrl });
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: provider as 'facebook' | 'google' | 'github',
@@ -63,6 +77,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (data.url) {
+      console.info('[api/auth/login] OAuth URL generated');
       return NextResponse.json({ url: data.url });
     }
 

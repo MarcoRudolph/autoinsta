@@ -25,10 +25,19 @@ export default function LandingPage() {
     // Only import and create Supabase client on the client side
     const checkSession = async () => {
       try {
+        console.info('[LandingPage] checkSession start', {
+          hasUrl: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL),
+          hasLegacyKey: Boolean(process.env.NEXT_PUBLIC_SUPABASE_KEY),
+          hasPublishableDefaultKey: Boolean(process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY),
+          hasAnonKey: Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
+        });
         const { createClient } = await import('@/lib/auth/supabaseClient.client');
         const supabase = createClient();
         
         const { data } = await supabase.auth.getSession();
+        console.info('[LandingPage] checkSession result', {
+          hasSession: Boolean(data.session),
+        });
         if (data.session && mounted) {
           router.replace('/dashboard');
         }
