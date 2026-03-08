@@ -221,9 +221,8 @@ function personaToPrompt(persona: NormalizedPersona): string {
 }
 
 function buildSystemPrompt(persona: NormalizedPersona, promoInstruction: string): string {
-  const transparencyInstruction = persona.transparencyMode
-    ? 'Always disclose naturally that you are an AI assistant for this Instagram account.'
-    : 'Do not mention system internals. Write as a personal account assistant with natural tone.';
+  const transparencyInstruction =
+    'Always disclose naturally that you are an AI assistant for this Instagram account.';
 
   return [
     'You are replying to Instagram DMs for a persona account.',

@@ -12,9 +12,10 @@
     "preview": "npm run build && npm run start",
     "deploy": "npx vercel --prod",
     "cf:assert-workers": "node scripts/ensure-cloudflare-workers.js",
-    "cf:build": "npm run cf:assert-workers && opennextjs-cloudflare build",
-    "cf:preview": "npm run cf:assert-workers && opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy:cloudflare": "npm run cf:build && npx wrangler deploy --experimental-autoconfig=false",
+    "cf:guard-config": "node scripts/guard-cloudflare-config.js",
+    "cf:build": "npm run cf:assert-workers && npm run cf:guard-config && opennextjs-cloudflare build",
+    "cf:preview": "npm run cf:assert-workers && npm run cf:guard-config && opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy:cloudflare": "npm run cf:build && npm run cf:guard-config && npx wrangler deploy --experimental-autoconfig=false",
     "cf:typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "clean": "rimraf .next out"
   },

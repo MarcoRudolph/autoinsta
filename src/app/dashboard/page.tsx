@@ -1435,65 +1435,6 @@ function DashboardContent() {
     }
   };
 
-  const handleToggleTransparencyMode = async (id: string) => {
-    try {
-      // Get userId from session
-      const { createClient } = await import('@/lib/auth/supabaseClient.client');
-      const supabase = createClient();
-      
-      const { data, error } = await supabase.auth.getSession();
-      if (error || !data.session?.user?.id) {
-        alert(t('dashboard.noUserLoggedIn'));
-        return;
-      }
-      const userId = data.session.user.id;
-      
-      // Find the current persona to get its current transparency mode
-      const currentPersona = personas.find(p => p.id === id);
-      if (!currentPersona) {
-        console.error('Persona not found for transparency toggle');
-        return;
-      }
-      
-      // Toggle the transparency mode (true -> false, false -> true)
-      const newTransparencyMode = !currentPersona.transparencyMode;
-      
-      const res = await fetch('/api/toggle-transparency-mode', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          personaId: id, 
-          userId, 
-          transparencyMode: newTransparencyMode 
-        }),
-      });
-      
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-      
-      // Update the local state immediately for better UX
-      setPersonas(prevPersonas => 
-        prevPersonas.map(p => 
-          p.id === id 
-            ? { ...p, transparencyMode: newTransparencyMode }
-            : p
-        )
-      );
-      
-      // Also update the personality state if this persona is currently selected
-      if (selectedPersonaId === id) {
-        setPersonality(prev => ({
-          ...prev,
-          transparencyMode: newTransparencyMode
-        }));
-      }
-      
-    } catch (err) {
-      console.error('Error toggling transparency mode:', err);
-      alert('Fehler beim Ändern der Transparenzmodus.');
-    }
-  };
 
   return (
     <div className="min-h-screen p-4 md:p-6" style={{ background: 'linear-gradient(135deg, #1b1f2b, #2b2e47, #313c5c)' }}>
@@ -2546,36 +2487,6 @@ function DashboardContent() {
                           </button>
                         </div>
                         
-                        {/* Transparency Mode Switch */}
-                        <div className="flex items-center gap-2">
-                          <div className="flex flex-col">
-                            <span 
-                              className="text-sm font-medium text-gray-400"
-                              style={{
-                                fontFamily: '"Inter", sans-serif',
-                                fontWeight: '500'
-                              }}
-                            >
-                              {t('dashboard.dmSettings.transparencyMode')}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {t('dashboard.dmSettings.transparencyModeSubtitle')}
-                            </span>
-                          </div>
-                          <button
-                            type="button"
-                            role="switch"
-                            aria-checked={selected.transparencyMode || false}
-                            onClick={() => handleToggleTransparencyMode(selected.id)}
-                            className={`relative inline-flex h-6 w-12 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#f3aacb] border border-gray-300
-                              ${selected.transparencyMode ? 'bg-blue-500' : 'bg-gray-300'}`}
-                          >
-                            <span
-                              className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200
-                                ${selected.transparencyMode ? 'translate-x-6' : 'translate-x-1'}`}
-                            />
-                          </button>
-                        </div>
                       </div>
                     );
                   }
