@@ -25,6 +25,7 @@ export function getSupabaseServerConfig(): SupabaseServerConfig | null {
     readEnv("SUPABASE_URL");
 
   const anonKey =
+    readEnv("NEXT_PUBLIC_SUPABASE_KEY") ||
     readEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY") ||
     readEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY") ||
     readEnv("SUPABASE_ANON_KEY") ||

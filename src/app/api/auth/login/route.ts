@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            'Supabase configuration missing on server. Expected one URL key (NEXT_PUBLIC_SUPABASE_URL or SUPABASE_URL) and one anon key (NEXT_PUBLIC_SUPABASE_ANON_KEY / NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY / SUPABASE_ANON_KEY).',
+            'Supabase configuration missing on server. Expected one URL key (NEXT_PUBLIC_SUPABASE_URL or SUPABASE_URL) and one anon key (NEXT_PUBLIC_SUPABASE_KEY / NEXT_PUBLIC_SUPABASE_ANON_KEY / NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY / SUPABASE_ANON_KEY).',
           hasAnySupabaseLikeVar,
         },
         { status: 500 }
