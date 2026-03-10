@@ -21,10 +21,14 @@ const getBrowserSupabaseEnvDebug = () => ({
 
 export const createClient = () => {
   const debug = getBrowserSupabaseEnvDebug();
-  console.info('[supabaseClient.client] createClient env debug:', debug);
+  if (process.env.NODE_ENV === 'development') {
+    console.info('[supabaseClient.client] createClient env debug:', debug);
+  }
 
   if (!supabaseUrl || !supabaseKey) {
-    console.error('[supabaseClient.client] Missing Supabase browser config.', debug);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[supabaseClient.client] Missing Supabase browser config.', debug);
+    }
     throw new Error(
       'Missing NEXT_PUBLIC Supabase config in browser bundle. Check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_KEY/NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY/NEXT_PUBLIC_SUPABASE_ANON_KEY at build time.'
     );

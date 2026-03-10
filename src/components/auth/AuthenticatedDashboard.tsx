@@ -10,6 +10,7 @@ const AuthenticatedDashboard = () => {
   
   const [instagramConnected, setInstagramConnected] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
+  const [configError, setConfigError] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string>('');
   const [userId, setUserId] = useState<string>('');
@@ -96,7 +97,14 @@ const AuthenticatedDashboard = () => {
           setCheckingSession(false); 
         }
       } catch (error) {
-        console.error('Error checking session:', error);
+        const isConfigError =
+          error instanceof Error &&
+          error.message.includes('Missing NEXT_PUBLIC Supabase config');
+        if (isConfigError && mounted) {
+          setConfigError(true);
+        } else {
+          console.error('Error checking session:', error);
+        }
         if (mounted) {
           setCheckingSession(false);
         }
@@ -106,6 +114,16 @@ const AuthenticatedDashboard = () => {
     checkSession();
     return () => { mounted = false; }; 
   }, [router]);
+
+  if (configError) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center px-4 text-white">
+        <p className="text-center text-lg">
+          Configuration error. Please contact support.
+        </p>
+      </div>
+    );
+  }
 
   if (checkingSession) { 
     return ( 

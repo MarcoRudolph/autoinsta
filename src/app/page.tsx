@@ -16,6 +16,7 @@ import { useI18n } from '@/hooks/useI18n';
 export default function LandingPage() {
   const router = useRouter();
   const [checkingSession, setCheckingSession] = useState(true);
+  const [configError, setConfigError] = useState(false);
   const [currentLocale, setCurrentLocale] = useState('en');
   const { t, tList } = useI18n(currentLocale);
 
@@ -25,24 +26,35 @@ export default function LandingPage() {
     // Only import and create Supabase client on the client side
     const checkSession = async () => {
       try {
-        console.info('[LandingPage] checkSession start', {
-          hasUrl: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL),
-          hasLegacyKey: Boolean(process.env.NEXT_PUBLIC_SUPABASE_KEY),
-          hasPublishableDefaultKey: Boolean(process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY),
-          hasAnonKey: Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
-        });
+        if (process.env.NODE_ENV === 'development') {
+          console.info('[LandingPage] checkSession start', {
+            hasUrl: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL),
+            hasLegacyKey: Boolean(process.env.NEXT_PUBLIC_SUPABASE_KEY),
+            hasPublishableDefaultKey: Boolean(process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY),
+            hasAnonKey: Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
+          });
+        }
         const { createClient } = await import('@/lib/auth/supabaseClient.client');
         const supabase = createClient();
         
         const { data } = await supabase.auth.getSession();
-        console.info('[LandingPage] checkSession result', {
-          hasSession: Boolean(data.session),
-        });
+        if (process.env.NODE_ENV === 'development') {
+          console.info('[LandingPage] checkSession result', {
+            hasSession: Boolean(data.session),
+          });
+        }
         if (data.session && mounted) {
           router.replace('/dashboard');
         }
       } catch (error) {
-        console.error('Error checking session:', error);
+        const isConfigError =
+          error instanceof Error &&
+          error.message.includes('Missing NEXT_PUBLIC Supabase config');
+        if (isConfigError && mounted) {
+          setConfigError(true);
+        } else {
+          console.error('Error checking session:', error);
+        }
       } finally {
         if (mounted) {
           setCheckingSession(false);
@@ -54,6 +66,16 @@ export default function LandingPage() {
     
     return () => { mounted = false; };
   }, [router]);
+
+  if (configError) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center px-4 text-slate-900">
+        <p className="text-center text-lg">
+          Configuration error. Please contact support.
+        </p>
+      </div>
+    );
+  }
 
   if (checkingSession) {
     return (
