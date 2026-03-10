@@ -5,6 +5,28 @@ export const metadata = {
 export default function CookiePolicy() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 text-[#334269] space-y-4">
+      <div className="flex flex-wrap justify-between items-center gap-2 mb-4">
+        <a
+          href="/"
+          className="text-blue-600 hover:text-blue-800 underline text-sm flex items-center"
+        >
+          ← Zurück zur Startseite
+        </a>
+        <div className="flex flex-wrap gap-2 text-sm">
+          <span className="text-gray-500">Deutsch</span>
+          <span className="text-gray-400">|</span>
+          <a href="/cookie-policy-en" className="text-blue-600 hover:underline">English</a>
+          <span className="text-gray-400">|</span>
+          <a href="/cookie-policy-fr" className="text-blue-600 hover:underline">Français</a>
+          <span className="text-gray-400">|</span>
+          <a href="/cookie-policy-es" className="text-blue-600 hover:underline">Español</a>
+          <span className="text-gray-400">|</span>
+          <a href="/cookie-policy-it" className="text-blue-600 hover:underline">Italiano</a>
+          <span className="text-gray-400">|</span>
+          <a href="/cookie-policy-pt" className="text-blue-600 hover:underline">Português</a>
+        </div>
+      </div>
+
       <h1 className="text-3xl font-bold">Cookie Richtlinie</h1>
       <p>
         Diese Anwendung nutzt Supabase Auth für die Anmeldung über Google,

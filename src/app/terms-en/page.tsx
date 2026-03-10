@@ -10,12 +10,6 @@ export default function TermsOfServiceEn() {
         >
           ← Back to Home
         </a>
-        <a 
-          href="/terms" 
-          className="text-blue-600 hover:text-blue-800 underline text-sm"
-        >
-          Deutsch
-        </a>
       </div>
       
       <h1 className="text-4xl font-bold text-center mb-8">Terms of Use</h1>

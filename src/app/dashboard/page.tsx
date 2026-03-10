@@ -266,8 +266,9 @@ function DashboardContent() {
 
   // Check user subscription status
   const checkUserSubscription = useCallback(async () => {
+    if (!userId) return;
     try {
-      const res = await fetch('/api/subscription');
+      const res = await fetch(`/api/subscription?userId=${userId}`);
       if (res.ok) {
         const data = await res.json();
         console.log('Subscription data:', data);
@@ -280,7 +281,7 @@ function DashboardContent() {
       console.error('Error checking subscription:', error);
       setIsProUser(false);
     }
-  }, []);
+  }, [userId]);
 
   const handleActivatePersona = async (id: string) => {
     try {
@@ -491,10 +492,10 @@ function DashboardContent() {
     }
   }, [selectedPersonaId, fetchPersonaMessageCount]);
 
-  // Check subscription status on component mount
+  // Check subscription status when userId is available
   useEffect(() => {
-    checkUserSubscription();
-  }, [checkUserSubscription]);
+    if (userId) checkUserSubscription();
+  }, [userId, checkUserSubscription]);
 
   // Check if user can generate AI template
   const canGenerateAITemplate = useCallback(() => {
@@ -1042,6 +1043,70 @@ function DashboardContent() {
     }
   }, [personality, productLinks, fetchPersonas, currentPersonaId, t, selectedPersonaId]);
 
+  const loadPersonaById = useCallback(async (id: string) => {
+    if (!id) return;
+    try {
+      const res = await fetch(`/api/get-persona?id=${id}`);
+      if (res.ok) {
+        const data: { persona?: PersonaData } = await res.json();
+        if (data && data.persona && data.persona !== null) {
+          console.log('Loading persona:', data.persona);
+          
+          // Handle both old and new persona structures for backward compatibility
+          if (data.persona.personality) {
+            // New structure with personality and productLinks
+            const personaPersonality = {
+              ...data.persona.personality,
+              transparencyMode: data.persona.transparencyMode ?? true // Default to true if not set
+            };
+            setPersonality(personaPersonality);
+            setProductLinks(convertProductLinks(data.persona.productLinks || []));
+            setLastLoadedPersona(personaPersonality);
+          } else {
+            // Old structure - treat the entire persona as personality data
+            const oldPersonality = {
+              ...data.persona as unknown as Personality,
+              transparencyMode: data.persona.transparencyMode ?? true // Default to true if not set
+            };
+            setPersonality(oldPersonality);
+            setProductLinks([]);
+            setLastLoadedPersona(oldPersonality);
+          }
+          
+          setSelectedPersonaId(String(id));
+          setCurrentPersonaId(String(id));
+        } else {
+          console.warn('No valid persona data received:', data);
+          alert(t('dashboard.noValidPersonaData'));
+          // Remove the orphaned persona from the list
+          setPersonas(prevPersonas => prevPersonas.filter(p => p.id !== id));
+        }
+      } else if (res.status === 404) {
+        console.error('Persona not found in database:', id);
+        alert('This persona no longer exists in the database. It will be removed from the list.');
+        // Remove the orphaned persona from the list
+        setPersonas(prevPersonas => prevPersonas.filter(p => p.id !== id));
+        setSelectedPersonaId('');
+        setCurrentPersonaId(null);
+      } else {
+        console.error('Failed to fetch persona:', res.status, res.statusText);
+        alert(t('dashboard.errorLoadingPersona'));
+      }
+    } catch (error) {
+      console.error('Error loading persona:', error);
+      alert(t('dashboard.errorLoadingPersona'));
+    }
+  }, [t]);
+
+  // Load full persona when selectedPersonaId is set (e.g. from fetchPersonas auto-select)
+  useEffect(() => {
+    if (!selectedPersonaId || !personas.length) return;
+    const persona = personas.find(p => String(p.id) === selectedPersonaId);
+    if (persona) {
+      loadPersonaById(selectedPersonaId);
+    }
+  }, [selectedPersonaId, personas, loadPersonaById]);
+
   useEffect(() => {
     let mounted = true;
     
@@ -1135,61 +1200,6 @@ function DashboardContent() {
       setShowUnsavedDialog(true);
     } else {
       await loadPersonaById(id);
-    }
-  };
-
-  const loadPersonaById = async (id: string) => {
-    if (!id) return;
-    try {
-      const res = await fetch(`/api/get-persona?id=${id}`);
-      if (res.ok) {
-        const data: { persona?: PersonaData } = await res.json();
-        if (data && data.persona && data.persona !== null) {
-          console.log('Loading persona:', data.persona);
-          
-          // Handle both old and new persona structures for backward compatibility
-          if (data.persona.personality) {
-            // New structure with personality and productLinks
-            const personaPersonality = {
-              ...data.persona.personality,
-              transparencyMode: data.persona.transparencyMode ?? true // Default to true if not set
-            };
-            setPersonality(personaPersonality);
-            setProductLinks(convertProductLinks(data.persona.productLinks || []));
-            setLastLoadedPersona(personaPersonality);
-          } else {
-            // Old structure - treat the entire persona as personality data
-            const oldPersonality = {
-              ...data.persona as unknown as Personality,
-              transparencyMode: data.persona.transparencyMode ?? true // Default to true if not set
-            };
-            setPersonality(oldPersonality);
-            setProductLinks([]);
-            setLastLoadedPersona(oldPersonality);
-          }
-          
-          setSelectedPersonaId(String(id));
-          setCurrentPersonaId(String(id));
-        } else {
-          console.warn('No valid persona data received:', data);
-          alert(t('dashboard.noValidPersonaData'));
-          // Remove the orphaned persona from the list
-          setPersonas(prevPersonas => prevPersonas.filter(p => p.id !== id));
-        }
-      } else if (res.status === 404) {
-        console.error('Persona not found in database:', id);
-        alert('This persona no longer exists in the database. It will be removed from the list.');
-        // Remove the orphaned persona from the list
-        setPersonas(prevPersonas => prevPersonas.filter(p => p.id !== id));
-        setSelectedPersonaId('');
-        setCurrentPersonaId(null);
-      } else {
-        console.error('Failed to fetch persona:', res.status, res.statusText);
-        alert(t('dashboard.errorLoadingPersona'));
-      }
-    } catch (error) {
-      console.error('Error loading persona:', error);
-      alert(t('dashboard.errorLoadingPersona'));
     }
   };
 

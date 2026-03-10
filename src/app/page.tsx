@@ -413,7 +413,7 @@ export default function LandingPage() {
       </section>
 
       <Footer locale={currentLocale} />
-      <CookieBanner />
+      <CookieBanner locale={currentLocale} />
     </div>
   );
 }

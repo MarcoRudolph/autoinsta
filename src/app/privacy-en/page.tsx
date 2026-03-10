@@ -133,7 +133,7 @@ export default function PrivacyPolicyEn() {
         <h2 className="text-2xl font-semibold">9. Cookies</h2>
         <p>
           We use cookies and similar technologies. Details can be found in our 
-          <a href="/cookie-policy" className="text-blue-600 hover:underline"> Cookie Policy</a>.
+          <a href="/cookie-policy-en" className="text-blue-600 hover:underline"> Cookie Policy</a>.
         </p>
       </section>
 

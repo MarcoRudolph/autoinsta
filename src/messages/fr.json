@@ -13,6 +13,7 @@
   },
   "dashboard": {
     "title": "Tableau de bord",
+    "loading": "Chargement...",
     "welcome": "Bienvenue sur votre tableau de bord",
     "yourPersonas": "Vos Personas",
     "noPersonasYet": "Pas encore de personas",

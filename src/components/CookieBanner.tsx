@@ -12,7 +12,15 @@ interface Consent {
 const CONSENT_KEY = "cookieConsent";
 const CONSENT_LOG_KEY = "cookieConsentLog";
 
-export default function CookieBanner() {
+function cookiePolicyHref(locale: string): string {
+  return locale === "de" ? "/cookie-policy" : `/cookie-policy-${locale}`;
+}
+
+interface CookieBannerProps {
+  locale?: string;
+}
+
+export default function CookieBanner({ locale = "en" }: CookieBannerProps) {
   const [open, setOpen] = useState(false);
   const [analytics, setAnalytics] = useState(false);
   const [marketing, setMarketing] = useState(false);
@@ -100,7 +108,7 @@ export default function CookieBanner() {
           </button>
         </div>
         <p className="mt-2 text-xs text-right space-x-2">
-          <Link href="/cookie-policy" className="underline">Cookie-Richtlinie</Link>
+          <Link href={cookiePolicyHref(locale)} className="underline">Cookie-Richtlinie</Link>
           <span>•</span>
           <Link href="/terms-new" className="underline">Terms of use</Link>
         </p>

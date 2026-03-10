@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
-import { db } from '@/drizzle';
+import { db, hasPostgresUrlConfig } from '@/drizzle';
 import { instagramConnections } from '@/drizzle/schema/instagram';
 
 export const runtime = 'nodejs';
@@ -153,6 +153,16 @@ export async function GET(request: NextRequest) {
 
   const redirectUri = `${normalizedSiteUrl}/api/instagram/callback`;
 
+  if (!hasPostgresUrlConfig()) {
+    console.error('Instagram callback: POSTGRES_URL not configured');
+    return NextResponse.redirect(
+      new URL(
+        '/dashboard?instagramConnected=false&instagramError=Database not configured (POSTGRES_URL missing)',
+        normalizedSiteUrl
+      )
+    );
+  }
+
   const parsedState = decodeState(state);
   const flow = parsedState.flow;
   const flowUserId = parsedState.userId || null;
@@ -228,14 +238,16 @@ export async function GET(request: NextRequest) {
             userId: flowUserId,
           });
         } catch (error) {
-          const errMsg = error instanceof Error ? error.message : String(error);
-          const errStack = error instanceof Error ? error.stack : undefined;
+          const err = error instanceof Error ? error : new Error(String(error));
+          const dbError = error as { code?: string; detail?: string };
           console.error('Instagram connection failed: Database write failed while linking Instagram account', {
             flow: 'meta_business',
             igAccountId: firstConnected.instagram_business_account.id,
             userId: flowUserId,
-            error: errMsg,
-            stack: errStack,
+            error: err.message,
+            code: dbError?.code,
+            detail: dbError?.detail,
+            stack: err.stack,
           });
           return NextResponse.redirect(
             new URL(
@@ -326,14 +338,16 @@ export async function GET(request: NextRequest) {
             userId: flowUserId,
           });
         } catch (error) {
-          const errMsg = error instanceof Error ? error.message : String(error);
-          const errStack = error instanceof Error ? error.stack : undefined;
+          const err = error instanceof Error ? error : new Error(String(error));
+          const dbError = error as { code?: string; detail?: string };
           console.error('Instagram connection failed: Database write failed while linking Instagram account', {
             flow: 'instagram_login',
             igAccountId,
             userId: flowUserId,
-            error: errMsg,
-            stack: errStack,
+            error: err.message,
+            code: dbError?.code,
+            detail: dbError?.detail,
+            stack: err.stack,
           });
           return NextResponse.redirect(
             new URL(
@@ -375,7 +389,12 @@ export async function GET(request: NextRequest) {
       dashboardUrl.searchParams.set('instagramWebhookSubscribed', 'false');
     }
     return NextResponse.redirect(dashboardUrl);
-  } catch {
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error('Instagram callback unexpected error:', {
+      message: err.message,
+      stack: err.stack,
+    });
     return NextResponse.redirect(
       new URL('/dashboard?instagramConnected=false&instagramError=Unexpected callback error', normalizedSiteUrl)
     );

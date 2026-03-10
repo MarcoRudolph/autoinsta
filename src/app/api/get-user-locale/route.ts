@@ -24,7 +24,13 @@ export async function GET(req: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Error getting user locale:', error);
+      console.error('Error getting user locale:', {
+        message: error?.message,
+        code: (error as { code?: string })?.code,
+        details: (error as { details?: string })?.details,
+        hint: (error as { hint?: string })?.hint,
+        userId,
+      });
       return NextResponse.json({ error: 'Failed to get user locale' }, { status: 500 });
     }
 
@@ -32,7 +38,12 @@ export async function GET(req: NextRequest) {
     const locale = data?.locale || 'en';
     return NextResponse.json({ locale });
   } catch (error) {
-    console.error('Error in get-user-locale API:', error);
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error('Error in get-user-locale API:', {
+      message: err.message,
+      stack: err.stack,
+      cause: err.cause,
+    });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

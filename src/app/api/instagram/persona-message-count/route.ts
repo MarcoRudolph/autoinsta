@@ -46,6 +46,12 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ count: countRows[0]?.count ?? 0 });
   } catch (error) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error('persona-message-count API error:', {
+      message: err.message,
+      stack: err.stack,
+      personaId,
+    });
     return NextResponse.json({ error: 'Unexpected error', details: String(error) }, { status: 500 });
   }
 }

@@ -13,6 +13,7 @@
   },
   "dashboard": {
     "title": "Dashboard",
+    "loading": "Lädt...",
     "welcome": "Willkommen in deinem Dashboard",
     "yourPersonas": "Deine Personas",
     "noPersonasYet": "Noch keine Personas",

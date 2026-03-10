@@ -13,6 +13,7 @@
   },
   "dashboard": {
     "title": "Painel de controlo",
+    "loading": "A carregar...",
     "welcome": "Bem-vindo ao teu painel de controlo",
     "yourPersonas": "As tuas Personas",
     "noPersonasYet": "Ainda sem personas",

@@ -5,7 +5,11 @@ interface FooterProps {
   locale?: string;
 }
 
-export default function Footer({ locale = 'en' }: FooterProps) {
+function cookiePolicyHref(locale: string): string {
+  return locale === "de" ? "/cookie-policy" : `/cookie-policy-${locale}`;
+}
+
+export default function Footer({ locale = "en" }: FooterProps) {
   const { t } = useI18n(locale);
   const tf = (key: string, fallback: string): string => {
     const value = t(key);
@@ -84,7 +88,7 @@ export default function Footer({ locale = 'en' }: FooterProps) {
                 </Link>
               </li>
               <li>
-                <Link href="/cookie-policy" className="hover:text-[#f3aacb] transition-colors">
+                <Link href={cookiePolicyHref(locale)} className="hover:text-[#f3aacb] transition-colors">
                   {tf('footer.cookiePolicy', 'Cookie Policy')}
                 </Link>
               </li>
@@ -117,7 +121,7 @@ export default function Footer({ locale = 'en' }: FooterProps) {
             <Link href="/terms-new" className="text-xs text-gray-500 hover:text-[#f3aacb] transition-colors">
               {tf('footer.termsOfUse', 'Terms of Use')}
             </Link>
-            <Link href="/cookie-policy" className="text-xs text-gray-500 hover:text-[#f3aacb] transition-colors">
+            <Link href={cookiePolicyHref(locale)} className="text-xs text-gray-500 hover:text-[#f3aacb] transition-colors">
               {tf('footer.cookiePolicy', 'Cookie Policy')}
             </Link>
             <Link href="/data-deletion-new" className="text-xs text-gray-500 hover:text-[#f3aacb] transition-colors">
