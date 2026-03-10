@@ -4,6 +4,7 @@ const isPagesBuild =
   typeof process.env.CF_PAGES_URL === "string" ||
   typeof process.env.CF_PAGES_BRANCH === "string";
 
+  console.log("SUPABASE URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
 if (isPagesBuild) {
   console.error("");
   console.error("This project must be deployed with OpenNext on Cloudflare Workers.");
