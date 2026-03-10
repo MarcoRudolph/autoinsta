@@ -8,7 +8,7 @@ type DrizzleDb = ReturnType<typeof drizzle<typeof schema>>;
 let cachedDb: DrizzleDb | null = null;
 let cachedPool: Pool | null = null;
 
-function resolvePostgresUrl(): string | null {
+export function resolvePostgresUrl(): string | null {
   if (process.env.POSTGRES_URL) {
     return process.env.POSTGRES_URL;
   }

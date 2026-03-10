@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
-import { db, hasPostgresUrlConfig } from '@/drizzle';
+import { db, resolvePostgresUrl } from '@/drizzle';
 import { instagramConnections } from '@/drizzle/schema/instagram';
 
 export const runtime = 'nodejs';
@@ -153,8 +153,8 @@ export async function GET(request: NextRequest) {
 
   const redirectUri = `${normalizedSiteUrl}/api/instagram/callback`;
 
-  if (!hasPostgresUrlConfig()) {
-    console.error('Instagram callback: POSTGRES_URL not configured');
+  if (!resolvePostgresUrl()) {
+    console.error('Instagram callback: POSTGRES_URL not resolved (process.env or Cloudflare bindings)');
     return NextResponse.redirect(
       new URL(
         '/dashboard?instagramConnected=false&instagramError=Database not configured (POSTGRES_URL missing)',
