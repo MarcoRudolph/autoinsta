@@ -11,13 +11,29 @@ import {
 import AuthForm from '@/components/auth/AuthForm';
 import CookieBanner from '@/components/CookieBanner';
 import Footer from '@/components/Footer';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { locales } from '@/config/i18n';
+import type { Locale } from '@/config/i18n';
 import { useI18n } from '@/hooks/useI18n';
 
 export default function LandingPage() {
   const router = useRouter();
   const [checkingSession, setCheckingSession] = useState(true);
   const [configError, setConfigError] = useState(false);
-  const [currentLocale, setCurrentLocale] = useState('en');
+  const [currentLocale, setCurrentLocale] = useState<string>('en');
+
+  useEffect(() => {
+    const saved = localStorage.getItem('locale') || 'en';
+    if (locales.includes(saved as Locale)) setCurrentLocale(saved);
+  }, []);
+
+  useEffect(() => {
+    console.info('[LandingPage] mounted', {
+      pathname: typeof window !== 'undefined' ? window.location.pathname : null,
+      search: typeof window !== 'undefined' ? window.location.search : null,
+      referrer: typeof document !== 'undefined' ? document.referrer || '(none)' : null,
+    });
+  }, []);
   const { t, tList } = useI18n(currentLocale);
 
   useEffect(() => {
@@ -26,25 +42,27 @@ export default function LandingPage() {
     // Only import and create Supabase client on the client side
     const checkSession = async () => {
       try {
-        if (process.env.NODE_ENV === 'development') {
-          console.info('[LandingPage] checkSession start', {
-            hasUrl: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL),
-            hasLegacyKey: Boolean(process.env.NEXT_PUBLIC_SUPABASE_KEY),
-            hasPublishableDefaultKey: Boolean(process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY),
-            hasAnonKey: Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
-          });
-        }
+        console.info('[LandingPage] checkSession start', {
+          pathname: typeof window !== 'undefined' ? window.location.pathname : null,
+          search: typeof window !== 'undefined' ? window.location.search : null,
+          hasUrl: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL),
+          hasAnonKey: Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
+        });
         const { createClient } = await import('@/lib/auth/supabaseClient.client');
         const supabase = createClient();
-        
-        const { data } = await supabase.auth.getSession();
-        if (process.env.NODE_ENV === 'development') {
-          console.info('[LandingPage] checkSession result', {
-            hasSession: Boolean(data.session),
-          });
-        }
+        const { data, error: sessionError } = await supabase.auth.getSession();
+        console.info('[LandingPage] checkSession result', {
+          hasSession: Boolean(data.session),
+          userId: data.session?.user?.id ?? null,
+          expiresAt: data.session?.expires_at ?? null,
+          sessionError: sessionError?.message ?? null,
+          mounted,
+        });
         if (data.session && mounted) {
+          console.info('[LandingPage] Session found, redirecting to /dashboard');
           router.replace('/dashboard');
+        } else if (mounted) {
+          console.info('[LandingPage] No session, showing landing page');
         }
       } catch (error) {
         const isConfigError =
@@ -170,12 +188,10 @@ export default function LandingPage() {
         
         {/* Language Switcher */}
         <div className="absolute top-4 left-4 z-30 pointer-events-auto">
-          <button
-            onClick={() => setCurrentLocale(currentLocale === 'en' ? 'de' : 'en')}
-            className="px-4 py-2 rounded-full bg-[#334269]/60 text-white font-semibold backdrop-blur-md hover:bg-[#334269]/80 transition-all duration-200"
-          >
-            {currentLocale === 'en' ? 'DE' : 'EN'}
-          </button>
+          <LanguageSwitcher
+            variant="dropdown"
+            onLocaleChange={setCurrentLocale}
+          />
         </div>
         {/* rudolpho-chat Card + Catchy Lines Block */}
         <div className="absolute top-0 left-0 w-full flex flex-col items-center pt-12 z-20">

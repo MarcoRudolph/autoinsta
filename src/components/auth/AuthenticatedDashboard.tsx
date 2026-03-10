@@ -86,15 +86,25 @@ const AuthenticatedDashboard = () => {
     
     const checkSession = async () => {
       try {
+        console.info('[AuthenticatedDashboard] checkSession start', {
+          pathname: typeof window !== 'undefined' ? window.location.pathname : null,
+          search: typeof window !== 'undefined' ? window.location.search : null,
+        });
         const { createClient } = await import('@/lib/auth/supabaseClient.client');
         const supabase = createClient();
-        
-        const { data } = await supabase.auth.getSession(); 
-        if (!data.session && mounted) { 
-          router.replace('/'); 
-        } 
+        const { data, error: sessionError } = await supabase.auth.getSession();
+        console.info('[AuthenticatedDashboard] checkSession result', {
+          hasSession: Boolean(data.session),
+          userId: data.session?.user?.id ?? null,
+          expiresAt: data.session?.expires_at ?? null,
+          sessionError: sessionError?.message ?? null,
+        });
+        if (!data.session && mounted) {
+          console.warn('[AuthenticatedDashboard] No session, redirecting to landing page');
+          router.replace('/');
+        }
         if (mounted) {
-          setCheckingSession(false); 
+          setCheckingSession(false);
         }
       } catch (error) {
         const isConfigError =

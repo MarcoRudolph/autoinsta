@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -11,11 +12,28 @@ export default function SettingsPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [useMetaBusinessLogin, setUseMetaBusinessLogin] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const storedMode = localStorage.getItem('chatboxLoginProvider');
     setUseMetaBusinessLogin(storedMode === 'meta-business');
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchUser = async () => {
+      try {
+        const { createClient } = await import('@/lib/auth/supabaseClient.client');
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (mounted && user?.id) setUserId(user.id);
+      } catch {
+        // Ignore - user may not be logged in or config missing
+      }
+    };
+    fetchUser();
+    return () => { mounted = false; };
   }, []);
 
   const handleLoginProviderToggle = (checked: boolean) => {
@@ -104,6 +122,17 @@ export default function SettingsPage() {
 
         {/* Settings Sections */}
         <div className="space-y-6">
+          {/* Language */}
+          <div className="bg-[#15192a]/80 backdrop-blur-lg rounded-xl shadow-2xl p-6 text-white">
+            <h2 className="text-2xl font-bold mb-4 text-[#f3aacb]">Sprache / Language</h2>
+            <div className="p-4 bg-[#1a1f2e] rounded-lg">
+              <p className="text-sm text-gray-400 mb-4">
+                Wählen Sie Ihre bevorzugte Sprache für die Oberfläche.
+              </p>
+              <LanguageSwitcher variant="buttons" userId={userId ?? undefined} />
+            </div>
+          </div>
+
           {/* Account Settings */}
           <div className="bg-[#15192a]/80 backdrop-blur-lg rounded-xl shadow-2xl p-6 text-white">
             <h2 className="text-2xl font-bold mb-4 text-[#f3aacb]">Konto-Einstellungen</h2>

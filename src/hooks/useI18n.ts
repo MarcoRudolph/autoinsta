@@ -3,11 +3,14 @@ import { useMemo } from 'react';
 // Import JSON files
 import enMessages from '@/messages/en.json';
 import deMessages from '@/messages/de.json';
+import frMessages from '@/messages/fr.json';
+import esMessages from '@/messages/es.json';
+import itMessages from '@/messages/it.json';
+import ptMessages from '@/messages/pt.json';
 
-const messages = {
+const messages: Record<string, typeof enMessages> = {
   en: {
     ...enMessages,
-    // Fallback translations for any missing keys
     common: {
       save: "Save",
       cancel: "Cancel",
@@ -23,7 +26,6 @@ const messages = {
   },
   de: {
     ...deMessages,
-    // Fallback translations for any missing keys
     common: {
       save: "Speichern",
       cancel: "Abbrechen",
@@ -36,7 +38,11 @@ const messages = {
       confirm: "Bestätigen",
       close: "Schließen"
     }
-  }
+  },
+  fr: frMessages as typeof enMessages,
+  es: esMessages as typeof enMessages,
+  it: itMessages as typeof enMessages,
+  pt: ptMessages as typeof enMessages,
 };
 
 export function useI18n(locale: string = 'en') {

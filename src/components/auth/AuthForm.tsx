@@ -38,8 +38,13 @@ export default function AuthForm() {
       }
 
       if (data.url) {
-        console.info('[AuthForm] Redirecting to OAuth provider URL');
+        console.info('[AuthForm] Redirecting to OAuth provider URL', {
+          urlLength: data.url?.length ?? 0,
+          urlHost: data.url ? new URL(data.url).host : null,
+        });
         window.location.href = data.url;
+      } else {
+        console.warn('[AuthForm] No OAuth URL in response', { data });
       }
     } catch (error) {
       console.error('Google login error:', error);

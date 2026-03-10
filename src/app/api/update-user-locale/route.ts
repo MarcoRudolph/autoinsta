@@ -11,8 +11,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing locale or userId' }, { status: 400 });
     }
 
-    if (!['en', 'de'].includes(locale)) {
-      return NextResponse.json({ error: 'Invalid locale. Must be "en" or "de"' }, { status: 400 });
+    const validLocales = ['en', 'de', 'fr', 'es', 'it', 'pt'];
+    if (!validLocales.includes(locale)) {
+      return NextResponse.json(
+        { error: `Invalid locale. Must be one of: ${validLocales.join(', ')}` },
+        { status: 400 }
+      );
     }
 
     // Initialize Supabase client

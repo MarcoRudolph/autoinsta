@@ -1,0 +1,370 @@
+{
+  "common": {
+    "save": "Salva",
+    "cancel": "Annulla",
+    "add": "Aggiungi",
+    "edit": "Modifica",
+    "delete": "Elimina",
+    "loading": "Caricamento...",
+    "error": "Errore",
+    "success": "Successo",
+    "confirm": "Conferma",
+    "close": "Chiudi"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Benvenuto nella tua dashboard",
+    "yourPersonas": "Le tue Persona",
+    "noPersonasYet": "Nessuna persona ancora",
+    "newPersona": "Nuova Persona",
+    "savePersona": "Salva Persona",
+    "personaSaved": "Persona salvata!",
+    "personaUpdated": "Persona aggiornata!",
+    "saveError": "Errore nel salvataggio della persona",
+    "unsavedChanges": "Modifiche non salvate",
+    "unsavedChangesDescription": "Le modifiche alla persona corrente non sono state salvate. Vuoi comunque continuare?",
+    "continue": "Continua",
+    "personaDeleted": "Persona eliminata con successo",
+    "deleteConfirm": "Elimina",
+    "deleteConfirmTitle": "Elimina IA-Chatbot",
+    "deleteConfirmMessage": "Vuoi davvero eliminare l'IA-Chatbot '{name}'? Questa azione non può essere annullata.",
+    "deleteError": "Impossibile eliminare la persona",
+    "noUserLoggedIn": "Nessun utente connesso. Effettua l'accesso.",
+    "invalidPersona": "Seleziona una persona valida.",
+    "noValidPersonaData": "Nessun dato persona valido trovato.",
+    "errorLoadingPersona": "Errore nel caricamento della persona.",
+    "personaEmpty": "La persona è vuota",
+    "aiTemplateLimit": "Limite giornaliero modelli IA raggiunto",
+    "aiTemplateLimitDescription": "Hai raggiunto il limite giornaliero per la generazione di modelli IA. Riprova domani.",
+    "instagramConnected": "Instagram connesso",
+    "instagramDisconnected": "Instagram disconnesso",
+    "autorespondingToDMs": "Risposte automatiche ai DM",
+    "autorespondingToComments": "Risposte automatiche ai commenti",
+    "delayOfResponse": "Ritardo di risposta",
+    "connectInstagram": "Connetti Instagram",
+    "disconnectInstagram": "Disconnetti Instagram",
+    "settings": "Impostazioni",
+    "logout": "Esci",
+    "userProfile": "Profilo utente",
+    "craftPersona": "Crea persona",
+    "automateInstagram": "Automatizza le tue interazioni Instagram",
+    "userType": "Utente rudolpho-chat",
+    "productLinks": {
+      "title": "Link prodotti",
+      "titleWithName": "Link prodotti di {name}",
+      "subtitle": "A volte, durante una conversazione, il chatbot può condividere un link prodotto — ad esempio, un'immagine di un articolo che puoi acquistare. Può succedere se lo chiedi direttamente, o se l'argomento ispira naturalmente un suggerimento. Clicca su \"Aggiungi link\" per aggiungere nuovi URL di prodotti.",
+      "addButton": "Aggiungi link",
+      "placeholder": "Inserisci URL del prodotto",
+      "modalTitle": "Aggiunta link prodotto...",
+      "modalSubtitle": "Può essere qualsiasi sito che il chatbot deve raccomandare",
+      "actionTypes": {
+        "userShouldBuy": "L'utente dovrebbe acquistare",
+        "userShouldFollow": "L'utente dovrebbe seguire",
+        "userShouldSubscribe": "L'utente dovrebbe iscriversi"
+      },
+      "sendingBehavior": {
+        "proactive": "Invia in modo proattivo",
+        "situational": "Invia in situazione appropriata"
+      }
+    },
+    "personality": {
+      "name": "Nome",
+      "description": "Descrizione",
+      "childhoodExperiences": "Esperienze d'infanzia",
+      "personalDevelopment": "Sviluppo personale",
+      "sexuality": "Sessualità",
+      "generalExperiences": "Esperienze generali",
+      "socialEnvironmentFriendships": "Ambiente sociale e amicizie",
+      "educationLearning": "Istruzione e apprendimento",
+      "familyRelationships": "Relazioni familiari",
+      "emotionalTriggers": "Trigger emotivi",
+      "characterTraits": "Tratti del carattere",
+      "positiveTraits": "Tratti positivi",
+      "socialCommunicative": "Sociale e comunicativo",
+      "professionalCognitive": "Professionale e cognitivo",
+      "personalIntrinsic": "Personale e intrinseco",
+      "negativeTraits": "Tratti negativi",
+      "areasOfInterest": "Aree di interesse",
+      "communicationStyle": "Stile di comunicazione",
+      "tone": "Tono",
+      "wordChoice": "Scelta delle parole",
+      "responsePatterns": "Modelli di risposta",
+      "humor": "Umorismo",
+      "humorEnabled": "Umorismo attivato",
+      "humorTypes": "Tipi di umorismo",
+      "humorIntensity": "Intensità umorismo",
+      "humorExclusionTopics": "Argomenti esclusi dall'umorismo",
+      "addNew": "Aggiungi nuovo",
+      "addNewTrait": "Aggiungi nuovo tratto",
+      "addNewInterest": "Aggiungi nuovo interesse",
+      "addNewTrigger": "Aggiungi nuovo trigger",
+      "addNewHumorType": "Aggiungi nuovo tipo di umorismo",
+      "addNewExclusionTopic": "Aggiungi nuovo argomento di esclusione",
+      "placeholder": {
+        "name": "Inserisci nome",
+        "description": "Inserisci descrizione - tutto ciò che non rientra nei campi sotto",
+        "trait": "Inserisci tratto",
+        "interest": "Inserisci interesse",
+        "trigger": "Inserisci trigger",
+        "humorType": "Inserisci tipo di umorismo",
+        "exclusionTopic": "Inserisci argomento di esclusione"
+      }
+    },
+    "dmSettings": {
+      "title": "Impostazioni DM",
+      "active": "Attivo",
+      "duration": "Durata",
+      "from": "Da",
+      "until": "Fino a",
+      "productLinks": "Link prodotti",
+      "transparencyMode": "Modalità trasparenza",
+      "transparencyModeSubtitle": "Se attivata, il bot si identifica come tale"
+    },
+    "commentSettings": {
+      "title": "Impostazioni commenti",
+      "active": "Attivo",
+      "duration": "Durata",
+      "from": "Da",
+      "until": "Fino a",
+      "productLinks": "Link prodotti",
+      "transparencyMode": "Modalità trasparenza",
+      "transparencyModeSubtitle": "Se attivata, il bot si identifica come tale"
+    },
+    "systemPrompt": {
+      "title": "Prompt di sistema",
+      "subtitle": "Istruzioni personalizzate per guidare il comportamento e le risposte dell'IA nelle conversazioni.",
+      "placeholder": "Inserisci un prompt di sistema personalizzato per guidare il comportamento e le risposte dell'IA..."
+    },
+    "downloadDocumentation": {
+      "title": "Scarica documentazione completa",
+      "germanVersion": "Versione tedesca",
+      "englishVersion": "Versione inglese",
+      "germanDescription": "Guida utente completa in tedesco",
+      "englishDescription": "Guida utente completa in inglese",
+      "downloadPdf": "Scarica PDF"
+    },
+    "quickStartGuide": {
+      "title": "Guida introduttiva",
+      "step1": {
+        "title": "Registrati",
+        "description": "Crea un account tramite Google, Facebook o email"
+      },
+      "step2": {
+        "title": "Crea IA-Chatbot",
+        "description": "Definisci personalità e comportamento delle risposte"
+      },
+      "step3": {
+        "title": "Connetti Instagram",
+        "description": "Connetti il tuo account Instagram e attiva il bot"
+      },
+      "getStarted": "Inizia"
+    },
+    "footer": {
+      "usageCounter": "{remaining} di {total} tentativi rimasti oggi"
+    }
+  },
+  "landing": {
+    "howItWorks": {
+      "title": "Come funziona",
+      "steps": [
+        "Crea il tuo IA-Chatbot\nDefinisci personalità, stile di scrittura e risposte — esattamente come il tuo bot deve suonare.",
+        "Collega il tuo Instagram al tuo IA-Chatbot personalizzato.",
+        "Lascialo chattare per te\nIl tuo IA-Chatbot risponde automaticamente ai messaggi nel tuo stile — 24/7.",
+        "Grazie a Zep-Memory, il nostro IA-Chatbot ricorda ogni interazione — costruendo una connessione genuina e duratura con i tuoi follower. Nessuna ripetizione infinita, ma un compagno intelligente che li conosce, li comprende e cresce con loro."
+      ]
+    },
+    "trustTransparency": {
+      "title": "Fiducia e trasparenza",
+      "subtitle": "Crediamo in un'IA responsabile che costruisce connessioni genuine mantenendo i massimi standard di sicurezza e trasparenza.",
+      "contentSafety": {
+        "title": "Sicurezza dei contenuti prima di tutto",
+        "description": "Ogni persona generata dall'IA subisce rigorosi controlli di sicurezza dei contenuti. Il nostro sistema di filtraggio avanzato garantisce che il tuo chatbot IA mantenga una comunicazione appropriata, professionale e rispettosa in ogni momento.",
+        "features": [
+          "Moderazione dei contenuti in tempo reale",
+          "Tolleranza zero per contenuti dannosi",
+          "Standard di comunicazione professionale"
+        ]
+      },
+      "aiTransparency": {
+        "title": "Trasparenza IA",
+        "description": "Il tuo chatbot IA si identifica orgogliosamente come IA nelle conversazioni. Questo crea fiducia nel tuo pubblico mantenendo un coinvolgimento autentico. Nessun inganno, solo comunicazione genuina potenziata dall'IA.",
+        "features": [
+          "Chiara identificazione IA nelle chat",
+          "Approccio alla comunicazione onesto",
+          "Costruisce fiducia genuina del pubblico"
+        ]
+      },
+      "socialProof": {
+        "trustedBy": "Affidato da 0 creatori finora =)",
+        "buildingRelationships": "Costruire relazioni IA genuine",
+        "stats": {
+          "contentSafety": "Tasso sicurezza contenuti",
+          "aiTransparency": "Trasparenza IA",
+          "safetyMonitoring": "Monitoraggio sicurezza"
+        }
+      }
+    }
+  },
+  "footer": {
+    "tagline": "Automazione potenziata dall'IA per le tue interazioni Instagram. Lascia che il bot faccia il lavoro per te.",
+    "developedBy": "Sviluppato da",
+    "service": "Servizio",
+    "pricing": "Prezzi",
+    "proFeatures": "Funzionalità Pro",
+    "dashboard": "Dashboard",
+    "documentation": "Documentazione",
+    "legal": "Legale",
+    "imprint": "Impronta",
+    "termsOfUse": "Termini di utilizzo",
+    "cookiePolicy": "Informativa sui cookie",
+    "privacy": "Privacy",
+    "dataDeletion": "Eliminazione dati",
+    "allRightsReserved": "Tutti i diritti riservati",
+    "usageCounter": "{remaining} di {total} tentativi rimasti oggi"
+  },
+  "modals": {
+    "addValue": {
+      "title": "Aggiungi valore",
+      "placeholder": "Inserisci valore",
+      "save": "Salva"
+    },
+    "editValue": {
+      "title": "Modifica valore",
+      "placeholder": "Inserisci nuovo valore",
+      "update": "Aggiorna"
+    }
+  },
+  "terms": {
+    "title": "Termini di utilizzo",
+    "lastUpdated": "Ultimo aggiornamento",
+    "introduction": {
+      "title": "1. Introduzione",
+      "content": "Benvenuto su rudolpho-chat! Questi Termini di utilizzo regolano l'uso del nostro servizio di automazione potenziato dall'IA per le interazioni Instagram. Utilizzando il nostro servizio, accetti questi termini."
+    },
+    "serviceDescription": {
+      "title": "2. Descrizione del nostro servizio",
+      "functionality": {
+        "title": "2.1 Come funziona",
+        "content": "rudolpho-chat è una piattaforma potenziata dall'IA che ti permette di creare risposte automatizzate a messaggi diretti e commenti Instagram. Il nostro servizio funziona così:",
+        "features": [
+          "Creazione persona: Crei una personalità digitale con caratteristiche, stile di comunicazione e schemi di risposta specifici",
+          "Integrazione IA: La nostra intelligenza artificiale genera automaticamente risposte appropriate basate sulla tua persona definita",
+          "Automazione Instagram: Il servizio può rispondere automaticamente a messaggi e commenti in arrivo",
+          "Impostazioni personalizzabili: Mantieni il controllo completo su tutte le risposte automatizzate"
+        ]
+      },
+      "metaInteraction": {
+        "title": "2.2 Interazione con le piattaforme Meta",
+        "content": "Il nostro servizio interagisce con Instagram (una piattaforma Meta) tramite API ufficiali:",
+        "features": [
+          "Recupero dati: Recuperiamo solo i dati necessari per fornire il nostro servizio (es. messaggi in arrivo, commenti)",
+          "Trasmissione dati: Le risposte vengono inviate ai destinatari tramite l'API Instagram",
+          "Sicurezza dati: Tutte le trasmissioni di dati sono crittografate e condotte su connessioni sicure",
+          "Requisito consenso: Accediamo ai tuoi dati Instagram solo quando li hai approvati esplicitamente"
+        ]
+      }
+    },
+    "metaRelationship": {
+      "title": "3. Relazione con Meta Platforms, Inc.",
+      "independence": {
+        "title": "3.1 Indipendenza da Meta",
+        "content": "Avviso importante: rudolpho-chat è un servizio completamente indipendente e non è offerto, sponsorizzato né gestito da Meta Platforms, Inc. Siamo un'azienda indipendente con i nostri modelli di business e tecnologie."
+      },
+      "disclaimer": {
+        "title": "3.2 Limitazione di responsabilità riguardo Meta",
+        "content": "Meta Platforms, Inc. non è responsabile per:",
+        "items": [
+          "Il funzionamento, la funzionalità o la disponibilità del nostro servizio",
+          "Il contenuto delle risposte generate tramite il nostro servizio",
+          "Problemi tecnici o malfunzionamenti del nostro sistema",
+          "Le nostre pratiche commerciali o obblighi verso gli utenti",
+          "Aspetti di privacy o sicurezza del nostro servizio"
+        ],
+        "conclusion": "Operiamo come fornitore di servizi indipendente e siamo unicamente responsabili di tutti gli aspetti del nostro servizio."
+      }
+    },
+    "usageTerms": {
+      "title": "4. Termini di utilizzo",
+      "allowed": {
+        "title": "4.1 Uso consentito",
+        "content": "Puoi utilizzare il nostro servizio solo per scopi legittimi:",
+        "items": [
+          "Automatizzare le tue interazioni Instagram",
+          "Creare persone per i tuoi scopi personali o professionali",
+          "Uso conforme ai Termini di utilizzo di Instagram"
+        ]
+      },
+      "prohibited": {
+        "title": "4.2 Uso vietato",
+        "content": "I seguenti usi non sono consentiti:",
+        "items": [
+          "Violazione dei Termini di utilizzo o delle linee guida della community di Instagram",
+          "Spam, molestie o comportamenti abusivi",
+          "Uso per scopi illegali o dannosi",
+          "Tentativo di compromettere la sicurezza del nostro sistema",
+          "Condivisione del tuo account con terzi"
+        ]
+      }
+    },
+    "accounts": {
+      "title": "5. Account e abbonamenti",
+      "free": {
+        "title": "5.1 Uso gratuito",
+        "content": "Offriamo un piano gratuito con funzionalità limitate:",
+        "items": [
+          "20 messaggi automatizzati al mese",
+          "Creazione base di persona",
+          "Modelli di risposta standard"
+        ]
+      },
+      "pro": {
+        "title": "5.2 Abbonamento Pro",
+        "content": "Il nostro piano Pro offre funzionalità estese:",
+        "items": [
+          "Messaggi automatizzati illimitati",
+          "Risposte IA avanzate",
+          "Supporto prioritario",
+          "Creazione persona personalizzata"
+        ],
+        "price": "Prezzo: 10€ al mese, cancellabile in qualsiasi momento"
+      }
+    },
+    "privacy": {
+      "title": "6. Privacy e sicurezza",
+      "content": "La protezione dei tuoi dati è la nostra massima priorità. Tutti i dettagli sul trattamento dei dati sono nella nostra",
+      "privacyLink": "Informativa sulla privacy",
+      "security": "Implementiamo misure di sicurezza complete per proteggere i tuoi dati e garantire la conformità con tutte le normative applicabili sulla protezione dei dati."
+    },
+    "liability": {
+      "title": "7. Responsabilità e garanzia",
+      "content": "Il nostro servizio è fornito 'così com'è'. Non garantiamo disponibilità ininterrotta o funzionalità priva di errori.",
+      "limitation": "La nostra responsabilità è limitata all'importo che hai pagato per il nostro servizio negli ultimi 12 mesi."
+    },
+    "changes": {
+      "title": "8. Modifiche ai termini di utilizzo",
+      "content": "Ci riserviamo il diritto di modificare questi Termini di utilizzo secondo necessità. Modifiche significative ti verranno notificate via email. L'uso continuato del nostro servizio dopo le modifiche costituisce accettazione dei nuovi termini."
+    },
+    "termination": {
+      "title": "9. Risoluzione",
+      "content": "Puoi cancellare il tuo account in qualsiasi momento. Dopo la cancellazione, tutti i tuoi dati verranno eliminati entro 30 giorni, a meno che non si applichino periodi di conservazione legali.",
+      "rights": "Ci riserviamo il diritto di bloccare o eliminare account che violano questi Termini di utilizzo.",
+      "dataDeletion": {
+        "title": "Eliminazione dati",
+        "content": "Puoi anche eliminare i tuoi dati prima della cancellazione. Una guida dettagliata è disponibile nella nostra",
+        "link": "Pagina di eliminazione dati"
+      }
+    },
+    "contact": {
+      "title": "10. Contatto",
+      "content": "Per domande su questi Termini di utilizzo, puoi contattarci a:",
+      "email": "Email",
+      "address": "Indirizzo",
+      "phone": "Telefono"
+    },
+    "legal": {
+      "title": "11. Base legale",
+      "content": "Questi Termini di utilizzo sono soggetti alla legge tedesca. La giurisdizione è, nella misura legalmente consentita, la sede della nostra azienda."
+    },
+    "note": "Nota: Questi Termini di utilizzo possono essere aggiornati secondo necessità. Modifiche significative ti verranno notificate via email."
+  }
+}
