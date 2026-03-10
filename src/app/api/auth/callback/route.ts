@@ -70,7 +70,11 @@ export async function GET(request: NextRequest) {
       new URL('/dashboard?error=Authentication failed', siteUrl)
     );
   } catch (err) {
-    console.error('[AuthCallback] Unexpected error:', err);
+    console.error('[AuthCallback] Unexpected error', {
+      message: err instanceof Error ? err.message : String(err),
+      name: err instanceof Error ? err.name : undefined,
+      stack: err instanceof Error ? err.stack : undefined,
+    });
     return NextResponse.redirect(
       new URL('/dashboard?error=Unexpected error during authentication', siteUrl)
     );

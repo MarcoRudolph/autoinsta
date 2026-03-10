@@ -26,9 +26,7 @@ export const createClient = () => {
   }
 
   if (!supabaseUrl || !supabaseKey) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('[supabaseClient.client] Missing Supabase browser config.', debug);
-    }
+    console.error('[supabaseClient.client] Missing Supabase browser config', debug);
     throw new Error(
       'Missing NEXT_PUBLIC Supabase config in browser bundle. Check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_KEY/NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY/NEXT_PUBLIC_SUPABASE_ANON_KEY at build time.'
     );

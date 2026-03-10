@@ -57,7 +57,11 @@ const AuthenticatedDashboard = () => {
           setUserId(user.id);
         }
       } catch (error) {
-        console.error('Error getting user email:', error);
+        console.error('[AuthenticatedDashboard] getUserEmail error', {
+          message: error instanceof Error ? error.message : String(error),
+          name: error instanceof Error ? error.name : undefined,
+          stack: error instanceof Error ? error.stack : undefined,
+        });
       }
     }; 
     getUserEmail(); 
@@ -112,9 +116,13 @@ const AuthenticatedDashboard = () => {
           error.message.includes('Missing NEXT_PUBLIC Supabase config');
         if (isConfigError && mounted) {
           setConfigError(true);
-        } else {
-          console.error('Error checking session:', error);
         }
+        console.error('[AuthenticatedDashboard] checkSession error', {
+          message: error instanceof Error ? error.message : String(error),
+          name: error instanceof Error ? error.name : undefined,
+          stack: error instanceof Error ? error.stack : undefined,
+          isConfigError,
+        });
         if (mounted) {
           setCheckingSession(false);
         }
@@ -154,9 +162,13 @@ const AuthenticatedDashboard = () => {
       
       await supabase.auth.signOut(); 
       router.push('/'); 
-    } catch (error) { 
-      console.error('Logout error:', error); 
-      router.push('/'); 
+    } catch (error) {
+      console.error('[AuthenticatedDashboard] Logout error', {
+        message: error instanceof Error ? error.message : String(error),
+        name: error instanceof Error ? error.name : undefined,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      router.push('/');
     } 
   };
   

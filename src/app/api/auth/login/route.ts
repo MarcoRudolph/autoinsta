@@ -72,7 +72,11 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      console.error('OAuth error:', error);
+      console.error('[api/auth/login] OAuth error', {
+        message: error.message,
+        name: error.name,
+        provider,
+      });
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
@@ -83,7 +87,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ error: 'No OAuth URL received' }, { status: 400 });
   } catch (error) {
-    console.error('Unexpected error during OAuth login:', error);
+    console.error('[api/auth/login] Unexpected error', {
+      message: error instanceof Error ? error.message : String(error),
+      name: error instanceof Error ? error.name : undefined,
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return NextResponse.json({ error: 'Unexpected error during OAuth login' }, { status: 500 });
   }
 }

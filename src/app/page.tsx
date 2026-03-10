@@ -42,15 +42,61 @@ export default function LandingPage() {
     // Only import and create Supabase client on the client side
     const checkSession = async () => {
       try {
+        const hasHashWithToken =
+          typeof window !== 'undefined' &&
+          window.location.hash.includes('access_token');
         console.info('[LandingPage] checkSession start', {
           pathname: typeof window !== 'undefined' ? window.location.pathname : null,
           search: typeof window !== 'undefined' ? window.location.search : null,
+          hasHashWithToken,
           hasUrl: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL),
           hasAnonKey: Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
         });
         const { createClient } = await import('@/lib/auth/supabaseClient.client');
         const supabase = createClient();
-        const { data, error: sessionError } = await supabase.auth.getSession();
+        let { data, error: sessionError } = await supabase.auth.getSession();
+        if (!data.session && hasHashWithToken) {
+          console.info('[LandingPage] Hash with token detected, recovering session from URL...');
+          try {
+            const hash = typeof window !== 'undefined' ? window.location.hash.slice(1) : '';
+            const params = new URLSearchParams(hash);
+            const accessToken = params.get('access_token');
+            const refreshToken = params.get('refresh_token');
+            if (accessToken && refreshToken) {
+              const { data: setData, error: setError } = await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken,
+              });
+              if (setError) {
+                console.warn('[LandingPage] setSession from hash failed:', setError.message);
+              } else if (setData.session) {
+                data = { session: setData.session };
+                if (typeof window !== 'undefined') {
+                  window.history.replaceState(null, '', window.location.pathname + window.location.search);
+                }
+                console.info('[LandingPage] Session recovered from hash');
+              }
+            } else {
+              console.warn('[LandingPage] Hash missing access_token or refresh_token', { hasAccessToken: Boolean(accessToken), hasRefreshToken: Boolean(refreshToken) });
+              await new Promise((r) => setTimeout(r, 800));
+              const retry = await supabase.auth.getSession();
+              data = retry.data;
+              sessionError = retry.error;
+              if (data.session && typeof window !== 'undefined') {
+                window.history.replaceState(null, '', window.location.pathname + window.location.search);
+              }
+            }
+          } catch (hashErr) {
+            console.error('[LandingPage] Hash recovery error', {
+              message: hashErr instanceof Error ? hashErr.message : String(hashErr),
+              stack: hashErr instanceof Error ? hashErr.stack : undefined,
+            });
+            await new Promise((r) => setTimeout(r, 800));
+            const retry = await supabase.auth.getSession();
+            data = retry.data;
+            sessionError = retry.error;
+          }
+        }
         console.info('[LandingPage] checkSession result', {
           hasSession: Boolean(data.session),
           userId: data.session?.user?.id ?? null,
@@ -70,9 +116,13 @@ export default function LandingPage() {
           error.message.includes('Missing NEXT_PUBLIC Supabase config');
         if (isConfigError && mounted) {
           setConfigError(true);
-        } else {
-          console.error('Error checking session:', error);
         }
+        console.error('[LandingPage] checkSession error', {
+          message: error instanceof Error ? error.message : String(error),
+          name: error instanceof Error ? error.name : undefined,
+          stack: error instanceof Error ? error.stack : undefined,
+          isConfigError,
+        });
       } finally {
         if (mounted) {
           setCheckingSession(false);

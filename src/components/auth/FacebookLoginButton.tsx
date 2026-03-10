@@ -25,7 +25,10 @@ export default function FacebookLoginButton({ className = '', children }: Facebo
       const data = await response.json();
 
       if (data.error) {
-        console.error('Facebook login error:', data.error);
+        console.error('[FacebookLoginButton] Facebook login error (API response)', {
+          error: data.error,
+          status: response.status,
+        });
         alert('Facebook login failed: ' + data.error);
         return;
       }
@@ -35,7 +38,11 @@ export default function FacebookLoginButton({ className = '', children }: Facebo
         window.location.href = data.url;
       }
     } catch (error) {
-      console.error('Unexpected error during Facebook login:', error);
+      console.error('[FacebookLoginButton] Unexpected error', {
+        message: error instanceof Error ? error.message : String(error),
+        name: error instanceof Error ? error.name : undefined,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       alert('Unexpected error during Facebook login');
     } finally {
       setIsLoading(false);

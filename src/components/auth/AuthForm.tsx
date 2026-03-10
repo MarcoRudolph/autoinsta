@@ -47,7 +47,11 @@ export default function AuthForm() {
         console.warn('[AuthForm] No OAuth URL in response', { data });
       }
     } catch (error) {
-      console.error('Google login error:', error);
+      console.error('[AuthForm] Google login error', {
+        message: error instanceof Error ? error.message : String(error),
+        name: error instanceof Error ? error.name : undefined,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       setError('Google login failed');
     } finally {
       setLoading(false);
@@ -79,7 +83,11 @@ export default function AuthForm() {
         window.location.href = data.url;
       }
     } catch (error) {
-      console.error('Facebook login error:', error);
+      console.error('[AuthForm] Facebook login error', {
+        message: error instanceof Error ? error.message : String(error),
+        name: error instanceof Error ? error.name : undefined,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       setError('Facebook login failed');
     } finally {
       setLoading(false);
@@ -147,7 +155,12 @@ export default function AuthForm() {
         }
       }
     } catch (err: unknown) {
-      console.error('Auth error:', err);
+      console.error('[AuthForm] Auth error (login/register)', {
+        message: err instanceof Error ? err.message : String(err),
+        name: err instanceof Error ? err.name : undefined,
+        stack: err instanceof Error ? err.stack : undefined,
+        mode,
+      });
       setError('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
