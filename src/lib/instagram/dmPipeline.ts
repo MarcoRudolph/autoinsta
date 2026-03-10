@@ -221,11 +221,13 @@ function personaToPrompt(persona: NormalizedPersona): string {
 }
 
 function buildSystemPrompt(persona: NormalizedPersona, promoInstruction: string): string {
-  const transparencyInstruction =
-    'Always disclose naturally that you are an AI assistant for this Instagram account.';
+  const transparencyInstruction = persona.transparencyMode
+    ? 'Always disclose naturally that you are an AI assistant for this Instagram account.'
+    : 'Do not mention system internals. Write as a personal account assistant with natural tone.';
 
   return [
     'You are replying to Instagram DMs for a persona account.',
+    'Respond to each message according to this system prompt, the persona profile, and the chat history. Consider the context of the ongoing conversation.',
     transparencyInstruction,
     'Stay concise, helpful, and match the user language (German or English).',
     'Avoid spammy promotion and avoid repeating links unless explicitly asked.',
@@ -248,7 +250,7 @@ async function generateAiReply(
   const messages = [
     { role: 'system', content: systemPrompt },
     ...history.map((item) => ({ role: item.role, content: item.content })),
-    { role: 'user', content: latestUserMessage },
+    { role: 'user', content: `Nachricht: ${latestUserMessage}` },
   ];
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -654,6 +656,32 @@ export async function recordInstagramMessage(
     },
     reason: 'inserted',
   };
+}
+
+/**
+ * Returns the delay bounds (in minutes) from the active persona's DM settings for the given igAccountId.
+ * Used by the process-pending consumer to enforce delay-of-response before processing.
+ */
+export async function getDelayBoundsForIgAccount(
+  igAccountId: string
+): Promise<{ delayMin: number; delayMax: number }> {
+  const connection = await getConnectionByAccountId(igAccountId);
+  if (!connection?.userId) {
+    return { delayMin: 0, delayMax: 0 };
+  }
+
+  const persona = await getActivePersonaForUser(connection.userId);
+  if (!persona?.personality) {
+    return { delayMin: 0, delayMax: 0 };
+  }
+
+  const delayMin = Number(persona.personality.delayMin);
+  const delayMax = Number(persona.personality.delayMax);
+
+  const min = Number.isFinite(delayMin) && delayMin >= 0 ? delayMin : 0;
+  const max = Number.isFinite(delayMax) && delayMax >= min ? delayMax : min;
+
+  return { delayMin: min, delayMax: max };
 }
 
 export async function processIncomingDm(input: DmOrchestrationInput): Promise<void> {

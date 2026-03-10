@@ -228,10 +228,14 @@ export async function GET(request: NextRequest) {
             userId: flowUserId,
           });
         } catch (error) {
-          console.error('Failed to persist Instagram connection (meta business flow)', {
+          const errMsg = error instanceof Error ? error.message : String(error);
+          const errStack = error instanceof Error ? error.stack : undefined;
+          console.error('Instagram connection failed: Database write failed while linking Instagram account', {
+            flow: 'meta_business',
             igAccountId: firstConnected.instagram_business_account.id,
-            provider: 'meta_business',
-            error: error instanceof Error ? error.message : String(error),
+            userId: flowUserId,
+            error: errMsg,
+            stack: errStack,
           });
           return NextResponse.redirect(
             new URL(
@@ -322,10 +326,14 @@ export async function GET(request: NextRequest) {
             userId: flowUserId,
           });
         } catch (error) {
-          console.error('Failed to persist Instagram connection (instagram login flow)', {
+          const errMsg = error instanceof Error ? error.message : String(error);
+          const errStack = error instanceof Error ? error.stack : undefined;
+          console.error('Instagram connection failed: Database write failed while linking Instagram account', {
+            flow: 'instagram_login',
             igAccountId,
-            provider: 'instagram_login',
-            error: error instanceof Error ? error.message : String(error),
+            userId: flowUserId,
+            error: errMsg,
+            stack: errStack,
           });
           return NextResponse.redirect(
             new URL(

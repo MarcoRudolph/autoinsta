@@ -130,3 +130,22 @@ export const instagramDeliveryAudit = pgTable(
     ),
   })
 );
+
+export const instagramDmPending = pgTable(
+  'instagram_dm_pending',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    igAccountId: text('ig_account_id').notNull(),
+    threadKey: text('thread_key').notNull(),
+    inboundPayload: jsonb('inbound_payload').notNull(),
+    threadState: jsonb('thread_state').notNull(),
+    status: text('status').notNull().default('pending'), // pending | processing | done | failed
+    errorMessage: text('error_message'),
+    processedAt: timestamp('processed_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    statusIdx: index('instagram_dm_pending_status_idx').on(table.status),
+    createdAtIdx: index('instagram_dm_pending_created_idx').on(table.createdAt),
+  })
+);

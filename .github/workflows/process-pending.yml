@@ -1,0 +1,15 @@
+name: Process Pending DMs
+on:
+  schedule:
+    - cron: '*/2 * * * *'   # every 2 minutes
+  workflow_dispatch:        # manual trigger
+jobs:
+  call-api:
+    runs-on: ubuntu-latest
+    environment: production   # use environment secrets; create env named "production" in Settings
+    steps:
+      - name: Call process-pending
+        run: |
+          curl -sf -X POST "${{ secrets.APP_URL }}/api/instagram/process-pending" \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json"

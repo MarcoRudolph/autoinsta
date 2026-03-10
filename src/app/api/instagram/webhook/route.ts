@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { processIncomingDm, recordInstagramMessage, type StoredMessageInput } from '@/lib/instagram/dmPipeline';
+import { db } from '@/drizzle';
+import { instagramDmPending } from '@/drizzle/schema/instagram';
+import { recordInstagramMessage, type StoredMessageInput } from '@/lib/instagram/dmPipeline';
 
 export const runtime = 'nodejs';
 
@@ -254,8 +256,7 @@ export async function POST(request: NextRequest) {
     let storedCount = 0;
     let duplicateCount = 0;
     let storeErrorCount = 0;
-    let processedDmCount = 0;
-    let failedDmCount = 0;
+    let enqueuedCount = 0;
 
     for (const event of events) {
       const { inserted, threadState, reason } = await recordInstagramMessage(event);
@@ -278,14 +279,16 @@ export async function POST(request: NextRequest) {
 
       if (isIncomingDm && inserted) {
         try {
-          await processIncomingDm({
-            inboundMessage: event,
-            threadState,
+          await db.insert(instagramDmPending).values({
+            igAccountId: event.igAccountId,
+            threadKey: event.threadKey,
+            inboundPayload: event as unknown as Record<string, unknown>,
+            threadState: threadState as unknown as Record<string, unknown>,
+            status: 'pending',
           });
-          processedDmCount += 1;
+          enqueuedCount += 1;
         } catch (error) {
-          failedDmCount += 1;
-          console.error('Instagram DM pipeline failure', {
+          console.error('Instagram webhook failed to enqueue DM for processing', {
             platformMessageId: event.platformMessageId,
             igAccountId: event.igAccountId,
             threadKey: event.threadKey,
@@ -301,8 +304,7 @@ export async function POST(request: NextRequest) {
       storedCount,
       duplicateCount,
       storeErrorCount,
-      processedDmCount,
-      failedDmCount,
+      enqueuedCount,
       dmCount: events.filter((item) => item.messageKind === 'dm').length,
       commentCount: events.filter((item) => item.messageKind === 'comment').length,
       entryCount: payload.entry?.length || 0,
@@ -314,8 +316,7 @@ export async function POST(request: NextRequest) {
       stored: storedCount,
       duplicates: duplicateCount,
       storeErrors: storeErrorCount,
-      processedDm: processedDmCount,
-      failedDm: failedDmCount,
+      enqueued: enqueuedCount,
     });
   } catch (error) {
     console.error('Instagram webhook parse error:', error);
