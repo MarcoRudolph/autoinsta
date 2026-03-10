@@ -119,33 +119,33 @@ export default function LandingPage() {
               <button
                 className="px-4 py-2 rounded-full bg-[#334269]/60 text-white font-semibold backdrop-blur-md hover:bg-[#334269]/80"
               >
-                Pricing
+                {t('landing.pricing.button')}
               </button>
             </DialogTrigger>
             <DialogContent className="bg-white dark:bg-[#232946] border-2 border-[#f3aacb]/20 shadow-2xl max-w-md [&>button]:text-white [&>button]:hover:text-gray-200 [&>button]:bg-[#334269] [&>button]:hover:bg-[#334269]/80 [&>button]:rounded-full [&>button]:p-2 [&>button]:transition-all [&>button]:duration-200">
               <DialogTitle className="text-center mb-6 text-2xl font-bold text-[#334269] dark:text-white">
-                Choose Your Plan
+                {t('landing.pricing.dialogTitle')}
               </DialogTitle>
               <div className="space-y-6">
                 {/* Free Plan */}
                 <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-[#2a2f4c] dark:to-[#232946] rounded-xl p-6 shadow-lg border border-gray-200 dark:border-[#334269]/30 hover:shadow-xl transition-all duration-300">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-xl font-bold text-[#334269] dark:text-white">Free Plan</h3>
+                    <h3 className="text-xl font-bold text-[#334269] dark:text-white">{t('landing.pricing.freePlan')}</h3>
                     <span className="text-sm font-medium text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-3 py-1 rounded-full">
-                      Free
+                      {t('landing.pricing.free')}
                     </span>
                   </div>
                   <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-                    20 automated messages in direct messages or comments.
+                    {t('landing.pricing.freeDescription')}
                   </p>
                   <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
                     <li className="flex items-center">
                       <span className="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
-                      Basic automation
+                      {t('landing.pricing.freeFeature1')}
                     </li>
                     <li className="flex items-center">
                       <span className="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
-                      Standard response templates
+                      {t('landing.pricing.freeFeature2')}
                     </li>
                   </ul>
                 </div>
@@ -153,31 +153,31 @@ export default function LandingPage() {
                 {/* Pro Plan */}
                 <div className="bg-gradient-to-br from-[#f3aacb] to-[#e6a3c4] rounded-xl p-6 shadow-lg border-2 border-[#f3aacb] hover:shadow-xl transition-all duration-300 relative overflow-hidden">
                   <div className="absolute top-0 right-0 bg-[#334269] text-white text-xs font-bold px-3 py-1 rounded-bl-lg">
-                    POPULAR
+                    {t('landing.pricing.popular')}
                   </div>
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-xl font-bold text-[#334269]">Pro Plan</h3>
-                    <span className="text-lg font-bold text-[#334269]">10€/month</span>
+                    <h3 className="text-xl font-bold text-[#334269]">{t('landing.pricing.proPlan')}</h3>
+                    <span className="text-lg font-bold text-[#334269]">{t('landing.pricing.proPrice')}</span>
                   </div>
                   <p className="text-sm text-[#334269]/80 mb-4">
-                    Unlimited messages for one Instagram account.
+                    {t('landing.pricing.proDescription')}
                   </p>
                   <ul className="space-y-2 text-sm text-[#334269]/80">
                     <li className="flex items-center">
                       <span className="w-2 h-2 bg-[#334269] rounded-full mr-3"></span>
-                      Unlimited automation
+                      {t('landing.pricing.proFeature1')}
                     </li>
                     <li className="flex items-center">
                       <span className="w-2 h-2 bg-[#334269] rounded-full mr-3"></span>
-                      Advanced AI responses
+                      {t('landing.pricing.proFeature2')}
                     </li>
                     <li className="flex items-center">
                       <span className="w-2 h-2 bg-[#334269] rounded-full mr-3"></span>
-                      Priority support
+                      {t('landing.pricing.proFeature3')}
                     </li>
                     <li className="flex items-center">
                       <span className="w-2 h-2 bg-[#334269] rounded-full mr-3"></span>
-                      Custom AI-Chatbot creation
+                      {t('landing.pricing.proFeature4')}
                     </li>
                   </ul>
                 </div>
@@ -200,13 +200,13 @@ export default function LandingPage() {
           </div>
           <div className="flex flex-col items-center gap-2 md:gap-4 select-none pointer-events-none text-center">
             <span className="text-2xl md:text-4xl font-bold text-white drop-shadow-lg bg-gradient-to-r from-[#f3aacb] via-[#e6ebfc] to-[#a3bffa] bg-clip-text text-transparent animate-pulse text-center">
-              Craft your AI-Chatbot.
+              {t('landing.hero.tagline1')}
             </span>
             <span className="text-lg md:text-2xl font-semibold text-white drop-shadow-md bg-gradient-to-r from-[#a3bffa] via-[#f3aacb] to-[#e6ebfc] bg-clip-text text-transparent animate-fade-in text-center">
-              AI takes over your Instagram DMs & comments—just the way you want.
+              {t('landing.hero.tagline2')}
             </span>
             <span className="text-lg md:text-xl font-medium text-white drop-shadow-md bg-gradient-to-r from-[#e6ebfc] via-[#f3aacb] to-[#a3bffa] bg-clip-text text-transparent animate-fade-in delay-200 mb-4 text-center">
-              Consistent, authentic, automatic.
+              {t('landing.hero.tagline3')}
             </span>
             <div className="pointer-events-auto">
               <Dialog key="auth-form-dialog">
@@ -214,11 +214,11 @@ export default function LandingPage() {
                   <button
                     className="inline-block bg-[#f3aacb] text-[#334269] font-bold px-10 py-4 rounded-full text-lg md:text-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
                   >
-                    Try it now
+                    {t('landing.hero.cta')}
                   </button>
                 </DialogTrigger>
                 <DialogContent>
-                  <DialogTitle>Login or Register</DialogTitle>
+                  <DialogTitle>{t('landing.hero.loginTitle')}</DialogTitle>
                   <AuthForm />
                 </DialogContent>
               </Dialog>

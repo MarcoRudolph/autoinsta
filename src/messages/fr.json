@@ -164,6 +164,30 @@
     }
   },
   "landing": {
+    "hero": {
+      "tagline1": "Créez votre IA-Chatbot.",
+      "tagline2": "L'IA prend en charge vos DM et commentaires Instagram — exactement comme vous le souhaitez.",
+      "tagline3": "Cohérent, authentique, automatique.",
+      "cta": "Essayer maintenant",
+      "loginTitle": "Connexion ou inscription"
+    },
+    "pricing": {
+      "button": "Tarifs",
+      "dialogTitle": "Choisissez votre forfait",
+      "freePlan": "Forfait gratuit",
+      "free": "Gratuit",
+      "freeDescription": "20 messages automatisés en messages directs ou commentaires.",
+      "freeFeature1": "Automatisation de base",
+      "freeFeature2": "Modèles de réponse standard",
+      "popular": "POPULAIRE",
+      "proPlan": "Forfait Pro",
+      "proPrice": "10€/mois",
+      "proDescription": "Messages illimités pour un compte Instagram.",
+      "proFeature1": "Automatisation illimitée",
+      "proFeature2": "Réponses IA avancées",
+      "proFeature3": "Support prioritaire",
+      "proFeature4": "Création d'IA-Chatbot personnalisé"
+    },
     "howItWorks": {
       "title": "Comment ça marche",
       "steps": [

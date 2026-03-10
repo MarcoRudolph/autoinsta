@@ -164,6 +164,30 @@
     }
   },
   "landing": {
+    "hero": {
+      "tagline1": "Erstelle deinen AI-Chatbot.",
+      "tagline2": "Die KI übernimmt deine Instagram DMs und Kommentare – genau so, wie du es willst.",
+      "tagline3": "Konsistent, authentisch, automatisch.",
+      "cta": "Jetzt ausprobieren",
+      "loginTitle": "Anmelden oder Registrieren"
+    },
+    "pricing": {
+      "button": "Preise",
+      "dialogTitle": "Wähle deinen Plan",
+      "freePlan": "Kostenloser Plan",
+      "free": "Kostenlos",
+      "freeDescription": "20 automatisierte Nachrichten in Direktnachrichten oder Kommentaren.",
+      "freeFeature1": "Basis-Automatisierung",
+      "freeFeature2": "Standard-Antwortvorlagen",
+      "popular": "BELIEBT",
+      "proPlan": "Pro-Plan",
+      "proPrice": "10€/Monat",
+      "proDescription": "Unbegrenzte Nachrichten für ein Instagram-Konto.",
+      "proFeature1": "Unbegrenzte Automatisierung",
+      "proFeature2": "Erweiterte KI-Antworten",
+      "proFeature3": "Prioritäts-Support",
+      "proFeature4": "Individuelle AI-Chatbot-Erstellung"
+    },
     "howItWorks": {
       "title": "Wie es funktioniert",
       "steps": [
