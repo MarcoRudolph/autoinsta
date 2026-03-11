@@ -37,12 +37,21 @@ This app uses Node route handlers (`runtime = 'nodejs'`) for Drizzle + `pg`.
 Cloudflare Pages uses `next-on-pages`, which only supports Edge route handlers for Next.js routes.
 If a Pages build is triggered, the build now fails fast with a clear message via `scripts/ensure-cloudflare-workers.js`.
 
-5. **Environment Variables**:
-   Configure these variables in Cloudflare:
-   - `POSTGRES_URL`: Your database connection string
+5. **Environment Variables** (critical for runtime):
+
+   Cloudflare has two separate scopes. **Build variables** (Settings > Build) are only available during `npm run build` and are **not** available when API routes run.
+
+   You must add **Runtime variables** under:
+   **Workers & Pages → rudolpho-chat → Settings → Variables and Secrets**
+
+   Add as **Encrypted Secret**:
+   - `POSTGRES_URL`: Your database connection string (required for Instagram callback, persona-message-count, etc.)
    - `OPENAI_API_KEY`: Your OpenAI API key
-   - `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase anonymous key
+   - Plus Supabase keys if using Supabase: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+
+   Build variables can stay in Settings > Build for `NEXT_PUBLIC_*` inlining, but `POSTGRES_URL` and other runtime-needed vars must be in Variables and Secrets.
+
+   **Debug:** If Instagram connect fails with "POSTGRES_URL missing", call `GET /api/debug-env` to verify whether `process.env` and Cloudflare bindings have the variable (returns booleans only, no values).
 
 ### Important runtime note
 
