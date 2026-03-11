@@ -28,10 +28,16 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (error || !user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+      // OAuth users may not yet have a public.users row; return free defaults instead of 404
+      return NextResponse.json({
+        subscriptionStatus: 'free',
+        subscriptionPlan: 'free',
+        isPro: false,
+        subscriptionStartDate: null,
+        subscriptionEndDate: null,
+        cancelAtPeriodEnd: false,
+        currentPeriodEnd: null,
+      });
     }
 
     return NextResponse.json({

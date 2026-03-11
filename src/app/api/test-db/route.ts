@@ -9,11 +9,24 @@ export async function GET() {
     const connectivityProbe = await db.execute(sql`select 1 as ok`);
     const isConnected = connectivityProbe.rowCount !== 0;
 
+    let hasInstagramTable = false;
+    if (isConnected) {
+      try {
+        const tableCheck = await db.execute(
+          sql`select 1 from information_schema.tables where table_schema = 'public' and table_name = 'instagram_connections' limit 1`
+        );
+        hasInstagramTable = (tableCheck.rows?.length ?? 0) > 0;
+      } catch {
+        // Ignore
+      }
+    }
+
     return NextResponse.json({
       success: true,
       runtime: 'drizzle',
       hasPostgresUrl,
       isConnected,
+      hasInstagramTable,
     });
   } catch (error) {
     return NextResponse.json(

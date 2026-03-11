@@ -51,7 +51,7 @@ If a Pages build is triggered, the build now fails fast with a clear message via
 
    Build variables can stay in Settings > Build for `NEXT_PUBLIC_*` inlining, but `POSTGRES_URL` and other runtime-needed vars must be in Variables and Secrets.
 
-   **Debug:** If Instagram connect fails with "POSTGRES_URL missing", call `GET /api/debug-env` to verify whether `process.env` and Cloudflare bindings have the variable (returns booleans only, no values).
+   **Debug:** If Instagram connect fails with "POSTGRES_URL missing", call `GET /api/debug-env` to verify. If it fails with "Database write failed", ensure migrations are applied: `npm run db:migrate` (with `POSTGRES_URL` in env). Check `GET /api/test-db` for `hasInstagramTable`.
 
 ### Important runtime note
 

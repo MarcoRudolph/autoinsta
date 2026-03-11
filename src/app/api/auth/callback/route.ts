@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/auth/supabaseClient.server';
+import { db, hasPostgresUrlConfig } from '@/drizzle';
+import { users } from '@/drizzle/schema/users';
 
 export const runtime = 'nodejs';
 
@@ -60,6 +62,29 @@ export async function GET(request: NextRequest) {
     }
 
     if (data.session) {
+      // Ensure OAuth user exists in public.users for subscription, get-user-locale, etc.
+      const authUser = data.user;
+      if (authUser?.id && authUser?.email && hasPostgresUrlConfig()) {
+        try {
+          await db
+            .insert(users)
+            .values({
+              id: authUser.id,
+              email: authUser.email,
+              passwordHash: '', // OAuth users have no password
+              subscriptionStatus: 'free',
+              subscriptionPlan: 'free',
+              isPro: false,
+            })
+            .onConflictDoUpdate({
+              target: users.id,
+              set: { email: authUser.email, updatedAt: new Date() },
+            });
+        } catch (syncErr) {
+          console.warn('[AuthCallback] User sync to public.users failed (non-fatal):', syncErr);
+        }
+      }
+
       const redirectUrl = new URL('/dashboard?status=success', siteUrl);
       console.info('[AuthCallback] Success, redirecting to', { redirectUrl: redirectUrl.toString() });
       return NextResponse.redirect(redirectUrl);
