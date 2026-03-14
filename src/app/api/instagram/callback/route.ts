@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { db, resolvePostgresUrl } from '@/drizzle';
 import { instagramConnections } from '@/drizzle/schema/instagram';
+import { decodeOAuthState } from '@/lib/oauth/state';
 
 export const runtime = 'nodejs';
 
@@ -42,9 +43,7 @@ function decodeState(rawState: string | null): OAuthState {
   }
 
   try {
-    const normalized = rawState.replace(/-/g, '+').replace(/_/g, '/');
-    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
-    const parsed = JSON.parse(atob(padded)) as OAuthState;
+    const parsed = decodeOAuthState<OAuthState>(rawState);
     return parsed;
   } catch {
     return { flow: rawState };
@@ -129,48 +128,48 @@ async function upsertInstagramConnection(input: {
 }
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const code = searchParams.get('code');
-  const state = searchParams.get('state');
-  const oauthError = searchParams.get('error');
-  const oauthErrorReason = searchParams.get('error_description') || searchParams.get('error_reason');
-
-  // Use callback request origin so local testing redirects back correctly.
-  const normalizedSiteUrl = new URL(request.url).origin;
-
-  if (oauthError) {
-    const errorMessage = encodeURIComponent(oauthErrorReason || oauthError);
-    return NextResponse.redirect(
-      new URL(`/dashboard?instagramConnected=false&instagramError=${errorMessage}`, normalizedSiteUrl)
-    );
-  }
-
-  if (!code) {
-    return NextResponse.redirect(
-      new URL('/dashboard?instagramConnected=false&instagramError=Missing authorization code', normalizedSiteUrl)
-    );
-  }
-
-  const redirectUri = `${normalizedSiteUrl}/api/instagram/callback`;
-
-  if (!resolvePostgresUrl()) {
-    console.error('Instagram callback: POSTGRES_URL not resolved (process.env or Cloudflare bindings)');
-    return NextResponse.redirect(
-      new URL(
-        '/dashboard?instagramConnected=false&instagramError=Database not configured (POSTGRES_URL missing)',
-        normalizedSiteUrl
-      )
-    );
-  }
-
-  const parsedState = decodeState(state);
-  const flow = parsedState.flow;
-  const flowUserId = parsedState.userId || null;
-  const isMetaBusinessFlow = flow === 'meta_business_login';
-  const isInstagramLoginFlow = flow === 'instagram_login' || !flow;
-  let webhookSubscriptionFailed = false;
-
   try {
+    const { searchParams } = new URL(request.url);
+    const code = searchParams.get('code');
+    const state = searchParams.get('state');
+    const oauthError = searchParams.get('error');
+    const oauthErrorReason = searchParams.get('error_description') || searchParams.get('error_reason');
+
+    // Use callback request origin so local testing redirects back correctly.
+    const normalizedSiteUrl = new URL(request.url).origin;
+
+    if (oauthError) {
+      const errorMessage = encodeURIComponent(oauthErrorReason || oauthError);
+      return NextResponse.redirect(
+        new URL(`/dashboard?instagramConnected=false&instagramError=${errorMessage}`, normalizedSiteUrl)
+      );
+    }
+
+    if (!code) {
+      return NextResponse.redirect(
+        new URL('/dashboard?instagramConnected=false&instagramError=Missing authorization code', normalizedSiteUrl)
+      );
+    }
+
+    const redirectUri = `${normalizedSiteUrl}/api/instagram/callback`;
+
+    if (!resolvePostgresUrl()) {
+      console.error('Instagram callback: POSTGRES_URL not resolved (process.env or Cloudflare bindings)');
+      return NextResponse.redirect(
+        new URL(
+          '/dashboard?instagramConnected=false&instagramError=Database not configured (POSTGRES_URL missing)',
+          normalizedSiteUrl
+        )
+      );
+    }
+
+    const parsedState = decodeState(state);
+    const flow = parsedState.flow;
+    const flowUserId = parsedState.userId || null;
+    const isMetaBusinessFlow = flow === 'meta_business_login';
+    const isInstagramLoginFlow = flow === 'instagram_login' || !flow;
+    let webhookSubscriptionFailed = false;
+
     if (isMetaBusinessFlow) {
       const clientId =
         process.env.META_APP_ID ||
@@ -390,6 +389,13 @@ export async function GET(request: NextRequest) {
     }
     return NextResponse.redirect(dashboardUrl);
   } catch (error) {
+    const normalizedSiteUrl = (() => {
+      try {
+        return new URL(request.url).origin;
+      } catch {
+        return process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://rudolpho-chat.de';
+      }
+    })();
     const err = error instanceof Error ? error : new Error(String(error));
     console.error('Instagram callback unexpected error:', {
       message: err.message,

@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { encodeOAuthState } from '@/lib/oauth/state';
 
 export const runtime = 'nodejs';
-
-function encodeState(payload: Record<string, unknown>): string {
-  const json = JSON.stringify(payload);
-  return btoa(json)
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/g, '');
-}
 
 export async function GET(request: NextRequest) {
   const clientId =
@@ -40,7 +33,7 @@ export async function GET(request: NextRequest) {
   url.searchParams.append('redirect_uri', redirectUri);
   url.searchParams.append('response_type', 'code');
   url.searchParams.append('scope', scopes.join(','));
-  const state = encodeState({
+  const state = encodeOAuthState({
     flow: 'meta_business_login',
     userId: userId || null,
   });
