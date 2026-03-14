@@ -515,36 +515,6 @@ export async function recordInstagramMessage(
     };
   }
 
-  try {
-    await db.insert(instagramMessages).values({
-      igAccountId: message.igAccountId,
-      threadKey: message.threadKey,
-      platformMessageId: message.platformMessageId,
-      messageKind: message.messageKind,
-      direction: message.direction,
-      senderIgId: message.senderIgId,
-      recipientIgId: message.recipientIgId,
-      messageText: message.messageText,
-      sentAt: new Date(message.sentAt),
-      rawPayload: message.rawPayload,
-    });
-  } catch (error) {
-    console.error('[dmPipeline] Failed to insert instagram_messages row', {
-      igAccountId: message.igAccountId,
-      threadKey: message.threadKey,
-      platformMessageId: message.platformMessageId,
-      direction: message.direction,
-      messageKind: message.messageKind,
-      error: error instanceof Error ? error.message : String(error),
-    });
-      return {
-        inserted: false,
-        threadState: await loadThreadState(message.igAccountId, message.threadKey),
-        reason: 'error',
-        errorMessage: error instanceof Error ? error.message : String(error),
-      };
-    }
-
   let existingThread:
     | {
         incomingMessageCount: number;
@@ -613,7 +583,7 @@ export async function recordInstagramMessage(
           lastPromoMessageId: existingThread?.lastPromoMessageId || null,
           updatedAt: new Date(),
         },
-      });
+        });
   } catch (error) {
     console.error('[dmPipeline] Failed to upsert instagram_threads row', {
       igAccountId: message.igAccountId,
@@ -627,9 +597,39 @@ export async function recordInstagramMessage(
         inserted: false,
         threadState: await loadThreadState(message.igAccountId, message.threadKey),
         reason: 'error',
-        errorMessage: error instanceof Error ? error.message : String(error),
-      };
-    }
+      errorMessage: error instanceof Error ? error.message : String(error),
+    };
+  }
+
+  try {
+    await db.insert(instagramMessages).values({
+      igAccountId: message.igAccountId,
+      threadKey: message.threadKey,
+      platformMessageId: message.platformMessageId,
+      messageKind: message.messageKind,
+      direction: message.direction,
+      senderIgId: message.senderIgId,
+      recipientIgId: message.recipientIgId,
+      messageText: message.messageText,
+      sentAt: sentAtDate,
+      rawPayload: message.rawPayload,
+    });
+  } catch (error) {
+    console.error('[dmPipeline] Failed to insert instagram_messages row', {
+      igAccountId: message.igAccountId,
+      threadKey: message.threadKey,
+      platformMessageId: message.platformMessageId,
+      direction: message.direction,
+      messageKind: message.messageKind,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return {
+      inserted: false,
+      threadState: await loadThreadState(message.igAccountId, message.threadKey),
+      reason: 'error',
+      errorMessage: error instanceof Error ? error.message : String(error),
+    };
+  }
 
   try {
     await db
