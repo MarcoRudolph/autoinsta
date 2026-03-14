@@ -223,21 +223,52 @@ async function upsertInstagramConnection(input: {
   const tokenExpiresAt =
     typeof input.expiresInSeconds === 'number' ? new Date(Date.now() + input.expiresInSeconds * 1000) : null;
 
-  await db
-    .insert(instagramConnections)
-    .values({
+  const values = {
+    igAccountId: input.igAccountId,
+    igUsername: input.igUsername || null,
+    accessToken: input.accessToken || null,
+    tokenExpiresAt,
+    provider: input.provider,
+    userId: input.userId || null,
+    status: 'connected' as const,
+    updatedAt: new Date(),
+  };
+
+  try {
+    await db
+      .insert(instagramConnections)
+      .values(values)
+      .onConflictDoUpdate({
+        target: instagramConnections.igAccountId,
+        set: {
+          igUsername: input.igUsername || null,
+          accessToken: input.accessToken || null,
+          tokenExpiresAt,
+          provider: input.provider,
+          userId: input.userId || null,
+          status: 'connected',
+          updatedAt: new Date(),
+        },
+      });
+  } catch (error) {
+    const dbError = error as { code?: string; message?: string };
+    const message = dbError?.message || '';
+    const noConflictConstraint =
+      dbError?.code === '42P10' || message.includes('no unique or exclusion constraint matching the ON CONFLICT');
+
+    if (!noConflictConstraint) {
+      throw error;
+    }
+
+    console.warn('Instagram connection upsert fallback triggered: missing ON CONFLICT constraint', {
+      code: dbError?.code,
+      message: dbError?.message,
       igAccountId: input.igAccountId,
-      igUsername: input.igUsername || null,
-      accessToken: input.accessToken || null,
-      tokenExpiresAt,
-      provider: input.provider,
-      userId: input.userId || null,
-      status: 'connected',
-      updatedAt: new Date(),
-    })
-    .onConflictDoUpdate({
-      target: instagramConnections.igAccountId,
-      set: {
+    });
+
+    const updated = await db
+      .update(instagramConnections)
+      .set({
         igUsername: input.igUsername || null,
         accessToken: input.accessToken || null,
         tokenExpiresAt,
@@ -245,8 +276,14 @@ async function upsertInstagramConnection(input: {
         userId: input.userId || null,
         status: 'connected',
         updatedAt: new Date(),
-      },
-    });
+      })
+      .where(eq(instagramConnections.igAccountId, input.igAccountId))
+      .returning({ igAccountId: instagramConnections.igAccountId });
+
+    if (updated.length === 0) {
+      await db.insert(instagramConnections).values(values);
+    }
+  }
 
   const saved = await db
     .select({ igAccountId: instagramConnections.igAccountId })
