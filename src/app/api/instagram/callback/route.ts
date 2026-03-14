@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { db, resolvePostgresUrl } from '@/drizzle';
 import { instagramConnections } from '@/drizzle/schema/instagram';
 import { decodeOAuthState } from '@/lib/oauth/state';
@@ -296,6 +296,30 @@ async function upsertInstagramConnection(input: {
   }
 }
 
+async function resolveValidConnectionUserId(userId: string | null | undefined): Promise<string | null> {
+  if (!userId) return null;
+
+  try {
+    const result = await db.execute(
+      sql`select 1 from public.users where id = ${userId} limit 1`
+    );
+    if ((result.rows?.length ?? 0) > 0) {
+      return userId;
+    }
+
+    console.warn('Instagram callback: state userId is not present in public.users; storing null userId', {
+      userId,
+    });
+    return null;
+  } catch (error) {
+    console.warn('Instagram callback: failed to validate userId against public.users; storing null userId', {
+      userId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -335,6 +359,7 @@ export async function GET(request: NextRequest) {
     const parsedState = decodeState(state);
     const flow = parsedState.flow;
     const flowUserId = parsedState.userId || null;
+    const connectionUserId = await resolveValidConnectionUserId(flowUserId);
     const isMetaBusinessFlow = flow === 'meta_business_login';
     const isInstagramLoginFlow = flow === 'instagram_login' || !flow;
     let webhookSubscriptionFailed = false;
@@ -408,7 +433,7 @@ export async function GET(request: NextRequest) {
             accessToken: connectionToken,
             expiresInSeconds: tokenData.expires_in,
             provider: 'meta_business',
-            userId: flowUserId,
+            userId: connectionUserId,
           });
         } catch (error) {
           const err = error instanceof Error ? error : new Error(String(error));
@@ -417,6 +442,7 @@ export async function GET(request: NextRequest) {
             flow: 'meta_business',
             igAccountId: firstConnected.instagram_business_account.id,
             userId: flowUserId,
+            resolvedUserId: connectionUserId,
             error: err.message,
             code: dbError?.code,
             detail: dbError?.detail,
@@ -530,7 +556,7 @@ export async function GET(request: NextRequest) {
             accessToken: tokenToStore,
             expiresInSeconds: tokenExpiresIn,
             provider: 'instagram_login',
-            userId: flowUserId,
+            userId: connectionUserId,
           });
         } catch (error) {
           const err = error instanceof Error ? error : new Error(String(error));
@@ -539,6 +565,7 @@ export async function GET(request: NextRequest) {
             flow: 'instagram_login',
             igAccountId,
             userId: flowUserId,
+            resolvedUserId: connectionUserId,
             error: err.message,
             code: dbError?.code,
             detail: dbError?.detail,
