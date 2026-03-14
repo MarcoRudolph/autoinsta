@@ -36,6 +36,38 @@ type OAuthState = {
   userId?: string | null;
 };
 
+function extractApiErrorMessage(payload: unknown, fallback: string): string {
+  if (!payload || typeof payload !== 'object') return fallback;
+  const record = payload as Record<string, unknown>;
+  const nestedError =
+    record.error && typeof record.error === 'object' ? (record.error as Record<string, unknown>) : null;
+
+  const candidates = [
+    nestedError?.message,
+    record.error_message,
+    record.error_description,
+    record.message,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim().length > 0) {
+      return candidate;
+    }
+  }
+
+  return fallback;
+}
+
+async function parseJsonOrNull(response: Response): Promise<unknown> {
+  const raw = await response.text();
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as unknown;
+  } catch {
+    return null;
+  }
+}
+
 function decodeState(rawState: string | null): OAuthState {
   if (!rawState) return {};
   if (rawState === 'instagram_login' || rawState === 'meta_business_login') {
@@ -194,10 +226,15 @@ export async function GET(request: NextRequest) {
       tokenUrl.searchParams.append('code', code);
 
       const tokenResponse = await fetch(tokenUrl.toString(), { method: 'GET' });
-      const tokenData = (await tokenResponse.json()) as MetaTokenResponse;
+      const tokenPayload = await parseJsonOrNull(tokenResponse);
+      const tokenData = (tokenPayload ?? {}) as MetaTokenResponse;
 
       if (!tokenResponse.ok || !tokenData.access_token) {
-        const apiError = tokenData.error?.message || 'Meta token exchange failed';
+        const apiError = extractApiErrorMessage(tokenPayload, 'Meta token exchange failed');
+        console.error('Meta token exchange failed', {
+          status: tokenResponse.status,
+          apiError,
+        });
         return NextResponse.redirect(
           new URL(
             `/dashboard?instagramConnected=false&instagramError=${encodeURIComponent(apiError)}`,
@@ -315,9 +352,14 @@ export async function GET(request: NextRequest) {
         body: formBody.toString(),
       });
 
-      const tokenData = (await tokenResponse.json()) as MetaTokenResponse;
+      const tokenPayload = await parseJsonOrNull(tokenResponse);
+      const tokenData = (tokenPayload ?? {}) as MetaTokenResponse;
       if (!tokenResponse.ok || !tokenData.access_token) {
-        const apiError = tokenData.error?.message || 'Instagram token exchange failed';
+        const apiError = extractApiErrorMessage(tokenPayload, 'Instagram token exchange failed');
+        console.error('Instagram token exchange failed', {
+          status: tokenResponse.status,
+          apiError,
+        });
         return NextResponse.redirect(
           new URL(
             `/dashboard?instagramConnected=false&instagramError=${encodeURIComponent(apiError)}`,
