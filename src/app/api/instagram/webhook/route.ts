@@ -257,20 +257,28 @@ export async function POST(request: NextRequest) {
     let duplicateCount = 0;
     let storeErrorCount = 0;
     let enqueuedCount = 0;
+    const storeFailures: Array<{ platformMessageId: string; igAccountId: string; threadKey: string; error?: string }> = [];
 
     for (const event of events) {
-      const { inserted, threadState, reason } = await recordInstagramMessage(event);
+      const { inserted, threadState, reason, errorMessage } = await recordInstagramMessage(event);
       if (inserted) {
         storedCount += 1;
       } else if (reason === 'duplicate') {
         duplicateCount += 1;
       } else {
         storeErrorCount += 1;
+        storeFailures.push({
+          platformMessageId: event.platformMessageId,
+          igAccountId: event.igAccountId,
+          threadKey: event.threadKey,
+          error: errorMessage,
+        });
         console.error('Instagram webhook failed to persist event', {
           platformMessageId: event.platformMessageId,
           igAccountId: event.igAccountId,
           threadKey: event.threadKey,
           reason,
+          error: errorMessage,
         });
       }
 
@@ -317,6 +325,7 @@ export async function POST(request: NextRequest) {
       duplicates: duplicateCount,
       storeErrors: storeErrorCount,
       enqueued: enqueuedCount,
+      storeFailures: storeFailures.slice(0, 3),
     });
   } catch (error) {
     console.error('Instagram webhook parse error:', error);

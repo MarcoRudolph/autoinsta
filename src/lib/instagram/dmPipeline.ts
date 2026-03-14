@@ -474,7 +474,12 @@ async function loadThreadState(igAccountId: string, threadKey: string): Promise<
 
 export async function recordInstagramMessage(
   message: StoredMessageInput
-): Promise<{ inserted: boolean; threadState: ThreadState; reason: 'inserted' | 'duplicate' | 'error' }> {
+): Promise<{
+  inserted: boolean;
+  threadState: ThreadState;
+  reason: 'inserted' | 'duplicate' | 'error';
+  errorMessage?: string;
+}> {
   let existing: Array<{ platformMessageId: string }> = [];
   try {
     existing = await db
@@ -489,12 +494,13 @@ export async function recordInstagramMessage(
       platformMessageId: message.platformMessageId,
       error: error instanceof Error ? error.message : String(error),
     });
-    return {
-      inserted: false,
-      threadState: await loadThreadState(message.igAccountId, message.threadKey),
-      reason: 'error',
-    };
-  }
+      return {
+        inserted: false,
+        threadState: await loadThreadState(message.igAccountId, message.threadKey),
+        reason: 'error',
+        errorMessage: error instanceof Error ? error.message : String(error),
+      };
+    }
 
   if (existing.length > 0) {
     logDmDebug('duplicate_message', {
@@ -531,12 +537,13 @@ export async function recordInstagramMessage(
       messageKind: message.messageKind,
       error: error instanceof Error ? error.message : String(error),
     });
-    return {
-      inserted: false,
-      threadState: await loadThreadState(message.igAccountId, message.threadKey),
-      reason: 'error',
-    };
-  }
+      return {
+        inserted: false,
+        threadState: await loadThreadState(message.igAccountId, message.threadKey),
+        reason: 'error',
+        errorMessage: error instanceof Error ? error.message : String(error),
+      };
+    }
 
   let existingThread:
     | {
@@ -616,12 +623,13 @@ export async function recordInstagramMessage(
       outgoingCount,
       error: error instanceof Error ? error.message : String(error),
     });
-    return {
-      inserted: false,
-      threadState: await loadThreadState(message.igAccountId, message.threadKey),
-      reason: 'error',
-    };
-  }
+      return {
+        inserted: false,
+        threadState: await loadThreadState(message.igAccountId, message.threadKey),
+        reason: 'error',
+        errorMessage: error instanceof Error ? error.message : String(error),
+      };
+    }
 
   try {
     await db
