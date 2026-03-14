@@ -19,6 +19,25 @@ type MetaTokenResponse = {
   };
 };
 
+type InstagramLoginTokenDataItem = {
+  access_token?: string;
+  user_id?: number | string;
+  permissions?: string | string[];
+  token_type?: string;
+  expires_in?: number;
+};
+
+type InstagramLoginTokenResponse = {
+  access_token?: string;
+  user_id?: number | string;
+  token_type?: string;
+  expires_in?: number;
+  data?: InstagramLoginTokenDataItem[];
+  error_type?: string;
+  code?: number;
+  error_message?: string;
+};
+
 type MetaAccountListResponse = {
   data?: Array<{
     id?: string;
@@ -65,6 +84,87 @@ async function parseJsonOrNull(response: Response): Promise<unknown> {
     return JSON.parse(raw) as unknown;
   } catch {
     return null;
+  }
+}
+
+function normalizeInstagramLoginToken(payload: unknown): {
+  accessToken: string | null;
+  userId: string | null;
+  expiresIn?: number;
+} {
+  if (!payload || typeof payload !== 'object') {
+    return { accessToken: null, userId: null };
+  }
+
+  const record = payload as Record<string, unknown>;
+  const rootAccessToken = typeof record.access_token === 'string' ? record.access_token : null;
+  const rootUserId =
+    typeof record.user_id === 'string' || typeof record.user_id === 'number' ? String(record.user_id) : null;
+  const rootExpiresIn = typeof record.expires_in === 'number' ? record.expires_in : undefined;
+  if (rootAccessToken) {
+    return { accessToken: rootAccessToken, userId: rootUserId, expiresIn: rootExpiresIn };
+  }
+
+  const data = Array.isArray(record.data) ? (record.data as Array<Record<string, unknown>>) : [];
+  const first = data[0];
+  if (!first) {
+    return { accessToken: null, userId: null };
+  }
+
+  const dataAccessToken = typeof first.access_token === 'string' ? first.access_token : null;
+  const dataUserId =
+    typeof first.user_id === 'string' || typeof first.user_id === 'number' ? String(first.user_id) : null;
+  const dataExpiresIn = typeof first.expires_in === 'number' ? first.expires_in : undefined;
+
+  return {
+    accessToken: dataAccessToken,
+    userId: dataUserId,
+    expiresIn: dataExpiresIn,
+  };
+}
+
+async function exchangeInstagramShortTokenForLongLived(input: {
+  shortLivedToken: string;
+  clientSecret: string;
+}): Promise<{ accessToken: string | null; expiresIn?: number; error?: string }> {
+  const url = new URL('https://graph.instagram.com/access_token');
+  url.searchParams.append('grant_type', 'ig_exchange_token');
+  url.searchParams.append('client_secret', input.clientSecret);
+  url.searchParams.append('access_token', input.shortLivedToken);
+
+  try {
+    const response = await fetch(url.toString(), { method: 'GET' });
+    const payload = await parseJsonOrNull(response);
+    if (!response.ok) {
+      return {
+        accessToken: null,
+        error: extractApiErrorMessage(payload, 'Failed to exchange short-lived token for long-lived token'),
+      };
+    }
+
+    if (!payload || typeof payload !== 'object') {
+      return {
+        accessToken: null,
+        error: 'Long-lived token response was empty',
+      };
+    }
+
+    const record = payload as Record<string, unknown>;
+    const accessToken = typeof record.access_token === 'string' ? record.access_token : null;
+    const expiresIn = typeof record.expires_in === 'number' ? record.expires_in : undefined;
+    if (!accessToken) {
+      return {
+        accessToken: null,
+        error: 'Long-lived token missing access_token',
+      };
+    }
+
+    return { accessToken, expiresIn };
+  } catch (error) {
+    return {
+      accessToken: null,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
@@ -353,12 +453,14 @@ export async function GET(request: NextRequest) {
       });
 
       const tokenPayload = await parseJsonOrNull(tokenResponse);
-      const tokenData = (tokenPayload ?? {}) as MetaTokenResponse;
-      if (!tokenResponse.ok || !tokenData.access_token) {
+      const tokenData = (tokenPayload ?? {}) as InstagramLoginTokenResponse;
+      const normalizedToken = normalizeInstagramLoginToken(tokenData);
+      if (!tokenResponse.ok || !normalizedToken.accessToken) {
         const apiError = extractApiErrorMessage(tokenPayload, 'Instagram token exchange failed');
         console.error('Instagram token exchange failed', {
           status: tokenResponse.status,
           apiError,
+          responseShape: tokenPayload,
         });
         return NextResponse.redirect(
           new URL(
@@ -368,13 +470,28 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      const igAccountId = tokenData.user_id ? String(tokenData.user_id) : null;
+      let tokenToStore = normalizedToken.accessToken;
+      let tokenExpiresIn = normalizedToken.expiresIn;
+      const longLivedTokenResult = await exchangeInstagramShortTokenForLongLived({
+        shortLivedToken: normalizedToken.accessToken,
+        clientSecret,
+      });
+      if (longLivedTokenResult.accessToken) {
+        tokenToStore = longLivedTokenResult.accessToken;
+        tokenExpiresIn = longLivedTokenResult.expiresIn;
+      } else {
+        console.warn('Instagram long-lived token exchange failed; storing short-lived token instead', {
+          error: longLivedTokenResult.error || 'unknown',
+        });
+      }
+
+      const igAccountId = normalizedToken.userId;
       if (igAccountId) {
         try {
           await upsertInstagramConnection({
             igAccountId,
-            accessToken: tokenData.access_token,
-            expiresInSeconds: tokenData.expires_in,
+            accessToken: tokenToStore,
+            expiresInSeconds: tokenExpiresIn,
             provider: 'instagram_login',
             userId: flowUserId,
           });
@@ -400,7 +517,7 @@ export async function GET(request: NextRequest) {
 
         const subscriptionResult = await subscribeInstagramAccountToApp({
           igAccountId,
-          accessToken: tokenData.access_token,
+          accessToken: tokenToStore,
         });
 
         if (!subscriptionResult.ok) {
