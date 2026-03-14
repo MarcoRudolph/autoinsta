@@ -62,6 +62,9 @@ type PersonaData = {
 function DashboardContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const isTestMode =
+    process.env.NEXT_PUBLIC_TEST_MODE === '1' ||
+    process.env.NEXT_PUBLIC_TEST_MODE === 'true';
   
   // All hooks must be called before any return or conditional return
   // Initial state: flat structure
@@ -1614,7 +1617,9 @@ function DashboardContent() {
             </div>
 
             {/* Childhood Experiences */}
-            {Object.keys(personality.childhoodExperiences || {}).map((section: string) => {
+            {Object.keys(personality.childhoodExperiences || {})
+              .filter((section) => !(isTestMode && section === 'sexuality'))
+              .map((section: string) => {
               
               const addItem = (newItem: string) => {
                 if (newItem && newItem.trim()) {
