@@ -8,6 +8,9 @@ import {
   instagramThreads,
 } from '@/drizzle/schema/instagram';
 import { personas } from '@/drizzle/schema/personas';
+import { calculateMessageCostMicros, estimateMessageCostMicros } from '@/lib/billing/openaiCost';
+import { creditsFromCostMicros } from '@/lib/billing/plans';
+import { canAffordEstimatedMessage, recordUsageDebit } from '@/lib/billing/service';
 import { decideProductLink, type ProductLink } from './productLinkDecision';
 
 type MessageKind = 'dm' | 'comment';
@@ -240,7 +243,14 @@ async function generateAiReply(
   systemPrompt: string,
   history: Array<{ role: 'user' | 'assistant'; content: string }>,
   latestUserMessage: string
-): Promise<string> {
+): Promise<{
+  replyText: string;
+  model: string;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  apiCostMicros: number;
+}> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     throw new Error('OPENAI_API_KEY is missing');
@@ -274,12 +284,37 @@ async function generateAiReply(
 
   const payload = (await response.json()) as {
     choices?: Array<{ message?: { content?: string } }>;
+    usage?: {
+      prompt_tokens?: number;
+      completion_tokens?: number;
+      total_tokens?: number;
+    };
   };
   const content = payload.choices?.[0]?.message?.content?.trim();
   if (!content) {
     throw new Error('OpenAI returned empty content');
   }
-  return content;
+
+  const promptTokens = Number(payload.usage?.prompt_tokens || 0);
+  const completionTokens = Number(payload.usage?.completion_tokens || 0);
+  const totalTokens =
+    Number(payload.usage?.total_tokens || 0) ||
+    (Number.isFinite(promptTokens) && Number.isFinite(completionTokens)
+      ? promptTokens + completionTokens
+      : 0);
+  const apiCostMicros = calculateMessageCostMicros({
+    promptTokens: Math.max(0, promptTokens),
+    completionTokens: Math.max(0, completionTokens),
+  });
+
+  return {
+    replyText: content,
+    model,
+    promptTokens: Math.max(0, promptTokens),
+    completionTokens: Math.max(0, completionTokens),
+    totalTokens: Math.max(0, totalTokens),
+    apiCostMicros,
+  };
 }
 
 function wait(ms: number) {
@@ -743,17 +778,66 @@ export async function processIncomingDm(input: DmOrchestrationInput): Promise<vo
     inboundMessage.platformMessageId
   );
 
-  const replyText = await generateAiReply(
+  const affordability = await canAffordEstimatedMessage(connection.userId);
+  if (!affordability.allowed) {
+    await insertPromoAudit({
+      igAccountId: inboundMessage.igAccountId,
+      threadKey: inboundMessage.threadKey,
+      platformMessageId: inboundMessage.platformMessageId,
+      personaId: persona.id,
+      decision: 'promo_skipped',
+      reason: 'insufficient_credits',
+      metadata: {
+        requiredCredits: affordability.requiredCredits,
+        remainingCredits: affordability.remainingCredits,
+        estimatedCredits: creditsFromCostMicros(estimateMessageCostMicros()),
+      },
+    });
+    return;
+  }
+
+  const aiReply = await generateAiReply(
     buildSystemPrompt(persona, promoInstruction),
     history,
     inboundMessage.messageText
   );
 
+  const usageDebit = await recordUsageDebit({
+    userId: connection.userId,
+    igAccountId: inboundMessage.igAccountId,
+    threadKey: inboundMessage.threadKey,
+    platformMessageId: inboundMessage.platformMessageId,
+    model: aiReply.model,
+    promptTokens: aiReply.promptTokens,
+    completionTokens: aiReply.completionTokens,
+    totalTokens: aiReply.totalTokens,
+    apiCostMicros: aiReply.apiCostMicros,
+    metadata: {
+      source: 'processIncomingDm',
+    },
+  });
+  if (!usageDebit.ok) {
+    await insertPromoAudit({
+      igAccountId: inboundMessage.igAccountId,
+      threadKey: inboundMessage.threadKey,
+      platformMessageId: inboundMessage.platformMessageId,
+      personaId: persona.id,
+      decision: 'promo_skipped',
+      reason: 'insufficient_credits_after_generation',
+      metadata: {
+        apiCostMicros: aiReply.apiCostMicros,
+        debitedCredits: usageDebit.creditsDebited,
+        remainingCredits: usageDebit.remainingCredits,
+      },
+    });
+    return;
+  }
+
   const sent = await sendInstagramDm(
     inboundMessage.igAccountId,
     inboundMessage.threadKey,
     inboundMessage.senderIgId,
-    replyText,
+    aiReply.replyText,
     accessToken
   );
 
@@ -766,7 +850,7 @@ export async function processIncomingDm(input: DmOrchestrationInput): Promise<vo
     direction: 'outgoing',
     senderIgId: inboundMessage.igAccountId,
     recipientIgId: inboundMessage.senderIgId,
-    messageText: replyText,
+    messageText: aiReply.replyText,
     sentAt,
     rawPayload: {
       sourceMessageId: inboundMessage.platformMessageId,

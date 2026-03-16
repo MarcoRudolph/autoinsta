@@ -32,6 +32,33 @@ function getObjectId(event: Stripe.Event): string | null {
   return null;
 }
 
+async function syncUserEntitlement(
+  supabase: ReturnType<typeof createSupabaseAnonServerClient>,
+  input: {
+    userId: string;
+    plan: 'free' | 'pro' | 'max';
+    status: string;
+    currentPeriodStart?: Date | null;
+    currentPeriodEnd?: Date | null;
+    customerId?: string | null;
+  }
+) {
+  const isActiveStatus = input.status === 'active' || input.status === 'trialing';
+  const isPaidPlan = (input.plan === 'pro' || input.plan === 'max') && isActiveStatus;
+  await supabase
+    .from('users')
+    .update({
+      stripe_customer_id: input.customerId || null,
+      subscription_status: input.status || (isPaidPlan ? 'active' : 'free'),
+      subscription_plan: input.plan,
+      subscription_start_date: input.currentPeriodStart ? input.currentPeriodStart.toISOString() : null,
+      subscription_end_date: input.currentPeriodEnd ? input.currentPeriodEnd.toISOString() : null,
+      is_pro: isPaidPlan,
+      updatedAt: new Date().toISOString(),
+    })
+    .eq('id', input.userId);
+}
+
 /**
  * Handle checkout session completed event
  */
@@ -109,6 +136,15 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event) {
         console.error('Error creating subscription record:', insertError);
         throw insertError;
       }
+
+      await syncUserEntitlement(supabase, {
+        userId: appUserId,
+        plan,
+        status: sub.status,
+        currentPeriodStart: toDate(sub.current_period_start),
+        currentPeriodEnd: toDate(sub.current_period_end),
+        customerId,
+      });
     }
   } catch (error) {
     console.error('Error handling checkout session completed:', error);
@@ -208,6 +244,15 @@ async function handleSubscriptionChange(event: Stripe.Event) {
       console.error('Error updating subscription record:', updateError);
       throw updateError;
     }
+
+    await syncUserEntitlement(supabase, {
+      userId: userData.id,
+      plan,
+      status: sub.status,
+      currentPeriodStart: toDate(sub.current_period_start),
+      currentPeriodEnd: toDate(sub.current_period_end),
+      customerId: typeof sub.customer === 'string' ? sub.customer : sub.customer.id,
+    });
   } catch (error) {
     console.error('Error handling subscription change:', error);
     throw error;

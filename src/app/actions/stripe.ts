@@ -1,17 +1,16 @@
 'use server';
 
 import { stripe } from '@/lib/stripe';
+import { mapPlanToPrice } from '@/lib/stripe';
 import { createSupabaseAnonServerClient } from '@/lib/supabase/serverClient';
 import { revalidatePath } from 'next/cache';
-
-// Price ID for the 10 Euro monthly product
-const STRIPE_PRICE_PRO = process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO!;
 
 /**
  * Create a Stripe Checkout Session for subscription
  */
 export async function createSubscriptionCheckout(
   userId: string,
+  plan: 'pro' | 'max' = 'pro',
   successUrl?: string,
   cancelUrl?: string
 ) {
@@ -19,6 +18,11 @@ export async function createSubscriptionCheckout(
     // Check if Stripe is available
     if (!stripe) {
       throw new Error('Stripe is not configured');
+    }
+
+    const selectedPriceId = mapPlanToPrice(plan);
+    if (!selectedPriceId) {
+      throw new Error(`Stripe price for plan "${plan}" is not configured`);
     }
 
     const supabase = createSupabaseAnonServerClient();
@@ -59,25 +63,31 @@ export async function createSubscriptionCheckout(
         throw updateError;
       }
     }
+    if (!customerId) {
+      throw new Error('Stripe customer could not be created');
+    }
+
+    const stripeCustomerId: string = customerId;
+    const stripePriceId: string = selectedPriceId;
 
     // Create checkout session
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
-      customer: customerId,
-      line_items: [{ price: STRIPE_PRICE_PRO, quantity: 1 }],
+      customer: stripeCustomerId,
+      line_items: [{ price: stripePriceId, quantity: 1 }],
       allow_promotion_codes: true,
       success_url: successUrl || `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard?status=success`,
       cancel_url: cancelUrl || `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard?status=cancelled`,
       metadata: { 
         appUserId: userId,
-        priceId: STRIPE_PRICE_PRO,
-        plan: 'pro',
+        priceId: stripePriceId,
+        plan,
       },
       subscription_data: {
         metadata: {
           appUserId: userId,
-          priceId: STRIPE_PRICE_PRO,
-          plan: 'pro',
+          priceId: stripePriceId,
+          plan,
         },
       },
     });

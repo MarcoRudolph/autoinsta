@@ -21,7 +21,7 @@ export const subscriptions = pgTable('subscriptions', {
   // Plan and pricing
   priceId: text('price_id'), // Stripe price ID
   productId: text('product_id'), // Stripe product ID
-  plan: text('plan').notNull(), // 'free', 'pro', 'enterprise'
+  plan: text('plan').notNull(), // 'free', 'pro', 'max', 'enterprise'
   quantity: integer('quantity').notNull().default(1),
   
   // Invoice tracking

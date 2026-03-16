@@ -157,6 +157,16 @@ function DashboardContent() {
   
   // Subscription state
   const [isProUser, setIsProUser] = useState(false);
+  const [billingUsage, setBillingUsage] = useState<{
+    plan: string;
+    messagesReceived: number;
+    messagesSent: number;
+    creditsUsed: number;
+    creditsTotal: number;
+    creditsRemaining: number;
+    apiCostMicros: number;
+    apiBudgetMicros: number;
+  } | null>(null);
   // Unsaved changes dialog hooks
   const [lastLoadedPersona, setLastLoadedPersona] = useState<typeof personality>(personality);
   const [pendingPersonaId, setPendingPersonaId] = useState<string | null>(null);
@@ -284,6 +294,27 @@ function DashboardContent() {
     } catch (error) {
       console.error('Error checking subscription:', error);
       setIsProUser(false);
+    }
+  }, [userId]);
+
+  const fetchBillingUsage = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const res = await fetch(`/api/billing/usage?userId=${userId}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setBillingUsage({
+        plan: String(data.plan || 'free'),
+        messagesReceived: Number(data.messagesReceived || 0),
+        messagesSent: Number(data.messagesSent || 0),
+        creditsUsed: Number(data.creditsUsed || 0),
+        creditsTotal: Number(data.creditsTotal || 0),
+        creditsRemaining: Number(data.creditsRemaining || 0),
+        apiCostMicros: Number(data.apiCostMicros || 0),
+        apiBudgetMicros: Number(data.apiBudgetMicros || 0),
+      });
+    } catch (error) {
+      console.error('Error loading billing usage:', error);
     }
   }, [userId]);
 
@@ -500,6 +531,10 @@ function DashboardContent() {
   useEffect(() => {
     if (userId) checkUserSubscription();
   }, [userId, checkUserSubscription]);
+
+  useEffect(() => {
+    if (userId) fetchBillingUsage();
+  }, [userId, fetchBillingUsage]);
 
   // Check if user can generate AI template
   const canGenerateAITemplate = useCallback(() => {
@@ -1413,6 +1448,11 @@ function DashboardContent() {
     setUserDropdownOpen(false);
   };
 
+  const handleUpgrade = () => {
+    router.push('/pricing?upgrade=1');
+    setUserDropdownOpen(false);
+  };
+
   // Function to open AddValueModal
   const openAddModal = (title: string, placeholder: string, onSave: (value: string) => void) => {
     setAddValueModalConfig({ title, placeholder, onSave });
@@ -1496,6 +1536,21 @@ function DashboardContent() {
               <div className="px-4 py-3 border-b border-gray-100">
                 <p className="text-sm font-medium text-gray-900 truncate">{userEmail}</p>
                 <p className="text-xs text-gray-500">{String(t('dashboard.userType') || 'rudolpho-chat User')}</p>
+                {billingUsage && (
+                  <div className="mt-2 text-xs text-gray-600 space-y-1">
+                    <p>
+                      Plan: <span className="font-semibold uppercase">{billingUsage.plan}</span>
+                    </p>
+                    <p>Messages received: {billingUsage.messagesReceived}</p>
+                    <p>Messages sent: {billingUsage.messagesSent}</p>
+                    <p>
+                      Credits: {billingUsage.creditsUsed}/{billingUsage.creditsTotal}
+                    </p>
+                    <p>
+                      API cost: {(billingUsage.apiCostMicros / 1_000_000).toFixed(2)} EUR / {(billingUsage.apiBudgetMicros / 1_000_000).toFixed(2)} EUR
+                    </p>
+                  </div>
+                )}
               </div>
               
               {/* Menu Items */}
@@ -1506,6 +1561,20 @@ function DashboardContent() {
                   <LanguageSwitcher onLocaleChange={setCurrentLocale} userId={userId} />
                 </div>
                 
+                <button
+                  onClick={handleUpgrade}
+                  className="w-full text-left px-4 py-2 text-sm text-indigo-700 hover:bg-indigo-50 flex items-center gap-3"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9A2.25 2.25 0 015.25 16.5v-9A2.25 2.25 0 017.5 5.25h9A2.25 2.25 0 0118.75 7.5v9a2.25 2.25 0 01-2.25 2.25z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 12h7.5M12 8.25v7.5" />
+                  </svg>
+                  <div>
+                    <div className="font-medium">Upgrade</div>
+                    <div className="text-xs text-gray-500">Pro / Max</div>
+                  </div>
+                </button>
+
                 <button
                   onClick={handleSettings}
                   className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"

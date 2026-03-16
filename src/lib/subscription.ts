@@ -10,7 +10,7 @@ export type SubscriptionStatus =
   | 'incomplete_expired'
   | 'unpaid'
   | 'paused';
-export type SubscriptionPlan = 'free' | 'pro' | 'enterprise';
+export type SubscriptionPlan = 'free' | 'pro' | 'max' | 'enterprise';
 
 export interface UserSubscription {
   id: string;
@@ -55,7 +55,14 @@ export async function getUserPlan(userId: string): Promise<SubscriptionPlan> {
       .single();
 
     if (!user) return 'free';
-    if (user.is_pro || user.subscription_plan === 'pro' || user.subscription_plan === 'enterprise') return 'pro';
+    if (
+      user.is_pro ||
+      user.subscription_plan === 'pro' ||
+      user.subscription_plan === 'max' ||
+      user.subscription_plan === 'enterprise'
+    ) {
+      return user.subscription_plan === 'max' ? 'max' : 'pro';
+    }
     return 'free';
   } catch (error) {
     console.error('Fallback query failed in getUserPlan:', error);
@@ -65,7 +72,7 @@ export async function getUserPlan(userId: string): Promise<SubscriptionPlan> {
 
 export async function isUserPro(userId: string): Promise<boolean> {
   const plan = await getUserPlan(userId);
-  return plan === 'pro' || plan === 'enterprise';
+  return plan === 'pro' || plan === 'max' || plan === 'enterprise';
 }
 
 export async function getUserActiveSubscription(userId: string) {
@@ -240,8 +247,13 @@ export async function getUserSubscription(userId: string): Promise<UserSubscript
     const activeCancelAtPeriodEnd = Boolean(activeSubscription?.cancel_at_period_end);
 
     const isPro = activePlan
-      ? activePlan === 'pro' || activePlan === 'enterprise'
-      : Boolean(user.is_pro || user.subscription_plan === 'pro' || user.subscription_plan === 'enterprise');
+      ? activePlan === 'pro' || activePlan === 'max' || activePlan === 'enterprise'
+      : Boolean(
+          user.is_pro ||
+            user.subscription_plan === 'pro' ||
+            user.subscription_plan === 'max' ||
+            user.subscription_plan === 'enterprise'
+        );
 
     return {
       id: user.id,
