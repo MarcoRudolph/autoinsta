@@ -16,8 +16,8 @@ Steps:
 2. Go to Dashboard and click `Connect Instagram`.
 3. Authorize Instagram Business Login for the provided business account.
 4. Return to dashboard and confirm Instagram is connected.
-5. From the sender test account, send a DM to the connected business account.
-6. Wait up to 30 seconds for webhook delivery.
+5. Click `Simulate Review DM`.
+6. The app creates a deterministic inbound DM test event for review mode.
 7. Verify the app processed the incoming message (dashboard/status and backend logging evidence supplied in screencast).
 
 Requested Permissions:
@@ -27,6 +27,7 @@ Requested Permissions:
 Notes:
 - Webhook callback is configured in Instagram product settings.
 - Endpoint validates webhook signature and processes `messages` events.
+- Because real external DM delivery is blocked before full approval/business verification, review uses a deterministic in-app webhook simulation path in `TEST_MODE`.
 
 ## Deutsche Vorlage (intern)
 App-URL: `https://rudolpho-chat.de`
@@ -44,6 +45,6 @@ Schritte:
 2. Im Dashboard `Connect Instagram` klicken.
 3. Instagram Business Login mit dem bereitgestellten Business-Konto autorisieren.
 4. Zurueck im Dashboard pruefen, dass Instagram verbunden ist.
-5. Mit dem Sender-Testkonto eine DM an das verbundene Business-Konto senden.
-6. Bis zu 30 Sekunden auf Webhook-Zustellung warten.
+5. `Simulate Review DM` klicken.
+6. Die App erzeugt ein deterministisches eingehendes DM-Testevent fuer den Review-Modus.
 7. Pruefen, dass die App die eingehende Nachricht verarbeitet hat (Screencast/Logs als Nachweis).

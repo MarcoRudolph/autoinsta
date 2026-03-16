@@ -28,9 +28,11 @@ This cannot be automated from code. Execute these steps in Meta dashboard.
 - Log in at `https://rudolpho-chat.de`.
 - Open dashboard and connect Account A via Instagram login.
 
-## 6) Send Live DM Test
-- From Account B, send a DM to Account A.
-- Wait up to 30 seconds.
+## 6) Review-Safe Test Flow (works without live webhook delivery)
+- Enable `NEXT_PUBLIC_TEST_MODE=true` in app runtime/build env.
+- Log in to `https://rudolpho-chat.de`.
+- Connect Account A in the dashboard.
+- Click `Simulate Review DM` in the dashboard.
 
 ## 7) Verify Ingestion
 - Check DB:
@@ -41,8 +43,11 @@ order by created_at desc
 limit 20;
 ```
 - Expected:
-  - new row with `message_kind='dm'` and `direction='incoming'`.
+  - new row with `message_kind='dm'` and `direction='incoming'`
+  - `platform_message_id` starts with `review_test_`
+  - `message_text` is `review test dm`
 
 ## 8) Test Mode (UI)
 - Set `NEXT_PUBLIC_TEST_MODE=true` in runtime/build env.
 - In dashboard, the childhood attribute `sexuality` is hidden in test mode.
+- In dashboard, a `Simulate Review DM` button is shown after Instagram is connected.

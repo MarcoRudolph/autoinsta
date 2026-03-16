@@ -30,7 +30,8 @@ Use this checklist before submitting `instagram_business_basic` and `instagram_b
 
 ## 5) Functional Proof
 - Connect Instagram account from dashboard.
-- Send DM from second account to connected professional account.
+- Enable `NEXT_PUBLIC_TEST_MODE=true`.
+- Trigger `Simulate Review DM` from dashboard.
 - Confirm new `incoming` row in `instagram_messages`.
 - Confirm `webhook_verified=true` in `instagram_connections`.
 
@@ -38,5 +39,4 @@ Use this checklist before submitting `instagram_business_basic` and `instagram_b
 - Provide screencast from login to successful DM ingestion.
 - Provide reviewer credentials for both:
   - Business account (connected account)
-  - Sender account (test DM account)
 - Provide exact click-by-click steps (see `reviewer-instructions.md`).

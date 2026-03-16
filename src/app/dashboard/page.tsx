@@ -142,6 +142,7 @@ function DashboardContent() {
     transparencyMode: false,
   });
   const [instagramConnected, setInstagramConnected] = useState(false);
+  const [simulatingWebhook, setSimulatingWebhook] = useState(false);
   const [personas, setPersonas] = useState<{id: string, name: string, active?: boolean, transparencyMode?: boolean}[]>([]);
   const [selectedPersonaId, setSelectedPersonaId] = useState<string>('');
   const [personaMessageCount, setPersonaMessageCount] = useState<number | null>(null);
@@ -825,6 +826,32 @@ function DashboardContent() {
       params.set('userId', userId);
     }
     window.location.href = params.toString() ? `${targetPath}?${params.toString()}` : targetPath;
+  };
+
+  const handleSimulateWebhook = async () => {
+    try {
+      setSimulatingWebhook(true);
+      const response = await fetch('/api/instagram/simulate-webhook', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messageText: 'review test dm',
+        }),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload?.details || payload?.error || 'Simulation failed');
+      }
+
+      alert('Test DM created successfully. You can now verify ingestion in the database.');
+    } catch (error) {
+      alert(`Test DM simulation failed: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setSimulatingWebhook(false);
+    }
   };
 
 
@@ -1517,6 +1544,15 @@ function DashboardContent() {
         >
           {instagramConnected ? t('dashboard.instagramConnected') : t('dashboard.connectInstagram')}
         </button>
+        {isTestMode && instagramConnected && (
+          <button
+            onClick={handleSimulateWebhook}
+            disabled={simulatingWebhook}
+            className="mt-3 border border-amber-300 font-semibold py-2 px-4 rounded-lg transition shadow-none text-amber-100 hover:bg-amber-100 hover:text-slate-900 disabled:opacity-60"
+          >
+            {simulatingWebhook ? 'Creating test DM...' : 'Simulate Review DM'}
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
