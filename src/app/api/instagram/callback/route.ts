@@ -523,6 +523,23 @@ export async function GET(request: NextRequest) {
       const tokenPayload = await parseJsonOrNull(tokenResponse);
       const tokenData = (tokenPayload ?? {}) as InstagramLoginTokenResponse;
       const normalizedToken = normalizeInstagramLoginToken(tokenData);
+      console.log('Instagram token exchange response shape', {
+        status: tokenResponse.status,
+        hasAccessToken: Boolean(normalizedToken.accessToken),
+        hasUserId: Boolean(normalizedToken.userId),
+        tokenType:
+          typeof (tokenData as Record<string, unknown>).token_type === 'string'
+            ? ((tokenData as Record<string, unknown>).token_type as string)
+            : null,
+        expiresIn:
+          typeof (tokenData as Record<string, unknown>).expires_in === 'number'
+            ? ((tokenData as Record<string, unknown>).expires_in as number)
+            : null,
+        responseKeys:
+          tokenPayload && typeof tokenPayload === 'object'
+            ? Object.keys(tokenPayload as Record<string, unknown>).slice(0, 20)
+            : [],
+      });
       if (!tokenResponse.ok || !normalizedToken.accessToken) {
         const apiError = extractApiErrorMessage(tokenPayload, 'Instagram token exchange failed');
         console.error('Instagram token exchange failed', {
@@ -554,56 +571,67 @@ export async function GET(request: NextRequest) {
       }
 
       const igAccountId = normalizedToken.userId;
-      if (igAccountId) {
-        try {
-          await upsertInstagramConnection({
-            igAccountId,
-            accessToken: tokenToStore,
-            expiresInSeconds: tokenExpiresIn,
-            provider: 'instagram_login',
-            userId: connectionUserId,
-          });
-        } catch (error) {
-          const err = error instanceof Error ? error : new Error(String(error));
-          const dbError = error as { code?: string; detail?: string };
-          console.error('Instagram connection failed: Database write failed while linking Instagram account', {
-            flow: 'instagram_login',
-            igAccountId,
-            userId: flowUserId,
-            resolvedUserId: connectionUserId,
-            error: err.message,
-            code: dbError?.code,
-            detail: dbError?.detail,
-            stack: err.stack,
-          });
-          return NextResponse.redirect(
-            new URL(
-              '/dashboard?instagramConnected=false&instagramError=Database write failed while linking Instagram account',
-              normalizedSiteUrl
-            )
-          );
-        }
+      if (!igAccountId) {
+        console.error('Instagram callback failed: token exchange returned no user_id', {
+          status: tokenResponse.status,
+          responseShape: tokenPayload,
+        });
+        return NextResponse.redirect(
+          new URL(
+            '/dashboard?instagramConnected=false&instagramError=Instagram token exchange returned no user_id',
+            normalizedSiteUrl
+          )
+        );
+      }
 
-        const subscriptionResult = await subscribeInstagramAccountToApp({
+      try {
+        await upsertInstagramConnection({
           igAccountId,
           accessToken: tokenToStore,
+          expiresInSeconds: tokenExpiresIn,
+          provider: 'instagram_login',
+          userId: connectionUserId,
         });
+      } catch (error) {
+        const err = error instanceof Error ? error : new Error(String(error));
+        const dbError = error as { code?: string; detail?: string };
+        console.error('Instagram connection failed: Database write failed while linking Instagram account', {
+          flow: 'instagram_login',
+          igAccountId,
+          userId: flowUserId,
+          resolvedUserId: connectionUserId,
+          error: err.message,
+          code: dbError?.code,
+          detail: dbError?.detail,
+          stack: err.stack,
+        });
+        return NextResponse.redirect(
+          new URL(
+            '/dashboard?instagramConnected=false&instagramError=Database write failed while linking Instagram account',
+            normalizedSiteUrl
+          )
+        );
+      }
 
-        if (!subscriptionResult.ok) {
-          webhookSubscriptionFailed = true;
-          webhookSubscriptionError = `status=${subscriptionResult.status ?? 'n/a'} error=${
-            subscriptionResult.error || 'unknown'
-          }`.slice(0, 500);
-          console.error('Instagram webhook subscription failed (instagram login flow)', {
-            igAccountId,
-            status: subscriptionResult.status || null,
-            error: subscriptionResult.error || 'unknown',
-          });
-        } else {
-          console.log('Instagram webhook subscription succeeded (instagram login flow)', {
-            igAccountId,
-          });
-        }
+      const subscriptionResult = await subscribeInstagramAccountToApp({
+        igAccountId,
+        accessToken: tokenToStore,
+      });
+
+      if (!subscriptionResult.ok) {
+        webhookSubscriptionFailed = true;
+        webhookSubscriptionError = `status=${subscriptionResult.status ?? 'n/a'} error=${
+          subscriptionResult.error || 'unknown'
+        }`.slice(0, 500);
+        console.error('Instagram webhook subscription failed (instagram login flow)', {
+          igAccountId,
+          status: subscriptionResult.status || null,
+          error: subscriptionResult.error || 'unknown',
+        });
+      } else {
+        console.log('Instagram webhook subscription succeeded (instagram login flow)', {
+          igAccountId,
+        });
       }
     } else {
       return NextResponse.redirect(
