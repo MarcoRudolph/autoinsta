@@ -186,6 +186,34 @@ export async function GET(request: NextRequest) {
 
   if (latest?.accessToken && latest.igAccountId) {
     try {
+      const igBasicResp = await fetch(
+        `https://graph.instagram.com/me?fields=id,username&access_token=${encodeURIComponent(
+          latest.accessToken
+        )}`,
+        { method: 'GET' }
+      );
+      const igBasicPayload = await parseJsonOrText(igBasicResp);
+      checks.push({
+        name: 'ig_basic_graph_me_with_connection_token',
+        ok: igBasicResp.ok,
+        status: igBasicResp.status,
+        detail: igBasicResp.ok
+          ? 'Connection token can read graph.instagram.com/me'
+          : compactError(igBasicPayload),
+        data:
+          igBasicResp.ok && igBasicPayload && typeof igBasicPayload === 'object'
+            ? (igBasicPayload as Record<string, unknown>)
+            : undefined,
+      });
+    } catch (error) {
+      checks.push({
+        name: 'ig_basic_graph_me_with_connection_token',
+        ok: false,
+        detail: error instanceof Error ? error.message : String(error),
+      });
+    }
+
+    try {
       const igResp = await fetch(
         `https://graph.facebook.com/${GRAPH_VERSION}/${encodeURIComponent(
           latest.igAccountId
@@ -299,4 +327,3 @@ export async function GET(request: NextRequest) {
     },
   });
 }
-
