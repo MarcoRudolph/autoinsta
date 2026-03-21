@@ -6,19 +6,6 @@ import { decodeOAuthState } from '@/lib/oauth/state';
 
 export const runtime = 'nodejs';
 
-type MetaTokenResponse = {
-  access_token?: string;
-  token_type?: string;
-  expires_in?: number;
-  user_id?: number | string;
-  error?: {
-    message?: string;
-    type?: string;
-    code?: number;
-    fbtrace_id?: string;
-  };
-};
-
 type InstagramLoginTokenDataItem = {
   access_token?: string;
   user_id?: number | string;
@@ -36,18 +23,6 @@ type InstagramLoginTokenResponse = {
   error_type?: string;
   code?: number;
   error_message?: string;
-};
-
-type MetaAccountListResponse = {
-  data?: Array<{
-    id?: string;
-    name?: string;
-    access_token?: string;
-    instagram_business_account?: {
-      id?: string;
-      username?: string;
-    };
-  }>;
 };
 
 type OAuthState = {
@@ -123,54 +98,9 @@ function normalizeInstagramLoginToken(payload: unknown): {
   };
 }
 
-async function exchangeInstagramShortTokenForLongLived(input: {
-  shortLivedToken: string;
-  clientSecret: string;
-}): Promise<{ accessToken: string | null; expiresIn?: number; error?: string }> {
-  const url = new URL('https://graph.instagram.com/access_token');
-  url.searchParams.append('grant_type', 'ig_exchange_token');
-  url.searchParams.append('client_secret', input.clientSecret);
-  url.searchParams.append('access_token', input.shortLivedToken);
-
-  try {
-    const response = await fetch(url.toString(), { method: 'GET' });
-    const payload = await parseJsonOrNull(response);
-    if (!response.ok) {
-      return {
-        accessToken: null,
-        error: extractApiErrorMessage(payload, 'Failed to exchange short-lived token for long-lived token'),
-      };
-    }
-
-    if (!payload || typeof payload !== 'object') {
-      return {
-        accessToken: null,
-        error: 'Long-lived token response was empty',
-      };
-    }
-
-    const record = payload as Record<string, unknown>;
-    const accessToken = typeof record.access_token === 'string' ? record.access_token : null;
-    const expiresIn = typeof record.expires_in === 'number' ? record.expires_in : undefined;
-    if (!accessToken) {
-      return {
-        accessToken: null,
-        error: 'Long-lived token missing access_token',
-      };
-    }
-
-    return { accessToken, expiresIn };
-  } catch (error) {
-    return {
-      accessToken: null,
-      error: error instanceof Error ? error.message : String(error),
-    };
-  }
-}
-
 function decodeState(rawState: string | null): OAuthState {
   if (!rawState) return {};
-  if (rawState === 'instagram_login' || rawState === 'meta_business_login') {
+  if (rawState === 'instagram_login') {
     return { flow: rawState };
   }
 
@@ -217,7 +147,7 @@ async function upsertInstagramConnection(input: {
   igUsername?: string | null;
   accessToken?: string | null;
   expiresInSeconds?: number;
-  provider: 'instagram_login' | 'meta_business';
+  provider: 'instagram_login';
   userId?: string | null;
 }) {
   const tokenExpiresAt =
@@ -360,133 +290,10 @@ export async function GET(request: NextRequest) {
     const flow = parsedState.flow;
     const flowUserId = parsedState.userId || null;
     const connectionUserId = await resolveValidConnectionUserId(flowUserId);
-    const isMetaBusinessFlow = flow === 'meta_business_login';
     const isInstagramLoginFlow = flow === 'instagram_login' || !flow;
     let webhookSubscriptionFailed = false;
     let webhookSubscriptionError: string | null = null;
-
-    if (isMetaBusinessFlow) {
-      const clientId =
-        process.env.META_APP_ID ||
-        process.env.FACEBOOK_APP_ID ||
-        process.env.NEXT_PUBLIC_INSTAGRAM_CLIENT_ID ||
-        process.env.INSTAGRAM_CLIENT_ID;
-      const clientSecret = process.env.META_APP_SECRET || process.env.FACEBOOK_APP_SECRET;
-
-      if (!clientId || !clientSecret) {
-        return NextResponse.redirect(
-          new URL(
-            '/dashboard?instagramConnected=false&instagramError=Missing Meta app credentials',
-            normalizedSiteUrl
-          )
-        );
-      }
-
-      const tokenUrl = new URL('https://graph.facebook.com/v23.0/oauth/access_token');
-      tokenUrl.searchParams.append('client_id', clientId);
-      tokenUrl.searchParams.append('client_secret', clientSecret);
-      tokenUrl.searchParams.append('redirect_uri', redirectUri);
-      tokenUrl.searchParams.append('code', code);
-
-      const tokenResponse = await fetch(tokenUrl.toString(), { method: 'GET' });
-      const tokenPayload = await parseJsonOrNull(tokenResponse);
-      const tokenData = (tokenPayload ?? {}) as MetaTokenResponse;
-
-      if (!tokenResponse.ok || !tokenData.access_token) {
-        const apiError = extractApiErrorMessage(tokenPayload, 'Meta token exchange failed');
-        console.error('Meta token exchange failed', {
-          status: tokenResponse.status,
-          apiError,
-        });
-        return NextResponse.redirect(
-          new URL(
-            `/dashboard?instagramConnected=false&instagramError=${encodeURIComponent(apiError)}`,
-            normalizedSiteUrl
-          )
-        );
-      }
-
-      const accountResponse = await fetch(
-        `https://graph.facebook.com/v23.0/me/accounts?fields=id,name,instagram_business_account{id,username}&access_token=${encodeURIComponent(
-          tokenData.access_token
-        )}`,
-        { method: 'GET' }
-      );
-
-      if (!accountResponse.ok) {
-        return NextResponse.redirect(
-          new URL(
-            '/dashboard?instagramConnected=false&instagramError=Unable to read connected pages/accounts',
-            normalizedSiteUrl
-          )
-        );
-      }
-
-      const accountData = (await accountResponse.json()) as MetaAccountListResponse;
-      const firstConnected = accountData.data?.find((page) => page.instagram_business_account?.id);
-
-      if (firstConnected?.instagram_business_account?.id) {
-        const connectionToken = firstConnected.access_token || tokenData.access_token;
-        try {
-          await upsertInstagramConnection({
-            igAccountId: firstConnected.instagram_business_account.id,
-            igUsername: firstConnected.instagram_business_account.username || null,
-            accessToken: connectionToken,
-            expiresInSeconds: tokenData.expires_in,
-            provider: 'meta_business',
-            userId: connectionUserId,
-          });
-        } catch (error) {
-          const err = error instanceof Error ? error : new Error(String(error));
-          const dbError = error as { code?: string; detail?: string };
-          console.error('Instagram connection failed: Database write failed while linking Instagram account', {
-            flow: 'meta_business',
-            igAccountId: firstConnected.instagram_business_account.id,
-            userId: flowUserId,
-            resolvedUserId: connectionUserId,
-            error: err.message,
-            code: dbError?.code,
-            detail: dbError?.detail,
-            stack: err.stack,
-          });
-          return NextResponse.redirect(
-            new URL(
-              '/dashboard?instagramConnected=false&instagramError=Database write failed while linking Instagram account',
-              normalizedSiteUrl
-            )
-          );
-        }
-
-        if (connectionToken) {
-          const subscriptionResult = await subscribeInstagramAccountToApp({
-            igAccountId: firstConnected.instagram_business_account.id,
-            accessToken: connectionToken,
-          });
-
-          if (!subscriptionResult.ok) {
-            webhookSubscriptionFailed = true;
-            webhookSubscriptionError = `status=${subscriptionResult.status ?? 'n/a'} error=${
-              subscriptionResult.error || 'unknown'
-            }`.slice(0, 500);
-            console.error('Instagram webhook subscription failed (meta business flow)', {
-              igAccountId: firstConnected.instagram_business_account.id,
-              status: subscriptionResult.status || null,
-              error: subscriptionResult.error || 'unknown',
-            });
-          } else {
-            console.log('Instagram webhook subscription succeeded (meta business flow)', {
-              igAccountId: firstConnected.instagram_business_account.id,
-            });
-          }
-        } else {
-          webhookSubscriptionFailed = true;
-          webhookSubscriptionError = 'status=n/a error=Missing connection token for subscribed_apps call';
-          console.error('Instagram webhook subscription skipped due to missing token (meta business flow)', {
-            igAccountId: firstConnected.instagram_business_account.id,
-          });
-        }
-      }
-    } else if (isInstagramLoginFlow) {
+    if (isInstagramLoginFlow) {
       const clientId =
         process.env.INSTAGRAM_APP_ID ||
         process.env.NEXT_PUBLIC_INSTAGRAM_CLIENT_ID ||
@@ -555,20 +362,8 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      let tokenToStore = normalizedToken.accessToken;
-      let tokenExpiresIn = normalizedToken.expiresIn;
-      const longLivedTokenResult = await exchangeInstagramShortTokenForLongLived({
-        shortLivedToken: normalizedToken.accessToken,
-        clientSecret,
-      });
-      if (longLivedTokenResult.accessToken) {
-        tokenToStore = longLivedTokenResult.accessToken;
-        tokenExpiresIn = longLivedTokenResult.expiresIn;
-      } else {
-        console.warn('Instagram long-lived token exchange failed; storing short-lived token instead', {
-          error: longLivedTokenResult.error || 'unknown',
-        });
-      }
+      const tokenToStore = normalizedToken.accessToken;
+      const tokenExpiresIn = normalizedToken.expiresIn;
 
       const igAccountId = normalizedToken.userId;
       if (!igAccountId) {

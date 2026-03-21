@@ -851,11 +851,7 @@ function DashboardContent() {
   }, []);
 
   const handleInstagramLogin = () => {
-    const provider =
-      typeof window !== 'undefined'
-        ? localStorage.getItem('chatboxLoginProvider') || 'instagram'
-        : 'instagram';
-    const targetPath = provider === 'meta-business' ? '/api/instagram/auth-meta' : '/api/instagram/auth';
+    const targetPath = '/api/instagram/auth';
     const params = new URLSearchParams();
     if (userId) {
       params.set('userId', userId);

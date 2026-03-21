@@ -19,15 +19,11 @@ const AuthenticatedDashboard = () => {
   const userDropdownRef = useRef<HTMLDivElement>(null);
 
   const handleInstagramLogin = () => { 
-    const provider =
-      typeof window !== 'undefined'
-        ? localStorage.getItem('chatboxLoginProvider') || 'instagram'
-        : 'instagram';
-    const targetPath = provider === 'meta-business' ? '/api/instagram/auth-meta' : '/api/instagram/auth';
     const params = new URLSearchParams();
     if (userId) {
       params.set('userId', userId);
     }
+    const targetPath = '/api/instagram/auth';
     window.location.href = params.toString() ? `${targetPath}?${params.toString()}` : targetPath;
   };
 

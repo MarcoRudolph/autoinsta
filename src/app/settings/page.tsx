@@ -11,13 +11,11 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [useMetaBusinessLogin, setUseMetaBusinessLogin] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const storedMode = localStorage.getItem('chatboxLoginProvider');
-    setUseMetaBusinessLogin(storedMode === 'meta-business');
+    localStorage.setItem('chatboxLoginProvider', 'instagram');
   }, []);
 
   useEffect(() => {
@@ -35,12 +33,6 @@ export default function SettingsPage() {
     fetchUser();
     return () => { mounted = false; };
   }, []);
-
-  const handleLoginProviderToggle = (checked: boolean) => {
-    setUseMetaBusinessLogin(checked);
-    if (typeof window === 'undefined') return;
-    localStorage.setItem('chatboxLoginProvider', checked ? 'meta-business' : 'instagram');
-  };
 
   const handleLogout = async () => {
     try {
@@ -223,26 +215,19 @@ export default function SettingsPage() {
             <div className="p-4 bg-[#1a1f2e] rounded-lg space-y-3">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h3 className="font-semibold">Meta Business Login fuer Chat Box nutzen</h3>
+                  <h3 className="font-semibold">Login-Provider</h3>
                   <p className="text-sm text-gray-400">
-                    Standard ist Instagram Login. Wenn aktiv, nutzt der Connect-Button Meta Business Login.
+                    Der Connect-Button nutzt Instagram Login.
                   </p>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    checked={useMetaBusinessLogin}
-                    onChange={(event) => handleLoginProviderToggle(event.target.checked)}
-                  />
-                  <div className="w-14 h-8 bg-gray-300 peer-checked:bg-blue-500 rounded-full transition-colors" />
-                  <div className="absolute left-1 top-1 w-6 h-6 bg-white rounded-full shadow-md transition-transform peer-checked:translate-x-6" />
-                </label>
+                <span className="px-3 py-1 rounded-md bg-green-700/30 border border-green-500/40 text-sm font-semibold text-green-200">
+                  Instagram Login
+                </span>
               </div>
               <div className="text-sm text-gray-300">
                 Aktueller Modus:{' '}
                 <span className="font-semibold text-white">
-                  {useMetaBusinessLogin ? 'Meta Business Login' : 'Instagram Login'}
+                  Instagram Login
                 </span>
               </div>
             </div>
