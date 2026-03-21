@@ -1,24 +1,21 @@
-import openNextWorker from './.open-next/worker.js';
-
-type EnvLike = Record<string, string | undefined>;
-
-function resolveBaseUrl(env: EnvLike): string {
+function resolveBaseUrl(env) {
   const raw =
     env.NEXT_PUBLIC_SITE_URL ||
     env.NEXT_PUBLIC_APP_URL ||
     env.APP_BASE_URL ||
-    'https://rudolpho-chat.de';
-  return raw.endsWith('/') ? raw.slice(0, -1) : raw;
+    "https://rudolpho-chat.de";
+  return raw.endsWith("/") ? raw.slice(0, -1) : raw;
 }
 
-export async function fetch(request: Request, env: EnvLike, ctx: ExecutionContext) {
-  return openNextWorker.fetch(request, env, ctx);
+export async function fetch(request, env, ctx) {
+  const mod = await import("./.open-next/worker.js");
+  return mod.default.fetch(request, env, ctx);
 }
 
-export async function scheduled(event: ScheduledEvent, env: EnvLike, ctx: ExecutionContext) {
+export async function scheduled(event, env, ctx) {
   const cronSecret = env.INSTAGRAM_CRON_SECRET || env.CRON_SECRET;
   if (!cronSecret) {
-    console.error('[scheduled] Missing INSTAGRAM_CRON_SECRET/CRON_SECRET; skipping process-pending trigger');
+    console.error("[scheduled] Missing INSTAGRAM_CRON_SECRET/CRON_SECRET; skipping process-pending trigger");
     return;
   }
 
@@ -29,21 +26,21 @@ export async function scheduled(event: ScheduledEvent, env: EnvLike, ctx: Execut
     (async () => {
       try {
         const response = await globalThis.fetch(url, {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'x-cron-secret': cronSecret,
-            'user-agent': 'cloudflare-scheduled-instagram-processor',
+            "x-cron-secret": cronSecret,
+            "user-agent": "cloudflare-scheduled-instagram-processor",
           },
         });
         const body = await response.text();
-        console.log('[scheduled] process-pending response', {
+        console.log("[scheduled] process-pending response", {
           schedule: event.cron,
           status: response.status,
           ok: response.ok,
           body: body.slice(0, 500),
         });
       } catch (error) {
-        console.error('[scheduled] process-pending request failed', {
+        console.error("[scheduled] process-pending request failed", {
           schedule: event.cron,
           error: error instanceof Error ? error.message : String(error),
         });
