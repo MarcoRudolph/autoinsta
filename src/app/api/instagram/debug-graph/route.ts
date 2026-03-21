@@ -241,7 +241,7 @@ export async function GET(request: NextRequest) {
 
     try {
       const subResp = await fetch(
-        `https://graph.facebook.com/${GRAPH_VERSION}/${encodeURIComponent(
+        `https://graph.instagram.com/${GRAPH_VERSION}/${encodeURIComponent(
           latest.igAccountId
         )}/subscribed_apps?access_token=${encodeURIComponent(latest.accessToken)}`,
         { method: 'GET' }

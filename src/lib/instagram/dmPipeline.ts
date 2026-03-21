@@ -376,7 +376,7 @@ async function sendInstagramDm(
   text: string,
   accessToken: string
 ): Promise<{ platformMessageId: string }> {
-  const endpoint = `https://graph.facebook.com/${GRAPH_API_VERSION}/${igAccountId}/messages`;
+  const endpoint = `https://graph.instagram.com/${GRAPH_API_VERSION}/${igAccountId}/messages`;
   let lastError: GraphApiRequestError | null = null;
 
   for (let attempt = 0; attempt < 2; attempt += 1) {

@@ -117,12 +117,12 @@ async function subscribeInstagramAccountToApp(input: {
   accessToken: string;
 }): Promise<{ ok: boolean; status?: number; error?: string }> {
   try {
-    const response = await fetch(
-      `https://graph.facebook.com/v23.0/${encodeURIComponent(input.igAccountId)}/subscribed_apps?access_token=${encodeURIComponent(
-        input.accessToken
-      )}`,
-      { method: 'POST' }
+    const url = new URL(
+      `https://graph.instagram.com/v23.0/${encodeURIComponent(input.igAccountId)}/subscribed_apps`
     );
+    url.searchParams.set('access_token', input.accessToken);
+    url.searchParams.set('subscribed_fields', 'messages,comments');
+    const response = await fetch(url.toString(), { method: 'POST' });
 
     const bodyText = await response.text();
     if (!response.ok) {

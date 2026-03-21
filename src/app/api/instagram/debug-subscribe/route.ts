@@ -99,14 +99,16 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const postUrl = `https://graph.facebook.com/${GRAPH_VERSION}/${encodeURIComponent(
-    connection.igAccountId
-  )}/subscribed_apps?access_token=${encodeURIComponent(connection.accessToken)}`;
+  const postUrl = new URL(
+    `https://graph.instagram.com/${GRAPH_VERSION}/${encodeURIComponent(connection.igAccountId)}/subscribed_apps`
+  );
+  postUrl.searchParams.set('access_token', connection.accessToken);
+  postUrl.searchParams.set('subscribed_fields', 'messages,comments');
 
-  const postResp = await fetch(postUrl, { method: 'POST' });
+  const postResp = await fetch(postUrl.toString(), { method: 'POST' });
   const postPayload = await parseJsonOrText(postResp);
 
-  const verifyUrl = `https://graph.facebook.com/${GRAPH_VERSION}/${encodeURIComponent(
+  const verifyUrl = `https://graph.instagram.com/${GRAPH_VERSION}/${encodeURIComponent(
     connection.igAccountId
   )}/subscribed_apps?access_token=${encodeURIComponent(connection.accessToken)}`;
   const verifyResp = await fetch(verifyUrl, { method: 'GET' });
@@ -152,4 +154,3 @@ export async function POST(request: NextRequest) {
     },
   });
 }
-
