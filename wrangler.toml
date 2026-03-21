@@ -1,5 +1,5 @@
 name = "rudolpho-chat"
-main = ".open-next/worker.js"
+main = "worker-wrapper.ts"
 compatibility_date = "2025-09-01"
 # nodejs_compat_populate_process_env: injects dashboard Variables & Secrets into process.env at runtime
 compatibility_flags = ["nodejs_compat", "nodejs_compat_populate_process_env"]
