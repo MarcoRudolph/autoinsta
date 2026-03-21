@@ -9,6 +9,8 @@ const AuthenticatedDashboard = () => {
   const router = useRouter();
   
   const [instagramConnected, setInstagramConnected] = useState(false);
+  const [instagramWebhookSubscriptionFailed, setInstagramWebhookSubscriptionFailed] = useState(false);
+  const [instagramWebhookError, setInstagramWebhookError] = useState<string>('');
   const [checkingSession, setCheckingSession] = useState(true);
   const [configError, setConfigError] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
@@ -68,7 +70,18 @@ const AuthenticatedDashboard = () => {
   }, []);
 
   useEffect(() => { 
-    const param = searchParams.get('instagramConnected'); 
+    const param = searchParams.get('instagramConnected');
+    const webhookSubscribed = searchParams.get('instagramWebhookSubscribed');
+    const webhookError = searchParams.get('instagramWebhookError');
+
+    if (webhookSubscribed === 'false') {
+      setInstagramWebhookSubscriptionFailed(true);
+      setInstagramWebhookError(webhookError || 'Unknown webhook subscription failure');
+    } else {
+      setInstagramWebhookSubscriptionFailed(false);
+      setInstagramWebhookError('');
+    }
+
     if (param === 'true') { 
       setInstagramConnected(true); 
       if (typeof window !== 'undefined') { 
@@ -79,6 +92,8 @@ const AuthenticatedDashboard = () => {
       } 
     } else if (param === 'false') { 
       setInstagramConnected(false); 
+      setInstagramWebhookSubscriptionFailed(false);
+      setInstagramWebhookError('');
     } else if (typeof window !== 'undefined') { 
       const stored = localStorage.getItem('instagramConnected'); 
       if (stored === 'true') setInstagramConnected(true); 
@@ -233,6 +248,12 @@ const AuthenticatedDashboard = () => {
         >
           {instagramConnected ? 'Instagram verbunden' : 'Instagram verbinden'}
         </button>
+        {instagramConnected && instagramWebhookSubscriptionFailed && (
+          <div className="mt-4 w-full max-w-2xl rounded-lg border border-amber-300/60 bg-amber-100/90 px-4 py-3 text-amber-950">
+            <p className="text-sm font-semibold">Connected but webhook subscription failed.</p>
+            <p className="mt-1 text-xs font-mono break-words">{instagramWebhookError}</p>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

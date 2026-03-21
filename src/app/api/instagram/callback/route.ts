@@ -363,6 +363,7 @@ export async function GET(request: NextRequest) {
     const isMetaBusinessFlow = flow === 'meta_business_login';
     const isInstagramLoginFlow = flow === 'instagram_login' || !flow;
     let webhookSubscriptionFailed = false;
+    let webhookSubscriptionError: string | null = null;
 
     if (isMetaBusinessFlow) {
       const clientId =
@@ -464,6 +465,9 @@ export async function GET(request: NextRequest) {
 
           if (!subscriptionResult.ok) {
             webhookSubscriptionFailed = true;
+            webhookSubscriptionError = `status=${subscriptionResult.status ?? 'n/a'} error=${
+              subscriptionResult.error || 'unknown'
+            }`.slice(0, 500);
             console.error('Instagram webhook subscription failed (meta business flow)', {
               igAccountId: firstConnected.instagram_business_account.id,
               status: subscriptionResult.status || null,
@@ -476,6 +480,7 @@ export async function GET(request: NextRequest) {
           }
         } else {
           webhookSubscriptionFailed = true;
+          webhookSubscriptionError = 'status=n/a error=Missing connection token for subscribed_apps call';
           console.error('Instagram webhook subscription skipped due to missing token (meta business flow)', {
             igAccountId: firstConnected.instagram_business_account.id,
           });
@@ -586,6 +591,9 @@ export async function GET(request: NextRequest) {
 
         if (!subscriptionResult.ok) {
           webhookSubscriptionFailed = true;
+          webhookSubscriptionError = `status=${subscriptionResult.status ?? 'n/a'} error=${
+            subscriptionResult.error || 'unknown'
+          }`.slice(0, 500);
           console.error('Instagram webhook subscription failed (instagram login flow)', {
             igAccountId,
             status: subscriptionResult.status || null,
@@ -609,6 +617,10 @@ export async function GET(request: NextRequest) {
     const dashboardUrl = new URL('/dashboard?instagramConnected=true', normalizedSiteUrl);
     if (webhookSubscriptionFailed) {
       dashboardUrl.searchParams.set('instagramWebhookSubscribed', 'false');
+      dashboardUrl.searchParams.set(
+        'instagramWebhookError',
+        webhookSubscriptionError || 'status=n/a error=Unknown webhook subscription failure'
+      );
     }
     return NextResponse.redirect(dashboardUrl);
   } catch (error) {
