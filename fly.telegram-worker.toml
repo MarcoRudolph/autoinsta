@@ -1,11 +1,7 @@
-# Telegram MTProto worker only — not the Next.js app.
-# 1) fly apps create YOUR_WORKER_APP_NAME
-# 2) fly secrets set -a YOUR_WORKER_APP_NAME POSTGRES_URL=... TELEGRAM_API_ID=... TELEGRAM_API_HASH=... TELEGRAM_SESSION_SECRET=... APP_BASE_URL=https://your-next-host TELEGRAM_CRON_SECRET=...
-# 3) fly deploy -a YOUR_WORKER_APP_NAME -c fly.telegram-worker.toml
-#
-# Replace app name below or pass -a on every command.
+# Same settings as fly.toml — use this only if your Fly UI "Config path" is fly.telegram-worker.toml.
+# Prefer fly.toml (Fly’s default). Replace your-worker-app-name with your real Fly app name.
 
-app = "REPLACE_WITH_YOUR_FLY_APP_NAME"
+app = "autoinsta"
 primary_region = "fra"
 
 [build]
