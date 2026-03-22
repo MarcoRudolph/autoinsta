@@ -7,11 +7,17 @@ import {
   instagramPromoAudit,
   instagramThreads,
 } from '@/drizzle/schema/instagram';
-import { personas } from '@/drizzle/schema/personas';
-import { calculateMessageCostMicros, estimateMessageCostMicros } from '@/lib/billing/openaiCost';
-import { creditsFromCostMicros } from '@/lib/billing/plans';
+import { estimateMessageCostMicros } from '@/lib/billing/openaiCost';
+import { creditsFromCostMicros, getPersonaReplyMaxChars, normalizePlan } from '@/lib/billing/plans';
 import { canAffordEstimatedMessage, recordUsageDebit } from '@/lib/billing/service';
-import { decideProductLink, type ProductLink } from './productLinkDecision';
+import {
+  buildSystemPrompt,
+  generateAiReply,
+  getActivePersonaForUser,
+  getDelayBoundsFromPersona,
+} from '@/lib/persona/personaAi';
+import { getUserPlan } from '@/lib/subscription';
+import { decideProductLink } from './productLinkDecision';
 
 type MessageKind = 'dm' | 'comment';
 type MessageDirection = 'incoming' | 'outgoing' | 'unknown';
@@ -40,19 +46,6 @@ type ConnectionRecord = {
   igAccountId: string;
   userId: string | null;
   accessToken: string | null;
-};
-
-type PersonaRecord = {
-  id: number;
-  data: Record<string, unknown>;
-};
-
-type NormalizedPersona = {
-  id: string;
-  active: boolean;
-  transparencyMode: boolean;
-  personality: Record<string, unknown>;
-  productLinks: ProductLink[];
 };
 
 type DmOrchestrationInput = {
@@ -106,57 +99,6 @@ function logDmDebug(event: string, details: Record<string, unknown>) {
   console.log(`[dmPipeline] ${event}`, details);
 }
 
-function normalizeProductLinks(rawLinks: unknown): ProductLink[] {
-  if (!Array.isArray(rawLinks)) return [];
-
-  const normalized: ProductLink[] = [];
-
-  for (const link of rawLinks) {
-    if (typeof link === 'string') {
-      normalized.push({ url: link, actionType: 'buy', sendingBehavior: 'proactive' });
-      continue;
-    }
-
-    if (!link || typeof link !== 'object') continue;
-    const candidate = link as {
-      id?: string;
-      url?: string;
-      actionType?: string;
-      sendingBehavior?: string;
-    };
-    if (!candidate.url) continue;
-    normalized.push({
-      id: candidate.id,
-      url: candidate.url,
-      actionType: candidate.actionType || 'buy',
-      sendingBehavior: candidate.sendingBehavior || 'proactive',
-    });
-  }
-
-  return normalized;
-}
-
-function normalizePersona(row: PersonaRecord): NormalizedPersona {
-  const payload = row.data || {};
-  const nested = payload.data && typeof payload.data === 'object' ? (payload.data as Record<string, unknown>) : {};
-
-  const active = Boolean(payload.active ?? nested.active ?? false);
-  const transparencyMode = Boolean(payload.transparencyMode ?? nested.transparencyMode ?? true);
-  const personality =
-    (nested.personality as Record<string, unknown>) ||
-    (payload.personality as Record<string, unknown>) ||
-    payload;
-  const productLinks = normalizeProductLinks(nested.productLinks ?? payload.productLinks ?? []);
-
-  return {
-    id: String(row.id),
-    active,
-    transparencyMode,
-    personality,
-    productLinks,
-  };
-}
-
 async function getConnectionByAccountId(igAccountId: string): Promise<ConnectionRecord | null> {
   const rows = await db
     .select({
@@ -169,22 +111,6 @@ async function getConnectionByAccountId(igAccountId: string): Promise<Connection
     .limit(1);
 
   return rows[0] ?? null;
-}
-
-async function getActivePersonaForUser(userId: string): Promise<NormalizedPersona | null> {
-  const rows = (await db
-    .select({
-      id: personas.id,
-      data: personas.data,
-    })
-    .from(personas)
-    .where(eq(personas.userId, userId))) as PersonaRecord[];
-
-  if (rows.length === 0) return null;
-
-  const normalized = rows.map(normalizePersona);
-  const active = normalized.find((persona) => persona.active);
-  return active || normalized[0];
 }
 
 async function getRecentThreadMessages(
@@ -216,105 +142,6 @@ async function getRecentThreadMessages(
       role: row.direction === 'incoming' ? 'user' : 'assistant',
       content: row.messageText as string,
     }));
-}
-
-function personaToPrompt(persona: NormalizedPersona): string {
-  const compact = JSON.stringify(persona.personality ?? {});
-  return compact.length > 5000 ? compact.slice(0, 5000) : compact;
-}
-
-function buildSystemPrompt(persona: NormalizedPersona, promoInstruction: string): string {
-  const transparencyInstruction = persona.transparencyMode
-    ? 'Always disclose naturally that you are an AI assistant for this Instagram account.'
-    : 'Do not mention system internals. Write as a personal account assistant with natural tone.';
-
-  return [
-    'You are replying to Instagram DMs for a persona account.',
-    'Respond to each message according to this system prompt, the persona profile, and the chat history. Consider the context of the ongoing conversation.',
-    transparencyInstruction,
-    'Stay concise, helpful, and match the user language (German or English).',
-    'Avoid spammy promotion and avoid repeating links unless explicitly asked.',
-    promoInstruction,
-    `Persona profile JSON: ${personaToPrompt(persona)}`,
-  ].join('\n');
-}
-
-async function generateAiReply(
-  systemPrompt: string,
-  history: Array<{ role: 'user' | 'assistant'; content: string }>,
-  latestUserMessage: string
-): Promise<{
-  replyText: string;
-  model: string;
-  promptTokens: number;
-  completionTokens: number;
-  totalTokens: number;
-  apiCostMicros: number;
-}> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error('OPENAI_API_KEY is missing');
-  }
-
-  const model = process.env.OPENAI_MODEL || 'gpt-3.5-turbo';
-  const messages = [
-    { role: 'system', content: systemPrompt },
-    ...history.map((item) => ({ role: item.role, content: item.content })),
-    { role: 'user', content: `Nachricht: ${latestUserMessage}` },
-  ];
-
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      temperature: 0.7,
-      max_tokens: 250,
-    }),
-  });
-
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`OpenAI request failed: ${response.status} ${body}`);
-  }
-
-  const payload = (await response.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-    usage?: {
-      prompt_tokens?: number;
-      completion_tokens?: number;
-      total_tokens?: number;
-    };
-  };
-  const content = payload.choices?.[0]?.message?.content?.trim();
-  if (!content) {
-    throw new Error('OpenAI returned empty content');
-  }
-
-  const promptTokens = Number(payload.usage?.prompt_tokens || 0);
-  const completionTokens = Number(payload.usage?.completion_tokens || 0);
-  const totalTokens =
-    Number(payload.usage?.total_tokens || 0) ||
-    (Number.isFinite(promptTokens) && Number.isFinite(completionTokens)
-      ? promptTokens + completionTokens
-      : 0);
-  const apiCostMicros = calculateMessageCostMicros({
-    promptTokens: Math.max(0, promptTokens),
-    completionTokens: Math.max(0, completionTokens),
-  });
-
-  return {
-    replyText: content,
-    model,
-    promptTokens: Math.max(0, promptTokens),
-    completionTokens: Math.max(0, completionTokens),
-    totalTokens: Math.max(0, totalTokens),
-    apiCostMicros,
-  };
 }
 
 function wait(ms: number) {
@@ -714,17 +541,7 @@ export async function getDelayBoundsForIgAccount(
   }
 
   const persona = await getActivePersonaForUser(connection.userId);
-  if (!persona?.personality) {
-    return { delayMin: 0, delayMax: 0 };
-  }
-
-  const delayMin = Number(persona.personality.delayMin);
-  const delayMax = Number(persona.personality.delayMax);
-
-  const min = Number.isFinite(delayMin) && delayMin >= 0 ? delayMin : 0;
-  const max = Number.isFinite(delayMax) && delayMax >= min ? delayMax : min;
-
-  return { delayMin: min, delayMax: max };
+  return getDelayBoundsFromPersona(persona);
 }
 
 export async function processIncomingDm(input: DmOrchestrationInput): Promise<void> {
@@ -778,6 +595,9 @@ export async function processIncomingDm(input: DmOrchestrationInput): Promise<vo
     inboundMessage.platformMessageId
   );
 
+  const subscriptionPlan = normalizePlan(await getUserPlan(connection.userId));
+  const maxReplyChars = getPersonaReplyMaxChars(subscriptionPlan);
+
   const affordability = await canAffordEstimatedMessage(connection.userId);
   if (!affordability.allowed) {
     await insertPromoAudit({
@@ -797,9 +617,10 @@ export async function processIncomingDm(input: DmOrchestrationInput): Promise<vo
   }
 
   const aiReply = await generateAiReply(
-    buildSystemPrompt(persona, promoInstruction),
+    buildSystemPrompt(persona, promoInstruction, 'instagram'),
     history,
-    inboundMessage.messageText
+    inboundMessage.messageText,
+    { maxReplyChars }
   );
 
   const usageDebit = await recordUsageDebit({

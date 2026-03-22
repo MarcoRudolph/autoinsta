@@ -18,11 +18,25 @@ if (existsSync(envPath)) {
   }
 }
 
-async function main() {
-  const connectionString = process.env.POSTGRES_URL;
-  if (!connectionString || typeof connectionString !== "string") {
-    throw new Error("POSTGRES_URL is missing or invalid. Set it in .env (e.g. from Supabase: Settings -> Database -> Connection string).");
+function resolvePostgresUrl(): string {
+  const candidates = [
+    process.env.POSTGRES_URL,
+    process.env.DATABASE_URL,
+    process.env.SUPABASE_DB_URL,
+    process.env.DIRECT_URL,
+  ];
+  for (const c of candidates) {
+    if (typeof c === "string" && c.trim().length > 0) {
+      return c.trim();
+    }
   }
+  throw new Error(
+    "Database URL is missing. Set POSTGRES_URL (or DATABASE_URL / SUPABASE_DB_URL / DIRECT_URL) in .env — e.g. Supabase: Settings → Database → Connection string (use pooler or direct as appropriate)."
+  );
+}
+
+async function main() {
+  const connectionString = resolvePostgresUrl();
 
   let pool: Pool;
   try {
