@@ -11,6 +11,7 @@
     "test:instagram": "tsx --test src/lib/instagram/*.test.ts",
     "test:billing": "tsx --test src/lib/billing/*.test.ts",
     "db:migrate": "tsx src/drizzle/migrate.ts",
+    "telegram:worker": "tsx src/scripts/telegram-user-worker.ts",
     "preview": "npm run build && npm run start",
     "deploy": "npx vercel --prod",
     "cf:assert-workers": "node scripts/ensure-cloudflare-workers.js",
@@ -46,6 +47,7 @@
     "stripe": "^16.12.0",
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
+    "telegram": "^2.26.22",
     "uuid": "^11.1.0",
     "zod": "^4.0.2"
   },

@@ -50,6 +50,20 @@
       "when": 1742774400000,
       "tag": "0013_telegram_integration",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1742774400001,
+      "tag": "0014_telegram_link_expected_username",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1742774400002,
+      "tag": "0015_telegram_user_sessions_mtproto",
+      "breakpoints": true
     }
   ]
 }

@@ -1,13 +1,11 @@
 import { and, desc, eq } from 'drizzle-orm';
-import { randomBytes } from 'crypto';
 import { db } from '@/drizzle';
 import {
   telegramChatLinks,
   telegramDmPending,
-  telegramIdentities,
-  telegramLinkTokens,
   telegramMessages,
   telegramThreads,
+  telegramUserSessions,
 } from '@/drizzle/schema/telegram';
 import { getPersonaReplyMaxChars, normalizePlan } from '@/lib/billing/plans';
 import { canAffordEstimatedMessage, recordUsageDebit } from '@/lib/billing/service';
@@ -19,7 +17,8 @@ import {
   getDelayBoundsFromPersona,
 } from '@/lib/persona/personaAi';
 import { getUserPlan } from '@/lib/subscription';
-import { sendTelegramMessage } from './botApi';
+import { gramjsSendMessageAsUser } from './gramjsUserClient';
+import { decryptSessionString } from './sessionCrypto';
 
 export type TelegramThreadState = {
   incomingMessageCount: number;
@@ -49,100 +48,34 @@ export type TelegramOrchestrationInput = {
   updateKind: 'dm_private' | 'channel_post' | 'group_message';
 };
 
-const TOKEN_TTL_MS = 60 * 60 * 1000;
-
-export function extractLinkTokenFromStart(text: string | undefined): string | null {
-  if (!text || typeof text !== 'string') return null;
-  const m = text.trim().match(/^\/start(?:@\w+)?\s+(link_[a-f0-9]+)\s*$/i);
-  return m ? m[1].replace(/^link_/i, '') : null;
-}
-
-export async function createTelegramLinkToken(userId: string): Promise<{ token: string; expiresAt: Date }> {
-  const token = randomBytes(18).toString('hex');
-  const expiresAt = new Date(Date.now() + TOKEN_TTL_MS);
-  await db.insert(telegramLinkTokens).values({
-    token,
-    userId,
-    expiresAt,
-  });
-  return { token, expiresAt };
-}
-
-export async function completeTelegramLink(params: {
-  token: string;
-  telegramUserId: string;
-  telegramUsername: string | null;
-  privateChatId: string;
-}): Promise<{ ok: true; userId: string } | { ok: false; reason: string }> {
-  const now = new Date();
+export async function getTelegramSessionStringForUser(userId: string): Promise<string | null> {
   const rows = await db
-    .select()
-    .from(telegramLinkTokens)
-    .where(eq(telegramLinkTokens.token, params.token))
+    .select({ enc: telegramUserSessions.encryptedSession })
+    .from(telegramUserSessions)
+    .where(
+      and(eq(telegramUserSessions.userId, userId), eq(telegramUserSessions.status, 'connected'))
+    )
     .limit(1);
-  const row = rows[0];
-  if (!row) {
-    return { ok: false, reason: 'invalid_token' };
+  const enc = rows[0]?.enc;
+  if (!enc) return null;
+  try {
+    return decryptSessionString(enc);
+  } catch {
+    return null;
   }
-  if (row.usedAt) {
-    return { ok: false, reason: 'token_used' };
-  }
-  if (new Date(row.expiresAt) < now) {
-    return { ok: false, reason: 'token_expired' };
-  }
-
-  const userId = row.userId;
-
-  await db
-    .update(telegramLinkTokens)
-    .set({ usedAt: now })
-    .where(eq(telegramLinkTokens.id, row.id));
-
-  await db
-    .insert(telegramIdentities)
-    .values({
-      userId,
-      telegramUserId: params.telegramUserId,
-      telegramUsername: params.telegramUsername,
-      status: 'linked',
-      updatedAt: now,
-    })
-    .onConflictDoUpdate({
-      target: telegramIdentities.userId,
-      set: {
-        telegramUserId: params.telegramUserId,
-        telegramUsername: params.telegramUsername,
-        status: 'linked',
-        updatedAt: now,
-      },
-    });
-
-  await db
-    .insert(telegramChatLinks)
-    .values({
-      userId,
-      telegramChatId: params.privateChatId,
-      kind: 'private',
-      title: null,
-      enabled: true,
-      updatedAt: now,
-    })
-    .onConflictDoUpdate({
-      target: [telegramChatLinks.userId, telegramChatLinks.telegramChatId],
-      set: { enabled: true, kind: 'private', updatedAt: now },
-    });
-
-  return { ok: true, userId };
 }
 
 export async function getTelegramIdentityByTelegramUserId(
   telegramUserId: string
 ): Promise<{ userId: string } | null> {
   const rows = await db
-    .select({ userId: telegramIdentities.userId })
-    .from(telegramIdentities)
+    .select({ userId: telegramUserSessions.userId })
+    .from(telegramUserSessions)
     .where(
-      and(eq(telegramIdentities.telegramUserId, telegramUserId), eq(telegramIdentities.status, 'linked'))
+      and(
+        eq(telegramUserSessions.telegramUserId, telegramUserId),
+        eq(telegramUserSessions.status, 'connected')
+      )
     )
     .limit(1);
   return rows[0] ?? null;
@@ -436,8 +369,16 @@ export async function processIncomingTelegram(input: TelegramOrchestrationInput)
     return;
   }
 
-  const sent = await sendTelegramMessage(Number(inboundMessage.chatId), aiReply.replyText, {
-    replyToMessageId: inboundMessage.telegramMessageId,
+  const sessionString = await getTelegramSessionStringForUser(inboundMessage.userId);
+  if (!sessionString) {
+    return;
+  }
+
+  const sent = await gramjsSendMessageAsUser({
+    sessionString,
+    peerId: inboundMessage.chatId,
+    text: aiReply.replyText,
+    replyToMsgId: inboundMessage.telegramMessageId,
   });
 
   const sentAt = new Date().toISOString();
@@ -454,7 +395,7 @@ export async function processIncomingTelegram(input: TelegramOrchestrationInput)
     chatId: inboundMessage.chatId,
     messageText: aiReply.replyText,
     sentAt,
-    rawPayload: { telegram: sent.raw, sourceMessageId: inboundMessage.platformMessageId },
+    rawPayload: { gramjs: { messageId: sent.messageId }, sourceMessageId: inboundMessage.platformMessageId },
     participantTelegramUserId: inboundMessage.participantTelegramUserId,
   });
 

@@ -10,36 +10,25 @@ import {
   integer,
 } from 'drizzle-orm/pg-core';
 
-export const telegramLinkTokens = pgTable(
-  'telegram_link_tokens',
-  {
-    id: uuid('id').primaryKey().defaultRandom(),
-    token: text('token').notNull(),
-    userId: text('user_id').notNull(),
-    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
-    usedAt: timestamp('used_at', { withTimezone: true }),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => ({
-    tokenUidx: uniqueIndex('telegram_link_tokens_token_uidx').on(table.token),
-    userIdIdx: index('telegram_link_tokens_user_id_idx').on(table.userId),
-  })
-);
-
-export const telegramIdentities = pgTable(
-  'telegram_identities',
+export const telegramUserSessions = pgTable(
+  'telegram_user_sessions',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     userId: text('user_id').notNull(),
-    telegramUserId: text('telegram_user_id').notNull(),
+    encryptedSession: text('encrypted_session'),
+    phoneNumber: text('phone_number'),
+    phoneCodeHash: text('phone_code_hash'),
+    intendedUsername: text('intended_username'),
+    telegramUserId: text('telegram_user_id'),
     telegramUsername: text('telegram_username'),
-    status: text('status').notNull().default('linked'),
+    status: text('status').notNull().default('disconnected'),
+    lastError: text('last_error'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
-    userUidx: uniqueIndex('telegram_identities_user_id_uidx').on(table.userId),
-    tgUserUidx: uniqueIndex('telegram_identities_telegram_user_id_uidx').on(table.telegramUserId),
+    userUidx: uniqueIndex('telegram_user_sessions_user_id_uidx').on(table.userId),
+    tgUserIdx: index('telegram_user_sessions_tg_user_idx').on(table.telegramUserId),
   })
 );
 
