@@ -7,6 +7,8 @@
  *   APP_BASE_URL=https://your-app.com TELEGRAM_CRON_SECRET=... \
  *   npx tsx src/scripts/telegram-user-worker.ts
  */
+import { createServer } from 'node:http';
+
 import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
@@ -50,6 +52,19 @@ async function main(): Promise<void> {
   const connectionString = requireEnv('POSTGRES_URL');
   const apiId = Number(requireEnv('TELEGRAM_API_ID'));
   const apiHash = requireEnv('TELEGRAM_API_HASH');
+
+  const portRaw = process.env.PORT?.trim();
+  if (portRaw) {
+    const port = Number(portRaw);
+    if (Number.isFinite(port) && port > 0) {
+      createServer((_req, res) => {
+        res.writeHead(200, { 'Content-Type': 'text/plain' });
+        res.end('ok');
+      }).listen(port, '0.0.0.0', () => {
+        console.log('[telegram-worker] health on', port);
+      });
+    }
+  }
 
   const pool = new Pool({ connectionString });
   const db = drizzle(pool, { schema });
