@@ -3,6 +3,7 @@ export * from './personas';
 export * from './subscriptions';
 export * from './instagram';
 export * from './billing';
+export * from './telegram';
 export * from './relations';
 
 // Export subscription types

@@ -11,6 +11,7 @@ import EditValueModal from '@/components/ui/EditValueModal';
 import { useI18n } from '@/hooks/useI18n';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Footer from '@/components/Footer';
+import { TelegramIntegrationPanel } from '@/components/dashboard/TelegramIntegrationPanel';
 
 import isEqual from 'lodash.isequal';
 
@@ -142,6 +143,15 @@ function DashboardContent() {
     transparencyMode: false,
   });
   const [instagramConnected, setInstagramConnected] = useState(false);
+  const [telegramConnected, setTelegramConnected] = useState(false);
+  const [telegramIntegration, setTelegramIntegration] = useState<{
+    botConfigured: boolean;
+    webhookRegistered: boolean;
+    webhookMatchesExpected: boolean;
+    pendingUpdateCount: number;
+    lastWebhookError: string | null;
+    hint: string | null;
+  } | null>(null);
   const [simulatingWebhook, setSimulatingWebhook] = useState(false);
   const [personas, setPersonas] = useState<{id: string, name: string, active?: boolean, transparencyMode?: boolean}[]>([]);
   const [selectedPersonaId, setSelectedPersonaId] = useState<string>('');
@@ -859,6 +869,14 @@ function DashboardContent() {
     window.location.href = params.toString() ? `${targetPath}?${params.toString()}` : targetPath;
   };
 
+  const handleTelegramConnect = () => {
+    const params = new URLSearchParams();
+    if (userId) {
+      params.set('userId', userId);
+    }
+    window.location.href = `/api/telegram/connect?${params.toString()}`;
+  };
+
   const handleSimulateWebhook = async () => {
     try {
       setSimulatingWebhook(true);
@@ -935,6 +953,59 @@ function DashboardContent() {
     };
     getUserData();
   }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/telegram/status?userId=${encodeURIComponent(userId)}`);
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as { connected?: boolean };
+        if (!cancelled) setTelegramConnected(Boolean(data.connected));
+      } catch {
+        if (!cancelled) setTelegramConnected(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/telegram/integration-status?userId=${encodeURIComponent(userId)}`
+        );
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as {
+          botConfigured?: boolean;
+          webhookRegistered?: boolean;
+          webhookMatchesExpected?: boolean;
+          pendingUpdateCount?: number;
+          lastWebhookError?: string | null;
+          hint?: string | null;
+        };
+        if (cancelled) return;
+        setTelegramIntegration({
+          botConfigured: Boolean(data.botConfigured),
+          webhookRegistered: Boolean(data.webhookRegistered),
+          webhookMatchesExpected: Boolean(data.webhookMatchesExpected),
+          pendingUpdateCount: Number(data.pendingUpdateCount ?? 0),
+          lastWebhookError: data.lastWebhookError ?? null,
+          hint: data.hint ?? null,
+        });
+      } catch {
+        if (!cancelled) setTelegramIntegration(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
 
   // Check and initialize AI template daily limit
   useEffect(() => {
@@ -1603,12 +1674,21 @@ function DashboardContent() {
         </div>
         <h1 className="text-4xl font-extrabold tracking-wide">{String(t('dashboard.title') || 'Dashboard')}</h1>
         <p className="text-sm mt-2 opacity-80">{String(t('dashboard.automateInstagram') || 'Automate your Instagram interactions')}</p>
-        <button
-          onClick={handleInstagramLogin}
-          className={`mt-4 border font-semibold py-2 px-4 rounded-lg transition shadow-none ${instagramConnected ? 'bg-green-600 border-green-600 text-white' : 'bg-transparent text-white border-white hover:bg-white hover:text-indigo-700'}`}
-        >
-          {instagramConnected ? t('dashboard.instagramConnected') : t('dashboard.connectInstagram')}
-        </button>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={handleInstagramLogin}
+            className={`border font-semibold py-2 px-4 rounded-lg transition shadow-none ${instagramConnected ? 'bg-green-600 border-green-600 text-white' : 'bg-transparent text-white border-white hover:bg-white hover:text-indigo-700'}`}
+          >
+            {instagramConnected ? t('dashboard.instagramConnected') : t('dashboard.connectInstagram')}
+          </button>
+        </div>
+        <TelegramIntegrationPanel
+          locale={currentLocale}
+          telegramConnected={telegramConnected}
+          telegramIntegration={telegramIntegration}
+          onConnect={handleTelegramConnect}
+        />
         {isTestMode && instagramConnected && (
           <button
             onClick={handleSimulateWebhook}

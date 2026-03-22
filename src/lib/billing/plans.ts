@@ -44,6 +44,48 @@ export function normalizePlan(input: string | null | undefined): BillingPlan {
   return 'free';
 }
 
+/** Max characters for persona DM replies (Instagram / future Telegram); enforced in the AI pipeline. */
+export function getPersonaReplyMaxChars(plan: BillingPlan): number {
+  switch (plan) {
+    case 'free':
+      return 100;
+    case 'pro':
+      return 250;
+    case 'max':
+    case 'enterprise':
+      return 500;
+    default:
+      return 100;
+  }
+}
+
+/**
+ * Trims and truncates to maxChars, preferring a break at the last space before the limit.
+ */
+export function clampPersonaReplyText(text: string, maxChars: number): string {
+  if (!Number.isFinite(maxChars) || maxChars < 1) {
+    return text.trim().slice(0, 100);
+  }
+  const t = text.trim();
+  if (t.length <= maxChars) {
+    return t;
+  }
+  const slice = t.slice(0, maxChars);
+  const lastSpace = slice.lastIndexOf(' ');
+  if (lastSpace > Math.floor(maxChars * 0.65)) {
+    return slice.slice(0, lastSpace).trimEnd();
+  }
+  return slice.trimEnd();
+}
+
+/** Upper bound for OpenAI max_tokens given a character cap (mixed EN/DE text). */
+export function maxCompletionTokensForPersonaReply(maxChars: number): number {
+  if (!Number.isFinite(maxChars) || maxChars < 1) {
+    return 48;
+  }
+  return Math.min(900, Math.max(24, Math.ceil(maxChars * 0.55)));
+}
+
 export function creditsFromCostMicros(costMicros: number): number {
   if (!Number.isFinite(costMicros) || costMicros <= 0) return 0;
   return Math.ceil(costMicros / CREDIT_MICROS);
