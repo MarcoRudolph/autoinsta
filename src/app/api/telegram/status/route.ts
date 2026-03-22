@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { db } from '@/drizzle';
-import { telegramIdentities } from '@/drizzle/schema/telegram';
+import { telegramUserSessions } from '@/drizzle/schema/telegram';
 
 export const runtime = 'nodejs';
 
@@ -13,16 +13,16 @@ export async function GET(request: NextRequest) {
 
   const rows = await db
     .select({
-      telegramUserId: telegramIdentities.telegramUserId,
-      telegramUsername: telegramIdentities.telegramUsername,
-      status: telegramIdentities.status,
+      telegramUserId: telegramUserSessions.telegramUserId,
+      telegramUsername: telegramUserSessions.telegramUsername,
+      status: telegramUserSessions.status,
     })
-    .from(telegramIdentities)
-    .where(eq(telegramIdentities.userId, userId))
+    .from(telegramUserSessions)
+    .where(eq(telegramUserSessions.userId, userId))
     .limit(1);
 
   const row = rows[0];
-  if (!row || row.status !== 'linked') {
+  if (!row || row.status !== 'connected') {
     return NextResponse.json({ connected: false });
   }
 

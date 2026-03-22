@@ -144,14 +144,6 @@ function DashboardContent() {
   });
   const [instagramConnected, setInstagramConnected] = useState(false);
   const [telegramConnected, setTelegramConnected] = useState(false);
-  const [telegramIntegration, setTelegramIntegration] = useState<{
-    botConfigured: boolean;
-    webhookRegistered: boolean;
-    webhookMatchesExpected: boolean;
-    pendingUpdateCount: number;
-    lastWebhookError: string | null;
-    hint: string | null;
-  } | null>(null);
   const [simulatingWebhook, setSimulatingWebhook] = useState(false);
   const [personas, setPersonas] = useState<{id: string, name: string, active?: boolean, transparencyMode?: boolean}[]>([]);
   const [selectedPersonaId, setSelectedPersonaId] = useState<string>('');
@@ -869,14 +861,6 @@ function DashboardContent() {
     window.location.href = params.toString() ? `${targetPath}?${params.toString()}` : targetPath;
   };
 
-  const handleTelegramConnect = () => {
-    const params = new URLSearchParams();
-    if (userId) {
-      params.set('userId', userId);
-    }
-    window.location.href = `/api/telegram/connect?${params.toString()}`;
-  };
-
   const handleSimulateWebhook = async () => {
     try {
       setSimulatingWebhook(true);
@@ -965,41 +949,6 @@ function DashboardContent() {
         if (!cancelled) setTelegramConnected(Boolean(data.connected));
       } catch {
         if (!cancelled) setTelegramConnected(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [userId]);
-
-  useEffect(() => {
-    if (!userId) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch(
-          `/api/telegram/integration-status?userId=${encodeURIComponent(userId)}`
-        );
-        if (!res.ok || cancelled) return;
-        const data = (await res.json()) as {
-          botConfigured?: boolean;
-          webhookRegistered?: boolean;
-          webhookMatchesExpected?: boolean;
-          pendingUpdateCount?: number;
-          lastWebhookError?: string | null;
-          hint?: string | null;
-        };
-        if (cancelled) return;
-        setTelegramIntegration({
-          botConfigured: Boolean(data.botConfigured),
-          webhookRegistered: Boolean(data.webhookRegistered),
-          webhookMatchesExpected: Boolean(data.webhookMatchesExpected),
-          pendingUpdateCount: Number(data.pendingUpdateCount ?? 0),
-          lastWebhookError: data.lastWebhookError ?? null,
-          hint: data.hint ?? null,
-        });
-      } catch {
-        if (!cancelled) setTelegramIntegration(null);
       }
     })();
     return () => {
@@ -1685,9 +1634,9 @@ function DashboardContent() {
         </div>
         <TelegramIntegrationPanel
           locale={currentLocale}
+          userId={userId}
           telegramConnected={telegramConnected}
-          telegramIntegration={telegramIntegration}
-          onConnect={handleTelegramConnect}
+          onConnected={() => setTelegramConnected(true)}
         />
         {isTestMode && instagramConnected && (
           <button
