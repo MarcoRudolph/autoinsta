@@ -3,7 +3,10 @@ import test from 'node:test';
 import {
   BILLING_PLAN_CONFIG,
   canSendWithCredits,
+  clampPersonaReplyText,
   creditsFromCostMicros,
+  getPersonaReplyMaxChars,
+  maxCompletionTokensForPersonaReply,
   microsFromCredits,
   normalizePlan,
 } from './plans';
@@ -31,4 +34,22 @@ test('plan normalization defaults unknown plans to free', () => {
 test('credit guard helper allows and blocks correctly', () => {
   assert.equal(canSendWithCredits(30, 30), true);
   assert.equal(canSendWithCredits(29, 30), false);
+});
+
+test('persona reply character limits by billing plan', () => {
+  assert.equal(getPersonaReplyMaxChars('free'), 100);
+  assert.equal(getPersonaReplyMaxChars('pro'), 250);
+  assert.equal(getPersonaReplyMaxChars('max'), 500);
+  assert.equal(getPersonaReplyMaxChars('enterprise'), 500);
+});
+
+test('clampPersonaReplyText respects max length and prefers word breaks', () => {
+  assert.equal(clampPersonaReplyText('hi', 100), 'hi');
+  assert.equal(clampPersonaReplyText('hello world', 5), 'hello');
+  assert.equal(clampPersonaReplyText('abcdefghij', 4), 'abcd');
+});
+
+test('maxCompletionTokensForPersonaReply scales with character cap', () => {
+  assert.ok(maxCompletionTokensForPersonaReply(100) < maxCompletionTokensForPersonaReply(500));
+  assert.ok(maxCompletionTokensForPersonaReply(100) >= 24);
 });

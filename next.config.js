@@ -21,6 +21,7 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-dialog'],
     outputFileTracingRoot: process.cwd(),
+    instrumentationHook: true,
   },
   
   compress: true,
