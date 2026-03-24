@@ -104,6 +104,9 @@ export async function ensureBillingCycle(userId: string, now = new Date()) {
     .returning();
 
   const cycle = inserted[0];
+  if (!cycle) {
+    throw new Error('Failed to create billing cycle');
+  }
 
   await db.insert(billingLedger).values({
     userId,

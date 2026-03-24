@@ -11,8 +11,11 @@ if (existsSync(envPath)) {
   for (const line of content.split(/\r?\n/)) {
     const match = line.match(/^([^#=]+)=(.*)$/);
     if (match) {
-      const key = match[1].trim();
-      const value = match[2].trim().replace(/^["']|["']$/g, "").replace(/\s+$/g, "");
+      const keyPart = match[1];
+      const valuePart = match[2];
+      if (!keyPart || valuePart === undefined) continue;
+      const key = keyPart.trim();
+      const value = valuePart.trim().replace(/^["']|["']$/g, "").replace(/\s+$/g, "");
       process.env[key] = value;
     }
   }

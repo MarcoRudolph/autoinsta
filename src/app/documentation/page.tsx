@@ -2,11 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useI18n } from '@/hooks/useI18n';
 
 export default function DocumentationPage() {
   const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'de'>('de');
-  const { t } = useI18n(selectedLanguage);
 
   const documentation = {
     en: {
@@ -269,5 +267,4 @@ export default function DocumentationPage() {
     </div>
   );
 }
-
 

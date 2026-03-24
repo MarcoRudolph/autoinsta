@@ -77,10 +77,14 @@ export function decideProductLink(input: ProductDecisionInput): ProductDecision 
 
   if (situationalIntent) {
     if (situationalLinks.length > 0) {
+      const selected = situationalLinks[0];
+      if (!selected) {
+        return { shouldSendPromo: false, reason: 'no_eligible_link', selectedLink: null };
+      }
       return {
         shouldSendPromo: true,
         reason: 'situational_trigger',
-        selectedLink: situationalLinks[0],
+        selectedLink: selected,
       };
     }
     return { shouldSendPromo: false, reason: 'no_eligible_link', selectedLink: null };
@@ -88,10 +92,14 @@ export function decideProductLink(input: ProductDecisionInput): ProductDecision 
 
   if (input.incomingMessageCount >= 5) {
     if (proactiveLinks.length > 0) {
+      const selected = proactiveLinks[0];
+      if (!selected) {
+        return { shouldSendPromo: false, reason: 'no_eligible_link', selectedLink: null };
+      }
       return {
         shouldSendPromo: true,
         reason: 'proactive_threshold',
-        selectedLink: proactiveLinks[0],
+        selectedLink: selected,
       };
     }
     return { shouldSendPromo: false, reason: 'no_eligible_link', selectedLink: null };

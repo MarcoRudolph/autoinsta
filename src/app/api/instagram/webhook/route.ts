@@ -57,7 +57,9 @@ function timingSafeEqual(a: Uint8Array, b: Uint8Array): boolean {
   if (a.length !== b.length) return false;
   let diff = 0;
   for (let i = 0; i < a.length; i += 1) {
-    diff |= a[i] ^ b[i];
+    const aByte = a[i] ?? 0;
+    const bByte = b[i] ?? 0;
+    diff |= aByte ^ bByte;
   }
   return diff === 0;
 }

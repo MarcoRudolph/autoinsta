@@ -1,8 +1,4 @@
 import { pgTable, serial, jsonb, timestamp, uuid, unique, varchar, text, boolean } from "drizzle-orm/pg-core"
-import { sql } from "drizzle-orm"
-
-
-
 export const personas = pgTable("personas", {
 	id: serial().primaryKey().notNull(),
 	data: jsonb().notNull(),

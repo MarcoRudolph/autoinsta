@@ -1476,7 +1476,7 @@ function DashboardContent() {
   };
 
   // Function to handle editing values
-  const handleEditValue = (oldValue: string, newValue: string) => {
+  const handleEditValue = (_oldValue: string, newValue: string) => {
     if (editingValue) {
       if (editingValue.section === 'characterTraits') {
         setPersonality(prev => ({
@@ -2896,7 +2896,9 @@ function DashboardContent() {
                     value={link.url}
                     onChange={(e) => {
                       const newLinks = [...productLinks];
-                      newLinks[index] = { ...newLinks[index], url: e.target.value };
+                      const existing = newLinks[index];
+                      if (!existing) return;
+                      newLinks[index] = { ...existing, url: e.target.value };
                       setProductLinks(newLinks);
                       // Auto-save the persona after changing product link
                       setTimeout(() => handleSavePersona(), 100);
@@ -2910,7 +2912,9 @@ function DashboardContent() {
                     value={link.actionType}
                     onChange={(e) => {
                       const newLinks = [...productLinks];
-                      newLinks[index] = { ...newLinks[index], actionType: e.target.value };
+                      const existing = newLinks[index];
+                      if (!existing) return;
+                      newLinks[index] = { ...existing, actionType: e.target.value };
                       setProductLinks(newLinks);
                       // Auto-save the persona after changing product link
                       setTimeout(() => handleSavePersona(), 100);
@@ -2927,7 +2931,9 @@ function DashboardContent() {
                     value={link.sendingBehavior}
                     onChange={(e) => {
                       const newLinks = [...productLinks];
-                      newLinks[index] = { ...newLinks[index], sendingBehavior: e.target.value };
+                      const existing = newLinks[index];
+                      if (!existing) return;
+                      newLinks[index] = { ...existing, sendingBehavior: e.target.value };
                       setProductLinks(newLinks);
                       // Auto-save the persona after changing product link
                       setTimeout(() => handleSavePersona(), 100);

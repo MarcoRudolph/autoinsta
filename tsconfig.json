@@ -13,6 +13,16 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
+    
+    /* --- AGENT ACCURACY ENHANCEMENTS --- */
+    "noUnusedLocals": true,                // Prevents clutter and "dead" logic
+    "noUnusedParameters": true,            // Ensures clean function signatures
+    "noImplicitReturns": true,             // Catches paths where a function might return 'undefined'
+    "noFallthroughCasesInSwitch": true,    // Prevents accidental switch-case bugs
+    "noUncheckedIndexedAccess": true,      // CRITICAL: Forces agents to check if array[i] exists
+    "noImplicitOverride": true,            // Ensures class inheritance is intentional
+    "forceConsistentCasingInFileNames": true,
+
     "plugins": [
       {
         "name": "next"
@@ -22,6 +32,12 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": [
+    "next-env.d.ts", 
+    "**/*.ts", 
+    "**/*.tsx", 
+    ".next/types/**/*.ts",
+    "eslint.config.mjs" // Include config files for type-checked linting
+  ],
   "exclude": ["node_modules"]
 }

@@ -73,7 +73,8 @@ export function getClientIP(req: Request): string {
   const cfConnectingIP = req.headers.get('cf-connecting-ip');
   
   if (forwarded) {
-    return forwarded.split(',')[0].trim();
+    const first = forwarded.split(',')[0];
+    return first?.trim() || 'unknown';
   }
   if (realIP) {
     return realIP;
