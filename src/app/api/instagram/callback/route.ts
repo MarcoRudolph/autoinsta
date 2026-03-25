@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eq, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { db, resolvePostgresUrl } from '@/drizzle';
 import { instagramConnections } from '@/drizzle/schema/instagram';
 import { decodeOAuthState } from '@/lib/oauth/state';
+import { ensurePublicUserFromAuth } from '@/lib/users/ensurePublicUser';
 
 export const runtime = 'nodejs';
 
@@ -230,14 +231,12 @@ async function resolveValidConnectionUserId(userId: string | null | undefined): 
   if (!userId) return null;
 
   try {
-    const result = await db.execute(
-      sql`select 1 from public.users where id = ${userId} limit 1`
-    );
-    if ((result.rows?.length ?? 0) > 0) {
+    const ensured = await ensurePublicUserFromAuth({ userId });
+    if (ensured) {
       return userId;
     }
 
-    console.warn('Instagram callback: state userId is not present in public.users; storing null userId', {
+    console.warn('Instagram callback: could not ensure public.users row for state userId; storing null userId', {
       userId,
     });
     return null;

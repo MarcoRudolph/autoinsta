@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/card';
 import { useI18n } from '@/hooks/useI18n';
 import { normalizeTelegramUsernameInput } from '@/lib/telegram/telegramUsername';
+import { authedFetch } from '@/lib/auth/authedFetch';
 
 type TelegramIntegrationPanelProps = {
   locale: string;
@@ -61,7 +62,7 @@ export function TelegramIntegrationPanel({
 
     setBusy(true);
     try {
-      const res = await fetch('/api/telegram-user/request-code', {
+      const res = await authedFetch('/api/telegram-user/request-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -91,7 +92,7 @@ export function TelegramIntegrationPanel({
     }
     setBusy(true);
     try {
-      const res = await fetch('/api/telegram-user/verify-code', {
+      const res = await authedFetch('/api/telegram-user/verify-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, phoneCode: code }),

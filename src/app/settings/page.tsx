@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { authedFetch } from '@/lib/auth/authedFetch';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -68,7 +69,7 @@ export default function SettingsPage() {
       }
 
       // Call API to delete user data
-      const response = await fetch('/api/delete-user-data', {
+      const response = await authedFetch('/api/delete-user-data', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

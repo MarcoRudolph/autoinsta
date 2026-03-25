@@ -9,6 +9,10 @@ This file is for future agents and maintainers. It is the fastest context handof
 - Instagram app-review and E2E checklist: `docs/instagram-dm-e2e-and-app-review.md`
 - Telegram MTProto notes: `docs/telegram-mtproto-user.md`
 
+## Recent Progress
+
+- Timestamped fixes and learnings log: [progress.md](./progress.md)
+
 ## Project Summary
 
 - Product: AI assistant for creators/influencers that automates Instagram DM replies and Telegram DM replies.

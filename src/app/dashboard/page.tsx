@@ -12,6 +12,7 @@ import { useI18n } from '@/hooks/useI18n';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Footer from '@/components/Footer';
 import { TelegramIntegrationPanel } from '@/components/dashboard/TelegramIntegrationPanel';
+import { authedFetch } from '@/lib/auth/authedFetch';
 
 import isEqual from 'lodash.isequal';
 
@@ -284,7 +285,7 @@ function DashboardContent() {
   const checkUserSubscription = useCallback(async () => {
     if (!userId) return;
     try {
-      const res = await fetch(`/api/subscription?userId=${userId}`);
+      const res = await authedFetch(`/api/subscription?userId=${userId}`);
       if (res.ok) {
         const data = await res.json();
         console.log('Subscription data:', data);
@@ -302,7 +303,7 @@ function DashboardContent() {
   const fetchBillingUsage = useCallback(async () => {
     if (!userId) return;
     try {
-      const res = await fetch(`/api/billing/usage?userId=${userId}`);
+      const res = await authedFetch(`/api/billing/usage?userId=${userId}`);
       if (!res.ok) return;
       const data = await res.json();
       setBillingUsage({
@@ -344,7 +345,7 @@ function DashboardContent() {
       // If the persona is not active, activate it (set active to true)
       const newActiveStatus = !currentPersona.active;
       
-      const res = await fetch('/api/set-active-persona', {
+      const res = await authedFetch('/api/set-active-persona', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -393,7 +394,7 @@ function DashboardContent() {
         console.error('Error getting userId:', error);
       }
       
-      const res = await fetch(`/api/list-personas?t=${timestamp}&userId=${userId}`);
+      const res = await authedFetch(`/api/list-personas?t=${timestamp}&userId=${userId}`);
       if (res.ok) {
         const data = await res.json();
         console.log('Raw personas data:', data);
@@ -460,7 +461,7 @@ function DashboardContent() {
     }
     try {
       setPersonaMessageCountLoading(true);
-      const res = await fetch(`/api/instagram/persona-message-count?personaId=${personaId}`);
+      const res = await authedFetch(`/api/instagram/persona-message-count?personaId=${personaId}`);
       if (!res.ok) {
         setPersonaMessageCount(null);
         return;
@@ -555,7 +556,7 @@ function DashboardContent() {
     setLoadingAI(true);
     console.log('Sending request to /api/generate-persona...');
     try {
-      const res = await fetch('/api/generate-persona', { 
+      const res = await authedFetch('/api/generate-persona', { 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -738,7 +739,7 @@ function DashboardContent() {
       const filename = `${safeName}.json`;
 
       // Call API to save the template
-      const response = await fetch('/api/save-template', {
+      const response = await authedFetch('/api/save-template', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -864,7 +865,7 @@ function DashboardContent() {
   const handleSimulateWebhook = async () => {
     try {
       setSimulatingWebhook(true);
-      const response = await fetch('/api/instagram/simulate-webhook', {
+      const response = await authedFetch('/api/instagram/simulate-webhook', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -922,7 +923,7 @@ function DashboardContent() {
           
           // Load user's saved locale from database
           try {
-            const response = await fetch(`/api/get-user-locale?userId=${user.id}`);
+            const response = await authedFetch(`/api/get-user-locale?userId=${user.id}`);
             if (response.ok) {
               const { locale } = await response.json();
               setCurrentLocale(locale);
@@ -943,7 +944,7 @@ function DashboardContent() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/telegram/status?userId=${encodeURIComponent(userId)}`);
+        const res = await authedFetch(`/api/telegram/status?userId=${encodeURIComponent(userId)}`);
         if (!res.ok || cancelled) return;
         const data = (await res.json()) as { connected?: boolean };
         if (!cancelled) setTelegramConnected(Boolean(data.connected));
@@ -1051,7 +1052,7 @@ function DashboardContent() {
       if (currentPersonaId) {
         // Edit existing persona
         console.log('Editing persona:', currentPersonaId, personaData);
-        const res = await fetch('/api/edit-persona', {
+        const res = await authedFetch('/api/edit-persona', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ personaId: currentPersonaId, userId, data: personaData }),
@@ -1069,7 +1070,7 @@ function DashboardContent() {
         };
         console.log('Saving persona:', personaData);
         console.log('Name in personaData.personality.name:', personaData.personality.name);
-        const res = await fetch('/api/save-persona', {
+        const res = await authedFetch('/api/save-persona', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId, data: personaData }),
@@ -1127,7 +1128,7 @@ function DashboardContent() {
   const loadPersonaById = useCallback(async (id: string) => {
     if (!id) return;
     try {
-      const res = await fetch(`/api/get-persona?id=${id}`);
+      const res = await authedFetch(`/api/get-persona?id=${id}`);
       if (res.ok) {
         const data: { persona?: PersonaData } = await res.json();
         if (data && data.persona && data.persona !== null) {
@@ -1331,7 +1332,7 @@ function DashboardContent() {
       console.log('Making delete API call to /api/delete-persona');
       console.log('Request body:', { id: personaToDelete.id });
       
-      const res = await fetch(`/api/delete-persona`, {
+      const res = await authedFetch(`/api/delete-persona`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: personaToDelete.id }),

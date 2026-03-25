@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { SubscriptionStatus, SubscriptionPlan } from '../lib/subscription';
+import { authedFetch } from '@/lib/auth/authedFetch';
 
 export interface SubscriptionState {
   status: SubscriptionStatus;
@@ -24,7 +25,7 @@ export function useSubscription(userId: string | null) {
     setSubscription(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      const response = await fetch(`/api/subscription?userId=${userId}`);
+      const response = await authedFetch(`/api/subscription?userId=${userId}`);
       if (!response.ok) throw new Error('Failed to fetch subscription');
       
       const data = await response.json();

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import PricingCard from '@/components/PricingCard';
 import { createClient } from '@/lib/auth/supabaseClient.client';
+import { authedFetch } from '@/lib/auth/authedFetch';
 
 const PricingPage = () => {
   const router = useRouter();
@@ -28,7 +29,7 @@ const PricingPage = () => {
         return;
       }
 
-      const response = await fetch('/api/billing/checkout', {
+      const response = await authedFetch('/api/billing/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, plan }),

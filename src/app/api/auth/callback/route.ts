@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/auth/supabaseClient.server';
-import { db, hasPostgresUrlConfig } from '@/drizzle';
-import { users } from '@/drizzle/schema/users';
+import { ensurePublicUserFromAuth } from '@/lib/users/ensurePublicUser';
 
 export const runtime = 'nodejs';
 
@@ -64,22 +63,12 @@ export async function GET(request: NextRequest) {
     if (data.session) {
       // Ensure OAuth user exists in public.users for subscription, get-user-locale, etc.
       const authUser = data.user;
-      if (authUser?.id && authUser?.email && hasPostgresUrlConfig()) {
+      if (authUser?.id) {
         try {
-          await db
-            .insert(users)
-            .values({
-              id: authUser.id,
-              email: authUser.email,
-              passwordHash: '', // OAuth users have no password
-              subscriptionStatus: 'free',
-              subscriptionPlan: 'free',
-              isPro: false,
-            })
-            .onConflictDoUpdate({
-              target: users.id,
-              set: { email: authUser.email, updatedAt: new Date() },
-            });
+          await ensurePublicUserFromAuth({
+            userId: authUser.id,
+            email: authUser.email ?? null,
+          });
         } catch (syncErr) {
           console.warn('[AuthCallback] User sync to public.users failed (non-fatal):', syncErr);
         }

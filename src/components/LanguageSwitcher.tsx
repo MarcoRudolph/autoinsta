@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { locales, localeLabels } from '../config/i18n';
 import type { Locale } from '../config/i18n';
+import { authedFetch } from '@/lib/auth/authedFetch';
 
 interface LanguageSwitcherProps {
   onLocaleChange?: (locale: string) => void;
@@ -37,7 +38,7 @@ export default function LanguageSwitcher({
 
     if (userId) {
       try {
-        const response = await fetch('/api/update-user-locale', {
+        const response = await authedFetch('/api/update-user-locale', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ locale: newLocale, userId }),
