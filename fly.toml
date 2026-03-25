@@ -1,32 +1,23 @@
-# Default Fly config path (GitHub / fly deploy). Telegram worker only — not Next.js.
+# fly.toml app configuration file generated for autoinsta on 2026-03-22T20:07:04Z
 #
-# 1) fly apps create <name>
-# 2) Set `app` below to that name.
-# 3) fly secrets set (never commit secrets — use Fly dashboard or CLI):
-#    POSTGRES_URL TELEGRAM_API_ID TELEGRAM_API_HASH TELEGRAM_SESSION_SECRET
-#    APP_BASE_URL (site origin only, e.g. https://rudolpho-chat.de — no /api/... path)
-#    TELEGRAM_CRON_SECRET or CRON_SECRET
-# 4) fly deploy
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
-# GitHub: Working directory = ./   Config path = fly.toml
 
-app = "autoinsta"
-primary_region = "fra"
+app = 'autoinsta'
+primary_region = 'iad'
 
 [build]
-  dockerfile = "Dockerfile.telegram-worker"
-
-[env]
-  NODE_ENV = "production"
-  PORT = "8080"
 
 [http_service]
-  internal_port = 8080
+  internal_port = 3000
   force_https = true
-  auto_stop_machines = false
+  auto_stop_machines = 'stop'
   auto_start_machines = true
-  min_machines_running = 1
+  min_machines_running = 0
+  processes = ['app']
 
 [[vm]]
-  memory = "512mb"
+  memory = '1gb'
+  cpu_kind = 'shared'
   cpus = 1
+  memory_mb = 1024
