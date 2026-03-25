@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseAnonServerClient } from '@/lib/supabase/serverClient';
+import { requireAuthenticatedUser, validateRequestedUserId } from '@/lib/security/requestAuth';
 
 export const runtime = 'nodejs';
 
@@ -28,42 +29,33 @@ type PersonaData = {
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const userId = searchParams.get('userId');
+  const requestedUserId = searchParams.get('userId');
   try {
+    const auth = await requireAuthenticatedUser(request);
+    if (auth.response) return auth.response;
+    const mismatch = validateRequestedUserId(requestedUserId, auth.userId);
+    if (mismatch) return mismatch;
+
     // Initialize Supabase client
     const supabase = createSupabaseAnonServerClient();
 
-    let query = supabase.from('personas').select('*');
-    
-    // Filter by userId if provided
-    if (userId) {
-      query = query.eq('userId', userId);
-    }
-    
-    const { data: result, error } = await query;
+    const { data: result, error } = await supabase
+      .from('personas')
+      .select('*')
+      .eq('userId', auth.userId);
 
     if (error) {
       console.error('Error fetching personas:', error);
       return NextResponse.json({ error: 'Failed to list personas', details: error.message }, { status: 500 });
     }
 
-    console.log('Raw database result:', JSON.stringify(result, null, 2));
-    
     // Map to include id, name, and active for dropdown
     const personasList = (result || []).map(row => {
       const data = row.data as PersonaData;
-      console.log(`Processing persona ${row.id}:`, JSON.stringify(data, null, 2));
-      console.log(`Persona ${row.id} - data type:`, typeof data);
-      console.log(`Persona ${row.id} - data keys:`, Object.keys(data || {}));
       
       // Check if data has personality structure or flat structure
       // Handle double-wrapped data structure: data.data.personality.name
       const name = data?.data?.personality?.name || data?.personality?.name || data?.name || `Persona ${row.id}`;
-      console.log(`Persona ${row.id} - data?.data?.personality?.name:`, data?.data?.personality?.name);
-      console.log(`Persona ${row.id} - data?.personality?.name:`, data?.personality?.name);
-      console.log(`Persona ${row.id} - data?.name:`, data?.name);
-      console.log(`Persona ${row.id} - data?.personality:`, data?.personality);
-      console.log(`Persona ${row.id} - final name:`, name);
       
       // Check for active status in both flat and legacy nested data shapes
       let active = false;
@@ -84,8 +76,6 @@ export async function GET(request: Request) {
         transparencyMode = Boolean(data.data.transparencyMode);
       }
       
-      console.log(`Persona ${row.id} (${name}): active=${active}, transparencyMode=${transparencyMode}, data:`, data);
-      
       return {
         id: row.id,
         name: name,
@@ -93,7 +83,6 @@ export async function GET(request: Request) {
         transparencyMode: transparencyMode,
       };
     });
-    console.log('Final personasList:', JSON.stringify(personasList, null, 2));
     return NextResponse.json({ personas: personasList });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to list personas', details: String(error) }, { status: 500 });

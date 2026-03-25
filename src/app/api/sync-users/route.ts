@@ -1,9 +1,16 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseAnonServerClient } from '@/lib/supabase/serverClient';
+import { requireInternalApiKey } from '@/lib/security/internalApiAuth';
 
 export const runtime = 'nodejs';
 
-export async function POST() {
+export async function POST(request: Request) {
+  const authError = requireInternalApiKey(request, {
+    secrets: [process.env.INTERNAL_API_SECRET, process.env.ADMIN_SECRET],
+    context: 'admin',
+  });
+  if (authError) return authError;
+
   try {
     const supabase = createSupabaseAnonServerClient();
 

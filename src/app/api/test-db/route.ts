@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server';
 import { sql } from 'drizzle-orm';
 import { db, hasPostgresUrlConfig } from '@/drizzle';
+import { requireInternalApiKey } from '@/lib/security/internalApiAuth';
 
 export const runtime = 'nodejs';
 
-export async function GET() {
+export async function GET(request: Request) {
+  const authError = requireInternalApiKey(request, {
+    secrets: [process.env.INTERNAL_API_SECRET, process.env.ADMIN_SECRET],
+    context: 'debug',
+  });
+  if (authError) return authError;
+
   const hasPostgresUrl = hasPostgresUrlConfig();
 
   try {

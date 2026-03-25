@@ -1,22 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseAnonServerClient } from '@/lib/supabase/serverClient';
+import { requireInternalApiKey } from '@/lib/security/internalApiAuth';
 
 export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
 	try {
+		const authError = requireInternalApiKey(req, {
+			secrets: [process.env.ADMIN_SECRET, process.env.INTERNAL_API_SECRET],
+			context: 'admin',
+		});
+		if (authError) return authError;
+
 		const body = await req.json();
-		const { userId, adminSecret } = body;
-
-		const ADMIN_SECRET = process.env.ADMIN_SECRET;
-		if (!ADMIN_SECRET) {
-			console.error('ADMIN_SECRET environment variable not set');
-			return NextResponse.json({ error: 'Admin secret not configured' }, { status: 500 });
-		}
-
-		if (adminSecret !== ADMIN_SECRET) {
-			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-		}
+		const { userId } = body;
 		if (!userId) {
 			return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
 		}

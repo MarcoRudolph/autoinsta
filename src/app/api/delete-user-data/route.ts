@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseAnonServerClient } from '@/lib/supabase/serverClient';
+import { requireAuthenticatedUser, validateRequestedUserId } from '@/lib/security/requestAuth';
 
 export const runtime = 'nodejs';
 
 export async function DELETE(req: NextRequest) {
   try {
-    const { userId } = await req.json();
-
-    if (!userId) {
-      return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
-    }
+    const auth = await requireAuthenticatedUser(req);
+    if (auth.response) return auth.response;
+    const body = (await req.json().catch(() => ({}))) as { userId?: string };
+    const mismatch = validateRequestedUserId(body.userId, auth.userId);
+    if (mismatch) return mismatch;
+    const userId = auth.userId;
 
     // Initialize Supabase client
     const supabase = createSupabaseAnonServerClient();

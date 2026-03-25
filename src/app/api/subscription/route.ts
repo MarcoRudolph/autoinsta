@@ -1,21 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseAnonServerClient } from '@/lib/supabase/serverClient';
 import { normalizePlan } from '@/lib/billing/plans';
+import { requireAuthenticatedUser, validateRequestedUserId } from '@/lib/security/requestAuth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = request.nextUrl;
-    const userId = searchParams.get('userId');
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'User ID is required' },
-        { status: 400 }
-      );
-    }
+    const auth = await requireAuthenticatedUser(request);
+    if (auth.response) return auth.response;
+    const mismatch = validateRequestedUserId(request.nextUrl.searchParams.get('userId'), auth.userId);
+    if (mismatch) return mismatch;
+    const userId = auth.userId;
 
     // Initialize Supabase client
     const supabase = createSupabaseAnonServerClient();

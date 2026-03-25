@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseAnonServerClient } from '@/lib/supabase/serverClient';
 import { randomUUID } from 'crypto';
+import { requireInternalApiKey } from '@/lib/security/internalApiAuth';
 
 export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
+  const authError = requireInternalApiKey(request, {
+    secrets: [process.env.INTERNAL_API_SECRET, process.env.ADMIN_SECRET],
+    context: 'test',
+  });
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { email, passwordHash } = body;
@@ -87,6 +94,12 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  const authError = requireInternalApiKey(request, {
+    secrets: [process.env.INTERNAL_API_SECRET, process.env.ADMIN_SECRET],
+    context: 'test',
+  });
+  if (authError) return authError;
+
   try {
     const { searchParams } = new URL(request.url);
     const email = searchParams.get('email');

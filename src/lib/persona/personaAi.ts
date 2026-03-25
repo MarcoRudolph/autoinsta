@@ -87,7 +87,7 @@ export async function getActivePersonaForUser(userId: string): Promise<Normalize
 
   const normalized = rows.map(normalizePersona);
   const active = normalized.find((persona) => persona.active);
-  return active || normalized[0];
+  return active ?? normalized[0] ?? null;
 }
 
 export function getDelayBoundsFromPersona(persona: NormalizedPersona | null): {

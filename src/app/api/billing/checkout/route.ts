@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSubscriptionCheckout } from '@/app/actions/stripe';
+import { requireAuthenticatedUser, validateRequestedUserId } from '@/lib/security/requestAuth';
 
 export const runtime = 'nodejs';
 
@@ -10,13 +11,15 @@ type CheckoutBody = {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as CheckoutBody;
-    const userId = body.userId;
-    const plan = body.plan === 'max' ? 'max' : 'pro';
+    const auth = await requireAuthenticatedUser(request);
+    if (auth.response) return auth.response;
 
-    if (!userId) {
-      return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
-    }
+    const body = (await request.json()) as CheckoutBody;
+    const mismatch = validateRequestedUserId(body.userId, auth.userId);
+    if (mismatch) return mismatch;
+
+    const userId = auth.userId;
+    const plan = body.plan === 'max' ? 'max' : 'pro';
 
     const session = await createSubscriptionCheckout(userId, plan);
     return NextResponse.json(session);

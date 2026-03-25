@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseAnonServerClient } from '@/lib/supabase/serverClient';
+import { requireAuthenticatedUser, validateRequestedUserId } from '@/lib/security/requestAuth';
 
 export const runtime = 'nodejs';
 
 export async function PATCH(req: NextRequest) {
   try {
+    const auth = await requireAuthenticatedUser(req);
+    if (auth.response) return auth.response;
+
     const { personaId, userId, data } = await req.json();
-    if (!personaId || !userId || !data) {
-      return NextResponse.json({ error: 'Missing personaId, userId, or data' }, { status: 400 });
+    const mismatch = validateRequestedUserId(userId, auth.userId);
+    if (mismatch) return mismatch;
+    if (!personaId || !data) {
+      return NextResponse.json({ error: 'Missing personaId or data' }, { status: 400 });
     }
 
     // Initialize Supabase client
@@ -18,7 +24,7 @@ export async function PATCH(req: NextRequest) {
       .from('personas')
       .update({ data })
       .eq('id', personaId)
-      .eq('userId', userId)
+      .eq('userId', auth.userId)
       .select()
       .single();
 

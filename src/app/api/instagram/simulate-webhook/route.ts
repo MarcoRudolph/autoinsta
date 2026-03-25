@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/drizzle';
 import { instagramConnections, instagramDmPending } from '@/drizzle/schema/instagram';
 import { recordInstagramMessage, type StoredMessageInput } from '@/lib/instagram/dmPipeline';
+import { requireInternalApiKey } from '@/lib/security/internalApiAuth';
 
 export const runtime = 'nodejs';
 
@@ -16,6 +17,17 @@ function isTestModeEnabled(): boolean {
 }
 
 export async function POST(request: NextRequest) {
+  const authError = requireInternalApiKey(request, {
+    secrets: [
+      process.env.INSTAGRAM_DEBUG_KEY,
+      process.env.META_DEBUG_KEY,
+      process.env.INTERNAL_API_SECRET,
+      process.env.ADMIN_SECRET,
+    ],
+    context: 'instagram test',
+  });
+  if (authError) return authError;
+
   if (!isTestModeEnabled()) {
     return NextResponse.json({ error: 'Test mode is disabled' }, { status: 403 });
   }

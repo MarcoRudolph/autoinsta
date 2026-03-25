@@ -5,6 +5,7 @@ import { db } from '@/drizzle';
 import { telegramUserSessions } from '@/drizzle/schema/telegram';
 import { gramjsSendLoginCode } from '@/lib/telegram/gramjsUserClient';
 import { normalizeTelegramUsernameInput } from '@/lib/telegram/telegramUsername';
+import { requireAuthenticatedUser, validateRequestedUserId } from '@/lib/security/requestAuth';
 
 export const runtime = 'nodejs';
 
@@ -21,6 +22,9 @@ function normalizePhone(raw: string): string | null {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAuthenticatedUser(request);
+  if (auth.response) return auth.response;
+
   let body: unknown;
   try {
     body = await request.json();
@@ -33,7 +37,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid body', details: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { userId, phoneNumber, telegramUsername: usernameRaw } = parsed.data;
+  const { userId: requestedUserId, phoneNumber, telegramUsername: usernameRaw } = parsed.data;
+  const mismatch = validateRequestedUserId(requestedUserId, auth.userId);
+  if (mismatch) return mismatch;
+  const userId = auth.userId;
   const phone = normalizePhone(phoneNumber);
   if (!phone) {
     return NextResponse.json({ error: 'Invalid phone number' }, { status: 400 });

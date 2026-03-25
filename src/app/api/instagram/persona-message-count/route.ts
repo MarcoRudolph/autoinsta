@@ -3,10 +3,14 @@ import { and, eq, inArray, sql } from 'drizzle-orm';
 import { db, hasPostgresUrlConfig } from '@/drizzle';
 import { personas } from '@/drizzle/schema/personas';
 import { instagramConnections, instagramMessages } from '@/drizzle/schema/instagram';
+import { requireAuthenticatedUser } from '@/lib/security/requestAuth';
 
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
+  const auth = await requireAuthenticatedUser(request);
+  if (auth.response) return auth.response;
+
   const personaIdRaw = request.nextUrl.searchParams.get('personaId');
   const personaId = Number(personaIdRaw);
   if (!personaIdRaw || !Number.isInteger(personaId)) {
@@ -26,6 +30,9 @@ export async function GET(request: NextRequest) {
     const personaRow = personaRows[0];
     if (!personaRow?.userId) {
       return NextResponse.json({ error: 'Persona not found' }, { status: 404 });
+    }
+    if (personaRow.userId !== auth.userId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const userId = personaRow.userId;

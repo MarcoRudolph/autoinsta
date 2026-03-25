@@ -1,17 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseAnonServerClient } from '@/lib/supabase/serverClient';
+import { requireAuthenticatedUser, validateRequestedUserId } from '@/lib/security/requestAuth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = req.nextUrl;
-    const userId = searchParams.get('userId');
+    const auth = await requireAuthenticatedUser(req);
+    if (auth.response) return auth.response;
 
-    if (!userId) {
-      return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
-    }
+    const { searchParams } = req.nextUrl;
+    const mismatch = validateRequestedUserId(searchParams.get('userId'), auth.userId);
+    if (mismatch) return mismatch;
+    const userId = auth.userId;
 
     // Initialize Supabase client
     const supabase = createSupabaseAnonServerClient();

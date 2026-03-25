@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseAnonServerClient } from '@/lib/supabase/serverClient';
+import { requireAuthenticatedUser } from '@/lib/security/requestAuth';
 
 export const runtime = 'nodejs';
 
 export async function DELETE(req: NextRequest) {
   try {
+    const auth = await requireAuthenticatedUser(req);
+    if (auth.response) return auth.response;
+
     const { id } = await req.json();
     if (!id) {
       return NextResponse.json({ error: 'Missing id' }, { status: 400 });
@@ -17,7 +21,8 @@ export async function DELETE(req: NextRequest) {
     const { error } = await supabase
       .from('personas')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('userId', auth.userId);
 
     if (error) {
       console.error('Error deleting persona:', error);

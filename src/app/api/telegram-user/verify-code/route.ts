@@ -5,6 +5,7 @@ import { db } from '@/drizzle';
 import { telegramUserSessions } from '@/drizzle/schema/telegram';
 import { gramjsCompleteLogin } from '@/lib/telegram/gramjsUserClient';
 import { encryptSessionString } from '@/lib/telegram/sessionCrypto';
+import { requireAuthenticatedUser, validateRequestedUserId } from '@/lib/security/requestAuth';
 
 export const runtime = 'nodejs';
 
@@ -14,6 +15,9 @@ const BodySchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAuthenticatedUser(request);
+  if (auth.response) return auth.response;
+
   let body: unknown;
   try {
     body = await request.json();
@@ -26,7 +30,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid body', details: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { userId, phoneCode } = parsed.data;
+  const { userId: requestedUserId, phoneCode } = parsed.data;
+  const mismatch = validateRequestedUserId(requestedUserId, auth.userId);
+  if (mismatch) return mismatch;
+  const userId = auth.userId;
 
   const rows = await db
     .select()

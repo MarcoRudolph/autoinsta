@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { and, desc, eq } from 'drizzle-orm';
 import { db, resolvePostgresUrl } from '@/drizzle';
 import { instagramConnections } from '@/drizzle/schema/instagram';
+import { requireInternalApiKey } from '@/lib/security/internalApiAuth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -26,17 +27,16 @@ async function parseJsonOrText(response: Response): Promise<unknown> {
 
 export async function POST(request: NextRequest) {
   const startedAt = new Date().toISOString();
-  const debugSecret = process.env.INSTAGRAM_DEBUG_KEY || process.env.META_DEBUG_KEY || null;
-  const providedSecret =
-    request.headers.get('x-debug-key') || request.nextUrl.searchParams.get('key') || null;
-  const isProd = process.env.NODE_ENV === 'production';
-
-  if (isProd && debugSecret && providedSecret !== debugSecret) {
-    return NextResponse.json(
-      { error: 'Forbidden: missing or invalid debug key (x-debug-key or ?key=...)' },
-      { status: 403 }
-    );
-  }
+  const authError = requireInternalApiKey(request, {
+    secrets: [
+      process.env.INSTAGRAM_DEBUG_KEY,
+      process.env.META_DEBUG_KEY,
+      process.env.INTERNAL_API_SECRET,
+      process.env.ADMIN_SECRET,
+    ],
+    context: 'instagram debug',
+  });
+  if (authError) return authError;
 
   if (!resolvePostgresUrl()) {
     return NextResponse.json(

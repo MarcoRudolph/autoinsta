@@ -1,14 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseAnonServerClient } from '@/lib/supabase/serverClient';
+import { requireAuthenticatedUser, validateRequestedUserId } from '@/lib/security/requestAuth';
 
 export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   try {
-    const { locale, userId } = await req.json();
+    const auth = await requireAuthenticatedUser(req);
+    if (auth.response) return auth.response;
 
-    if (!locale || !userId) {
-      return NextResponse.json({ error: 'Missing locale or userId' }, { status: 400 });
+    const { locale, userId } = await req.json();
+    const mismatch = validateRequestedUserId(userId, auth.userId);
+    if (mismatch) return mismatch;
+
+    if (!locale) {
+      return NextResponse.json({ error: 'Missing locale' }, { status: 400 });
     }
 
     const validLocales = ['en', 'de', 'fr', 'es', 'it', 'pt'];
@@ -29,7 +35,7 @@ export async function POST(req: NextRequest) {
         locale: locale,
         updatedAt: new Date().toISOString()
       })
-      .eq('id', userId);
+      .eq('id', auth.userId);
 
     if (error) {
       console.error('Error updating user locale:', error);

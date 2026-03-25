@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseAnonServerClient } from '@/lib/supabase/serverClient';
+import { requireAuthenticatedUser, validateRequestedUserId } from '@/lib/security/requestAuth';
 
 export const runtime = 'nodejs';
 
@@ -14,9 +15,14 @@ type PersonaPayload = {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAuthenticatedUser(request);
+    if (auth.response) return auth.response;
+
     const { personaId, userId, transparencyMode } = await request.json();
+    const mismatch = validateRequestedUserId(userId, auth.userId);
+    if (mismatch) return mismatch;
     
-    if (!personaId || !userId || transparencyMode === undefined) {
+    if (!personaId || transparencyMode === undefined) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -30,7 +36,7 @@ export async function POST(request: NextRequest) {
       .from('personas')
       .select('data')
       .eq('id', personaId)
-      .eq('userId', userId)
+      .eq('userId', auth.userId)
       .single();
 
     if (fetchError || !personaData) {
@@ -64,7 +70,7 @@ export async function POST(request: NextRequest) {
         updatedAt: new Date().toISOString()
       })
       .eq('id', personaId)
-      .eq('userId', userId);
+      .eq('userId', auth.userId);
 
     if (updateError) {
       console.error('Error updating persona:', updateError);

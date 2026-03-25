@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { encodeOAuthState } from '@/lib/oauth/state';
+import { requireAuthenticatedUser, validateRequestedUserId } from '@/lib/security/requestAuth';
 
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
+  const auth = await requireAuthenticatedUser(request);
+  if (auth.response) return auth.response;
+
   const clientId =
     process.env.INSTAGRAM_APP_ID ||
     process.env.NEXT_PUBLIC_INSTAGRAM_CLIENT_ID ||
@@ -11,7 +15,9 @@ export async function GET(request: NextRequest) {
     process.env.META_APP_ID ||
     process.env.FACEBOOK_APP_ID;
   const requestOrigin = new URL(request.url).origin;
-  const userId = request.nextUrl.searchParams.get('userId');
+  const requestedUserId = request.nextUrl.searchParams.get('userId');
+  const mismatch = validateRequestedUserId(requestedUserId, auth.userId);
+  if (mismatch) return mismatch;
 
   if (!clientId) {
     return NextResponse.json({ error: 'Instagram Login OAuth is not configured' }, { status: 500 });
@@ -34,7 +40,7 @@ export async function GET(request: NextRequest) {
   url.searchParams.append('force_reauth', 'true');
   const state = encodeOAuthState({
     flow: 'instagram_login',
-    userId: userId || null,
+    userId: auth.userId,
   });
   url.searchParams.append('state', state);
 

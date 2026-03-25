@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseAnonServerClient } from '@/lib/supabase/serverClient';
+import { requireAuthenticatedUser } from '@/lib/security/requestAuth';
 
 export const runtime = 'nodejs';
 
@@ -18,6 +19,9 @@ type PersonaData = {
 };
 
 export async function GET(req: NextRequest) {
+  const auth = await requireAuthenticatedUser(req);
+  if (auth.response) return auth.response;
+
   const { searchParams } = new URL(req.url);
   const id = searchParams.get('id');
   if (!id) {
@@ -31,6 +35,7 @@ export async function GET(req: NextRequest) {
       .from('personas')
       .select('*')
       .eq('id', id)
+      .eq('userId', auth.userId)
       .limit(1)
       .single();
 
@@ -38,8 +43,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Persona not found' }, { status: 404 });
     }
 
-    console.log('Raw persona data from DB:', JSON.stringify(result.data, null, 2));
-    
     // Handle double-wrapped data structure while preferring top-level runtime flags
     // (legacy rows may have nested data + top-level updates from toggle routes).
     const personaData = result.data as PersonaData; // Proper type instead of any
@@ -52,7 +55,6 @@ export async function GET(req: NextRequest) {
         }
       : personaData;
     
-    console.log('Extracted persona data:', JSON.stringify(actualPersona, null, 2));
     return NextResponse.json({ persona: actualPersona });
   } catch (error) {
     return NextResponse.json({ error: 'Database error', details: String(error) }, { status: 500 });

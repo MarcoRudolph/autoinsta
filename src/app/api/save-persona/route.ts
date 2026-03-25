@@ -1,19 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseAnonServerClient } from '@/lib/supabase/serverClient';
+import { requireAuthenticatedUser, validateRequestedUserId } from '@/lib/security/requestAuth';
 
 export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   try {
+    const auth = await requireAuthenticatedUser(req);
+    if (auth.response) return auth.response;
+
     const payload = await req.json();
-    console.log('Save persona API received data:', JSON.stringify(payload, null, 2));
-    console.log('Data being inserted into database:', JSON.stringify(payload, null, 2));
+    const mismatch = validateRequestedUserId(payload?.userId, auth.userId);
+    if (mismatch) return mismatch;
     
     // Initialize Supabase client
     const supabase = createSupabaseAnonServerClient();
     
-    if (!payload?.userId || !payload?.data) {
-      return NextResponse.json({ error: 'Missing userId or persona data' }, { status: 400 });
+    if (!payload?.data) {
+      return NextResponse.json({ error: 'Missing persona data' }, { status: 400 });
     }
 
     // Normalize to a flat persona payload in `personas.data` for consistent reads/writes.
@@ -29,7 +33,7 @@ export async function POST(req: NextRequest) {
     const { data: result, error } = await supabase
       .from('personas')
       .insert({
-        userId: payload.userId, // ensure userId is provided
+        userId: auth.userId,
         data: personaData,
       })
       .select()
@@ -40,7 +44,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to save persona', details: error.message }, { status: 500 });
     }
     
-    console.log('Database insert result:', JSON.stringify(result, null, 2));
     return NextResponse.json({ success: true, persona: result });
   } catch (error) {
     console.error('Error in save-persona API:', error);
