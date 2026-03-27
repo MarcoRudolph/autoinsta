@@ -15,6 +15,11 @@ const BodySchema = z.object({
   telegramUsername: z.string().optional(),
 });
 
+function getMissingTelegramEnv(): string[] {
+  const required = ['TELEGRAM_API_ID', 'TELEGRAM_API_HASH', 'TELEGRAM_SESSION_SECRET'] as const;
+  return required.filter((key) => !(process.env[key]?.trim()));
+}
+
 function normalizePhone(raw: string): string | null {
   const digits = raw.replace(/[^\d+]/g, '');
   if (digits.length < 8) return null;
@@ -22,6 +27,14 @@ function normalizePhone(raw: string): string | null {
 }
 
 export async function POST(request: NextRequest) {
+  const missingEnv = getMissingTelegramEnv();
+  if (missingEnv.length > 0) {
+    return NextResponse.json(
+      { error: `Missing runtime env: ${missingEnv.join(', ')}` },
+      { status: 500 }
+    );
+  }
+
   const auth = await requireAuthenticatedUser(request);
   if (auth.response) return auth.response;
 
