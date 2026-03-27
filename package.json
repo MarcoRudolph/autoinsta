@@ -9,6 +9,7 @@
     "lint": "next lint",
     "test": "tsx --test src/lib/**/*.test.ts",
     "test:instagram": "tsx --test src/lib/instagram/*.test.ts",
+    "test:instagram:parallel": "tsx --test test/instagram-webhook-parallel.test.ts",
     "test:billing": "tsx --test src/lib/billing/*.test.ts",
     "db:migrate": "tsx src/drizzle/migrate.ts",
     "telegram:worker": "tsx src/scripts/telegram-user-worker.ts",
