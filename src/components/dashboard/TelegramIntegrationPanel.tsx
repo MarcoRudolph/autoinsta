@@ -39,7 +39,7 @@ export function TelegramIntegrationPanel({
 
   const getErrorMessage = async (res: Response): Promise<string> => {
     try {
-      const data = (await res.json()) as { error?: string };
+      const data = (await res.clone().json()) as { error?: string };
       if (data?.error?.trim()) {
         return data.error;
       }
