@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { and, eq, inArray, sql } from 'drizzle-orm';
-import { db, hasPostgresUrlConfig } from '@/drizzle';
+import { db } from '@/drizzle';
 import { personas } from '@/drizzle/schema/personas';
 import { instagramConnections, instagramMessages } from '@/drizzle/schema/instagram';
 import { requireAuthenticatedUser } from '@/lib/security/requestAuth';
@@ -14,11 +14,7 @@ export async function GET(request: NextRequest) {
   const personaIdRaw = request.nextUrl.searchParams.get('personaId');
   const personaId = Number(personaIdRaw);
   if (!personaIdRaw || !Number.isInteger(personaId)) {
-    return NextResponse.json({ error: 'Missing personaId' }, { status: 400 });
-  }
-
-  if (!hasPostgresUrlConfig()) {
-    return NextResponse.json({ error: 'POSTGRES_URL not configured' }, { status: 500 });
+    return NextResponse.json({ error: 'Invalid personaId' }, { status: 400 });
   }
 
   try {
