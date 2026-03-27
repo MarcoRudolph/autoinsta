@@ -1,3 +1,4 @@
+import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { getSupabaseServerConfig } from '@/lib/supabase/serverConfig';
@@ -12,12 +13,25 @@ function extractBearerToken(request: Request): string | null {
   return token.length > 0 ? token : null;
 }
 
-export async function requireAuthenticatedUser(request: Request): Promise<AuthResult> {
-  const token = extractBearerToken(request);
-  if (!token) {
-    return { response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
-  }
+function parseCookies(request: Request): Array<{ name: string; value: string }> {
+  const raw = request.headers.get('cookie') || '';
+  if (!raw) return [];
 
+  const cookies: Array<{ name: string; value: string }> = [];
+  for (const part of raw.split(';')) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+    const idx = trimmed.indexOf('=');
+    if (idx <= 0) continue;
+    const name = trimmed.slice(0, idx).trim();
+    const value = trimmed.slice(idx + 1).trim();
+    if (!name) continue;
+    cookies.push({ name, value });
+  }
+  return cookies;
+}
+
+export async function requireAuthenticatedUser(request: Request): Promise<AuthResult> {
   const config = getSupabaseServerConfig();
   if (!config) {
     return {
@@ -25,11 +39,36 @@ export async function requireAuthenticatedUser(request: Request): Promise<AuthRe
     };
   }
 
-  const supabase = createClient(config.url, config.anonKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-  const { data, error } = await supabase.auth.getUser(token);
+  const token = extractBearerToken(request);
+  if (token) {
+    const supabase = createClient(config.url, config.anonKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const { data, error } = await supabase.auth.getUser(token);
 
+    if (!error && data.user?.id) {
+      return { userId: data.user.id };
+    }
+    return { response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
+  }
+
+  const cookieJar = parseCookies(request);
+  if (cookieJar.length === 0) {
+    return { response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
+  }
+
+  const supabaseFromCookie = createServerClient(config.url, config.anonKey, {
+    cookies: {
+      getAll() {
+        return cookieJar;
+      },
+      setAll() {
+        // Route handlers typically don't need to mutate auth cookies in this flow.
+      },
+    },
+  });
+
+  const { data, error } = await supabaseFromCookie.auth.getUser();
   if (error || !data.user?.id) {
     return { response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
   }

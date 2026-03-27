@@ -2,7 +2,6 @@ import { and, desc, eq } from 'drizzle-orm';
 import { db } from '@/drizzle';
 import {
   telegramChatLinks,
-  telegramDmPending,
   telegramMessages,
   telegramThreads,
   telegramUserSessions,

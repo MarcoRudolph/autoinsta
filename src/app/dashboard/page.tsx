@@ -853,13 +853,39 @@ function DashboardContent() {
     }
   }, []);
 
-  const handleInstagramLogin = () => {
-    const targetPath = '/api/instagram/auth';
-    const params = new URLSearchParams();
-    if (userId) {
-      params.set('userId', userId);
+  const handleInstagramLogin = async () => {
+    try {
+      const targetPath = '/api/instagram/auth';
+      const params = new URLSearchParams();
+      if (userId) {
+        params.set('userId', userId);
+      }
+
+      params.set('mode', 'json');
+      const authUrl = `${targetPath}?${params.toString()}`;
+      const response = await authedFetch(authUrl, { method: 'GET' });
+
+      if (response.status === 401) {
+        throw new Error('Session expired. Please sign in again.');
+      }
+      if (response.status === 403) {
+        throw new Error('User mismatch detected. Please reload and try again.');
+      }
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload?.error || 'Instagram connect failed');
+      }
+
+      const payload = await response.json().catch(() => ({}));
+      const location = payload?.redirectUrl;
+      if (typeof location !== 'string' || location.length === 0) {
+        throw new Error('Instagram redirect URL missing');
+      }
+
+      window.location.href = location;
+    } catch (error) {
+      alert(`Instagram Connect failed: ${error instanceof Error ? error.message : String(error)}`);
     }
-    window.location.href = params.toString() ? `${targetPath}?${params.toString()}` : targetPath;
   };
 
   const handleSimulateWebhook = async () => {

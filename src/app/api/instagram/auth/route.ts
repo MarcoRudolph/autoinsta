@@ -44,6 +44,10 @@ export async function GET(request: NextRequest) {
   });
   url.searchParams.append('state', state);
 
+  const responseMode = request.nextUrl.searchParams.get('mode');
+  if (responseMode === 'json') {
+    return NextResponse.json({ redirectUrl: url.toString() });
+  }
+
   return NextResponse.redirect(url.toString());
 }
-

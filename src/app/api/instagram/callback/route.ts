@@ -6,6 +6,7 @@ import { decodeOAuthState } from '@/lib/oauth/state';
 import { ensurePublicUserFromAuth } from '@/lib/users/ensurePublicUser';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 type InstagramLoginTokenDataItem = {
   access_token?: string;
