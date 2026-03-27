@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useEffect } from 'react';
+import { Suspense, useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -11,24 +11,14 @@ function VerifyEmailContent() {
   const router = useRouter();
   const token = searchParams.get('token');
 
-  useEffect(() => {
-    if (!token) {
-      setStatus('error');
-      setMessage('No verification token provided.');
-      return;
-    }
-
-    verifyEmail(token);
-  }, [token]);
-
-  const verifyEmail = async (token: string) => {
+  const verifyEmail = useCallback(async (tokenValue: string) => {
     try {
       const response = await fetch('/api/verify-email', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ token }),
+        body: JSON.stringify({ token: tokenValue }),
       });
 
       const data = await response.json();
@@ -57,7 +47,17 @@ function VerifyEmailContent() {
       setStatus('error');
       setMessage('An error occurred during verification. Please try again.');
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    if (!token) {
+      setStatus('error');
+      setMessage('No verification token provided.');
+      return;
+    }
+
+    verifyEmail(token);
+  }, [token, verifyEmail]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#334155] flex items-center justify-center px-4">

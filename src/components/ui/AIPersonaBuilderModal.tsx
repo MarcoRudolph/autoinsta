@@ -46,8 +46,8 @@ export default function AIPersonaBuilderModal({
             className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 min-h-[100px] resize-none"
             disabled={loading}
           />
-                     <p className="text-xs text-gray-500 mt-2">
-             Tip: Be specific about personality traits, background, or style. Use "random" for AI-generated creativity.
+           <p className="text-xs text-gray-500 mt-2">
+             Tip: Be specific about personality traits, background, or style. Use &quot;random&quot; for AI-generated creativity.
            </p>
            <p className="text-xs text-orange-500 mt-1">
              ⚠️ Content Guidelines: Avoid sexual, violent, illegal, or hateful content. Your prompt will be checked for safety.

@@ -5,7 +5,7 @@ import { type NextRequest, NextResponse } from 'next/server';
  * Helper to create a Supabase server client in middleware with cookie passthrough.
  */
 export const createMiddlewareClient = (request: NextRequest) => {
-  let response = NextResponse.next({
+  const response = NextResponse.next({
     request: {
       headers: request.headers,
     },

@@ -144,6 +144,7 @@ function DashboardContent() {
     transparencyMode: false,
   });
   const [instagramConnected, setInstagramConnected] = useState(false);
+  const [dashboardTab, setDashboardTab] = useState<'live' | 'craft'>('live');
   const [telegramConnected, setTelegramConnected] = useState(false);
   const [simulatingWebhook, setSimulatingWebhook] = useState(false);
   const [personas, setPersonas] = useState<{id: string, name: string, active?: boolean, transparencyMode?: boolean}[]>([]);
@@ -1149,7 +1150,7 @@ function DashboardContent() {
     } finally {
       setSaving(false);
     }
-  }, [personality, productLinks, fetchPersonas, currentPersonaId, t, selectedPersonaId]);
+  }, [personality, productLinks, fetchPersonas, currentPersonaId, t, selectedPersonaId, personas]);
 
   const loadPersonaById = useCallback(async (id: string) => {
     if (!id) return;
@@ -1659,6 +1660,32 @@ function DashboardContent() {
             {instagramConnected ? t('dashboard.instagramConnected') : t('dashboard.connectInstagram')}
           </button>
         </div>
+        <div className="mt-5 w-full max-w-xl">
+          <div className="inline-flex w-full rounded-xl bg-white/10 p-1">
+            <button
+              type="button"
+              onClick={() => setDashboardTab('live')}
+              className={`flex-1 rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                dashboardTab === 'live'
+                  ? 'bg-white text-indigo-700 shadow-sm'
+                  : 'text-white/80 hover:text-white'
+              }`}
+            >
+              Live
+            </button>
+            <button
+              type="button"
+              onClick={() => setDashboardTab('craft')}
+              className={`flex-1 rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                dashboardTab === 'craft'
+                  ? 'bg-white text-indigo-700 shadow-sm'
+                  : 'text-white/80 hover:text-white'
+              }`}
+            >
+              Craft
+            </button>
+          </div>
+        </div>
         <TelegramIntegrationPanel
           locale={currentLocale}
           userId={userId}
@@ -1677,7 +1704,7 @@ function DashboardContent() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Craft Persona Section */}
+        {dashboardTab === 'craft' && (
         <div className="bg-[#15192a]/80 backdrop-blur-lg rounded-xl shadow-2xl p-6 text-white">
           <div className="flex items-center justify-between mb-4 gap-4">
             <div className="flex flex-wrap items-center gap-2">
@@ -2563,9 +2590,11 @@ function DashboardContent() {
             </div>
           </div>
         </div>
+        )}
 
-        {/* DM & Comment Settings */}
-        <div className="space-y-6">
+        <div className={`space-y-6 ${dashboardTab === 'live' ? 'md:col-span-2' : ''}`}>
+          {dashboardTab === 'live' && (
+          <>
           {/* Deine Personas Section as Card */}
           <div className="bg-[#15192a]/80 backdrop-blur-lg rounded-xl shadow-2xl p-6 text-white mb-8">
             <h2 className="text-2xl md:text-4xl mb-4 bg-gradient-to-r from-[#f3aacb] via-[#a3bffa] to-[#e6ebfc] bg-clip-text text-transparent drop-shadow-lg tracking-tight" style={{
@@ -2670,7 +2699,11 @@ function DashboardContent() {
               <span className="text-gray-400">{t('dashboard.noPersonasYet')}</span>
             )}
           </div>
+          </>
+          )}
 
+          {dashboardTab === 'craft' && (
+          <>
           {/* System Prompt Section as Card */}
           <div className="bg-[#15192a]/80 backdrop-blur-lg rounded-xl shadow-2xl p-6 text-white">
             <h2 className="text-2xl md:text-4xl mb-4 bg-gradient-to-r from-[#f3aacb] via-[#a3bffa] to-[#e6ebfc] bg-clip-text text-transparent drop-shadow-lg tracking-tight" style={{
@@ -2692,7 +2725,11 @@ function DashboardContent() {
               onChange={e => setPersonality(prev => ({ ...prev, systemPrompt: e.target.value }))}
             />
           </div>
+          </>
+          )}
 
+          {dashboardTab === 'live' && (
+          <>
           <div className="bg-[#15192a]/80 backdrop-blur-lg rounded-xl shadow-2xl p-6 text-white">
             <div className="flex items-center gap-4 mb-4">
               <h2 className="text-2xl md:text-4xl bg-gradient-to-r from-[#f3aacb] via-[#a3bffa] to-[#e6ebfc] bg-clip-text text-transparent drop-shadow-lg tracking-tight m-0" style={{
@@ -2796,7 +2833,11 @@ function DashboardContent() {
               {/* Remove the Product Links section from here - it will be moved to its own card */}
             </div>
           </div>
+          </>
+          )}
 
+          {dashboardTab === 'live' && (
+          <>
           {/* Comment Settings (similar structure) */}
           <div className="bg-[#15192a]/80 backdrop-blur-lg rounded-xl shadow-2xl p-6 text-white">
             <div className="flex items-center gap-4 mb-4">
@@ -2897,7 +2938,11 @@ function DashboardContent() {
               )}
             </div>
           </div>
+          </>
+          )}
 
+          {dashboardTab === 'craft' && (
+          <>
           {/* New Product Links Card */}
           <div className="bg-[#15192a]/80 backdrop-blur-lg rounded-xl shadow-2xl p-6 text-white">
             <h2 className="text-2xl md:text-4xl mb-2 bg-gradient-to-r from-[#f3aacb] via-[#a3bffa] to-[#e6ebfc] bg-clip-text text-transparent drop-shadow-lg tracking-tight" style={{
@@ -2999,6 +3044,8 @@ function DashboardContent() {
               </button>
             </div>
           </div>
+          </>
+          )}
         </div>
       </div>
       {/* Action Buttons */}
