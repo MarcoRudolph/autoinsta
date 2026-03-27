@@ -37,6 +37,26 @@ export function TelegramIntegrationPanel({
   const inputClass =
     'w-full max-w-xs rounded-lg border border-white/30 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/45 focus:outline-none focus:ring-2 focus:ring-white/40';
 
+  const getErrorMessage = async (res: Response): Promise<string> => {
+    try {
+      const data = (await res.json()) as { error?: string };
+      if (data?.error?.trim()) {
+        return data.error;
+      }
+    } catch {
+      // fall through to text parsing
+    }
+    try {
+      const text = (await res.text()).trim();
+      if (text) {
+        return text.slice(0, 500);
+      }
+    } catch {
+      // no-op
+    }
+    return t('dashboard.telegramConnectError');
+  };
+
   if (!userId.trim()) {
     return (
       <p className="mt-4 max-w-md text-sm text-white/75">{t('dashboard.telegramLoginRequired')}</p>
@@ -71,14 +91,14 @@ export function TelegramIntegrationPanel({
           telegramUsername: normalizedUser,
         }),
       });
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        window.alert(data.error || t('dashboard.telegramConnectError'));
+        window.alert(await getErrorMessage(res));
         return;
       }
       setCodeSent(true);
-    } catch {
-      window.alert(t('dashboard.telegramConnectError'));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t('dashboard.telegramConnectError');
+      window.alert(message);
     } finally {
       setBusy(false);
     }
@@ -97,16 +117,16 @@ export function TelegramIntegrationPanel({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, phoneCode: code }),
       });
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        window.alert(data.error || t('dashboard.telegramConnectError'));
+        window.alert(await getErrorMessage(res));
         return;
       }
       setPhoneCode('');
       setCodeSent(false);
       onConnected();
-    } catch {
-      window.alert(t('dashboard.telegramConnectError'));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t('dashboard.telegramConnectError');
+      window.alert(message);
     } finally {
       setBusy(false);
     }
