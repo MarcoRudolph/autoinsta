@@ -191,6 +191,14 @@ export function TelegramIntegrationPanel({
                   <button
                     type="button"
                     disabled={busy}
+                    onClick={requestCode}
+                    className="w-full max-w-xs rounded-lg border border-white/70 bg-transparent py-2.5 px-4 text-sm font-semibold text-white shadow-none transition hover:bg-white hover:text-indigo-700 disabled:opacity-50"
+                  >
+                    {busy ? t('common.loading') : 'Nochmal senden'}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy}
                     onClick={() => {
                       setCodeSent(false);
                       setPhoneCode('');
